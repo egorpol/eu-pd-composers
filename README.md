@@ -8,16 +8,15 @@ Find notable 20th-century classical composers whose works are likely safer to st
 
 ```
 data/                         # versioned TSV dumps + manifest
-  README.md
-  composers.tsv
-  composers_imslp.tsv
-PublicDomainSheetMusicFinder.ipynb   # original end-to-end scrape (reference)
+scripts/build_dump.py         # current dump builder (preferred)
+requirements.txt
+PublicDomainSheetMusicFinder.ipynb   # original end-to-end scrape (historical reference)
 imslp_extract.ipynb                  # list works for one IMSLP composer page
 llm_parse_local.ipynb                # optional local-LLM Wikipedia helpers (legacy)
-experimental/                        # unfinished utils refactor — ignore for normal use
+experimental/                        # unfinished 2025 refactor — superseded by scripts/
 ```
 
-See [`data/README.md`](data/README.md) for dump dates, schema, and caveats.
+See [`data/README.md`](data/README.md) for dump dates, schema, and how to build a new dump.
 
 ## Sources
 
@@ -29,7 +28,7 @@ Public-domain status is a **heuristic**, not legal clearance. Editions, arrangem
 ## Setup
 
 ```bash
-pip install requests beautifulsoup4 pandas tqdm numpy
+pip install -r requirements.txt
 ```
 
 Optional for `llm_parse_local.ipynb`: a local OpenAI-compatible endpoint (e.g. LM Studio).
@@ -37,8 +36,8 @@ Optional for `llm_parse_local.ipynb`: a local OpenAI-compatible endpoint (e.g. L
 ## Usage
 
 1. Browse / filter the TSVs under `data/` (spreadsheet, pandas, or a future UI).
-2. Run root notebooks only if you need to **rebuild** a dump — then write a **new** dated file and update `data/README.md`.
-3. Ignore `experimental/` until the refactor is finished.
+2. Rebuild with `python scripts/build_dump.py` (writes dated files; see `data/README.md`).
+3. Root notebooks remain as historical reference only.
 
 ## License
 

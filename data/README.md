@@ -28,3 +28,24 @@ Treat these files as the product; treat the notebooks / `experimental/` as how t
 - Name → IMSLP URL matching is naive and under-recalls.
 - Living composers and recent deaths are included in the full dump; filter before research use.
 - Do not silently overwrite these files. New scrapes should land as a new dated dump (e.g. `composers_2026-09-24.tsv`) plus an updated row in this manifest.
+
+## Building a new dump
+
+```bash
+pip install -r requirements.txt
+# Smoke test (no writes):
+python scripts/build_dump.py --limit 5 --dry-run --no-pageviews --no-imslp
+# Full rebuild (slow; polite rate limits):
+python scripts/build_dump.py
+```
+
+Writes `data/composers_YYYY-MM-DD.tsv`, optional `composers_imslp_YYYY-MM-DD.tsv`, and `dump_meta_YYYY-MM-DD.json`. Never overwrites an existing dated file.
+
+### Target columns for v0.2+
+
+| Column | Notes |
+|---|---|
+| existing v0.1 columns | keep |
+| `eu_pd_year` | `Year of death + 71` calendar heuristic |
+| `dump_id` / meta JSON | provenance next to the TSV |
+| later | IMSLP EU/US/CA tags, Wikidata QID, work-level tags |
