@@ -4,15 +4,18 @@ Find notable 20th-century classical composers whose works are likely safer to st
 
 **Current direction:** ship a **versioned data dump** + keep notebooks as **build reference**. Filtering UI and richer work-level tags come later.
 
+See [CHANGELOG.md](CHANGELOG.md) for release history (targeting **0.2**).
+
 ## Layout
 
 ```
 data/                         # versioned TSV dumps + manifest
 scripts/build_dump.py         # current dump builder (preferred)
+scripts/heartbeat.py          # alive/progress logs for long scrapes
 requirements.txt
+CHANGELOG.md
 PublicDomainSheetMusicFinder.ipynb   # original end-to-end scrape (historical reference)
 imslp_extract.ipynb                  # list works for one IMSLP composer page
-llm_parse_local.ipynb                # optional local-LLM Wikipedia helpers (legacy)
 experimental/                        # unfinished 2025 refactor — superseded by scripts/
 ```
 
@@ -31,12 +34,11 @@ Public-domain status is a **heuristic**, not legal clearance. Editions, arrangem
 pip install -r requirements.txt
 ```
 
-Optional for `llm_parse_local.ipynb`: a local OpenAI-compatible endpoint (e.g. LM Studio).
-
 ## Usage
 
 1. Browse / filter the TSVs under `data/` (spreadsheet, pandas, or a future UI).
 2. Rebuild with `python scripts/build_dump.py` (writes dated files; see `data/README.md`).
+   Long runs log a heartbeat every 30s by default (`--heartbeat-interval`).
 3. Root notebooks remain as historical reference only.
 
 ## License

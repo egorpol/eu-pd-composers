@@ -10,10 +10,11 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import sys
 import time
 from datetime import date, datetime, timezone
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 from urllib.parse import quote, urljoin
 
 import numpy as np
@@ -21,6 +22,9 @@ import pandas as pd
 import requests
 from bs4 import BeautifulSoup
 from tqdm import tqdm
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from heartbeat import Heartbeat
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DATA_DIR = REPO_ROOT / "data"
@@ -145,6 +149,21 @@ def write_dump(df: pd.DataFrame, stem: str, dump_date: date) -> Path:
     return path
 
 
+def _map_with_heartbeat(
+    series: pd.Series,
+    fn,
+    name: str,
+    interval_s: float,
+) -> list:
+    """Apply ``fn`` over ``series`` with tqdm + periodic heartbeat logs."""
+    results: list = []
+    with Heartbeat(name=name, total=len(series), interval_s=interval_s) as hb:
+        for value in tqdm(series, desc=name):
+            results.append(fn(value))
+            hb.tick()
+    return results
+
+
 def build(args: argparse.Namespace) -> None:
     dump_date = date.fromisoformat(args.date) if args.date else date.today()
     session = requests.Session()
@@ -162,9 +181,11 @@ def build(args: argparse.Namespace) -> None:
     if args.pageviews:
         start, end = args.pageviews_start, args.pageviews_end
         log.info("Fetching pageviews %s → %s", start, end)
-        tqdm.pandas(desc="pageviews")
-        df["Pageviews"] = df["URL"].progress_apply(
-            lambda u: fetch_pageviews(u, start, end, session)
+        df["Pageviews"] = _map_with_heartbeat(
+            series=df["URL"],
+            fn=lambda u: fetch_pageviews(u, start, end, session),
+            name="pageviews",
+            interval_s=args.heartbeat_interval,
         )
         df = df.sort_values(by="Pageviews", ascending=False, na_position="last")
     else:
@@ -174,9 +195,11 @@ def build(args: argparse.Namespace) -> None:
     if args.imslp:
         log.info("Checking IMSLP category pages (heuristic Last,_First URLs)")
         df["IMSLP_URL"] = df["Name"].map(imslp_category_url)
-        tqdm.pandas(desc="imslp")
-        df["IMSLP_Exists"] = df["IMSLP_URL"].progress_apply(
-            lambda u: page_exists(u, session)
+        df["IMSLP_Exists"] = _map_with_heartbeat(
+            series=df["IMSLP_URL"],
+            fn=lambda u: page_exists(u, session),
+            name="imslp",
+            interval_s=args.heartbeat_interval,
         )
     else:
         log.info("Skipping IMSLP checks (--no-imslp)")
@@ -247,6 +270,12 @@ def parse_args() -> argparse.Namespace:
     )
     p.add_argument("--pageviews-start", default="20250101")
     p.add_argument("--pageviews-end", default="20251231")
+    p.add_argument(
+        "--heartbeat-interval",
+        type=float,
+        default=30.0,
+        help="Seconds between alive/progress log lines during long scrapes (default: 30)",
+    )
     p.set_defaults(pageviews=True, imslp=True)
     return p.parse_args()
 
