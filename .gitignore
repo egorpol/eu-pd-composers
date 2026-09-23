@@ -21,4 +21,5 @@ Thumbs.db
 
 # Local scratch
 *.log
+data/logs/
 .cache/

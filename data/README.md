@@ -1,51 +1,49 @@
 # Data dumps
 
-Versioned snapshots produced by the notebooks under the repo root.
-Treat these files as the product; treat the notebooks / `experimental/` as how they were built.
+Versioned snapshots. Treat TSV + `dump_meta_*.json` as the product; scripts under `scripts/` are how they were built.
 
-## Current release
+## Current dump (schema v2)
 
-| File | Rows | Schema |
+| File | Rows | dump_id |
 |---|---|---|
-| `composers.tsv` | 3367 | Name, Year of birth, Year of death, Nationality, Notable 20th-century works, Remarks, URL, Pageviews |
-| `composers_imslp.tsv` | 3367 | same as above + `IMSLP_URL`, `IMSLP_Exists` |
+| `composers_2026-09-24.tsv` | 3371 | `2026-09-24` |
+| `dump_meta_2026-09-24.json` | — | companion meta |
 
-### Provenance (best effort)
+**Columns:** Name, Year of birth, Year of death, Nationality, Notable 20th-century works, Remarks, URL, eu_pd_year, Pageviews, IMSLP_URL, IMSLP_Exists
 
 | Field | Value |
 |---|---|
-| Dump id | `v0.1-legacy` |
-| First committed | 2023-08-02 (`49be8ba`) |
-| Name source | Wikipedia: [List of 20th-century classical composers](https://en.wikipedia.org/wiki/List_of_20th-century_classical_composers) |
-| Popularity metric | Wikimedia Pageviews API, monthly totals (notebook hardcodes `20230101`–`20231231`; earlier README mentioned 2022 — treat ranking as approximate) |
-| Score source | IMSLP category page existence check (heuristic `Last,_First` URL) |
-| Jurisdiction heuristic | EU-style life+70 proxy via year of death (not legal advice; editions/arrangements/libretti can differ) |
-| License of dump tables | Derived facts + URLs; reuse under project MIT. Linked Wikipedia/IMSLP content remains under their terms. |
+| tool_version | `2.0.0-dev` |
+| schema_version | `2` |
+| Name source | Wikipedia [List of 20th-century classical composers](https://en.wikipedia.org/wiki/List_of_20th-century_classical_composers) |
+| Pageviews | Wikimedia API monthly totals `20250101`–`20251231` |
+| IMSLP | heuristic `Last,_First` category URL + HTTP existence |
+| EU heuristic | `eu_pd_year = Year of death + 71` |
+| IMSLP hits | 1146 / 3371 |
+| Likely EU PD in 2026 (death ≤ 1954) | 759 |
 
-### Caveats
+## Legacy dump (schema v1)
 
-- IMSLP presence ≠ public domain in your jurisdiction. Prefer IMSLP’s own CAN/US/EU tags for score-level status.
+| File | Rows | dump_id |
+|---|---|---|
+| `composers.tsv` | 3367 | `v0.1-legacy` |
+| `composers_imslp.tsv` | 3367 | `v0.1-legacy` |
+
+First committed 2023-08-02. Prefer the dated schema-v2 file above for new work.
+
+## Caveats
+
+- IMSLP presence ≠ public domain in your jurisdiction.
 - Name → IMSLP URL matching is naive and under-recalls.
-- Living composers and recent deaths are included in the full dump; filter before research use.
-- Do not silently overwrite these files. New scrapes should land as a new dated dump (e.g. `composers_2026-09-24.tsv`) plus an updated row in this manifest.
+- Living composers and recent deaths are included; filter before research use.
+- Never overwrite dated dumps — add a new date + meta file.
 
 ## Building a new dump
 
 ```bash
 pip install -r requirements.txt
-# Smoke test (no writes):
 python scripts/build_dump.py --limit 5 --dry-run --no-pageviews --no-imslp
-# Full rebuild (slow; polite rate limits):
-python scripts/build_dump.py
+python scripts/build_dump.py --date YYYY-MM-DD
 ```
 
-Writes a single `data/composers_YYYY-MM-DD.tsv` plus `dump_meta_YYYY-MM-DD.json`. Never overwrites an existing dated file.
-
-### Target columns for v0.2+
-
-| Column | Notes |
-|---|---|
-| existing v0.1 columns | keep |
-| `eu_pd_year` | `Year of death + 71` calendar heuristic |
-| `dump_id` / meta JSON | provenance next to the TSV |
-| later | IMSLP EU/US/CA tags, Wikidata QID, work-level tags |
+Writes one `composers_YYYY-MM-DD.tsv` + `dump_meta_YYYY-MM-DD.json`.

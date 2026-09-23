@@ -102,24 +102,52 @@ def fetch_pageviews(
     start: str,
     end: str,
     session: requests.Session,
-    sleep_s: float = 0.05,
+    sleep_s: float = 0.1,
+    max_retries: int = 5,
 ) -> float:
     if pd.isna(article_url) or "/wiki/" not in str(article_url):
         return float("nan")
     title = str(article_url).split("/wiki/", 1)[-1]
-    url = f"{PAGEVIEWS_API}/{title}/monthly/{start}00/{end}00"
-    try:
-        response = session.get(url, headers=HEADERS, timeout=15)
-        if response.status_code == 404:
-            return 0.0
-        response.raise_for_status()
-        payload = response.json()
-        total = sum(item.get("views", 0) for item in payload.get("items", []))
-        time.sleep(sleep_s)
-        return float(total)
-    except (requests.RequestException, json.JSONDecodeError, KeyError) as exc:
-        log.warning("pageviews failed for %s: %s", article_url, exc)
-        return float("nan")
+    # Encode path segment but keep already-encoded sequences intact.
+    title_enc = quote(title, safe="()_,%-")
+    url = f"{PAGEVIEWS_API}/{title_enc}/monthly/{start}00/{end}00"
+
+    for attempt in range(max_retries):
+        try:
+            response = session.get(url, headers=HEADERS, timeout=20)
+            if response.status_code == 404:
+                time.sleep(sleep_s)
+                return 0.0
+            if response.status_code == 429:
+                wait = min(60.0, 2.0 ** attempt + 1.0)
+                log.warning(
+                    "pageviews 429 for %s — sleep %.1fs (attempt %d/%d)",
+                    title,
+                    wait,
+                    attempt + 1,
+                    max_retries,
+                )
+                time.sleep(wait)
+                continue
+            response.raise_for_status()
+            payload = response.json()
+            total = sum(item.get("views", 0) for item in payload.get("items", []))
+            time.sleep(sleep_s)
+            return float(total)
+        except (requests.RequestException, json.JSONDecodeError, KeyError) as exc:
+            wait = min(30.0, 1.5 ** attempt)
+            log.warning(
+                "pageviews failed for %s: %s — retry in %.1fs (%d/%d)",
+                article_url,
+                exc,
+                wait,
+                attempt + 1,
+                max_retries,
+            )
+            time.sleep(wait)
+
+    log.error("pageviews giving up on %s after %d retries", article_url, max_retries)
+    return float("nan")
 
 
 def imslp_category_url(name: str) -> str:
