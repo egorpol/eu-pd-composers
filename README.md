@@ -1,10 +1,10 @@
-# Public Domain Sheet Music Finder
+# eu-pd-composers
 
 Find notable 20th-century classical composers whose works are likely safer to study or redistribute in EU-style life+70 regimes, then point at available IMSLP material.
 
 **Current direction:** ship a **versioned data dump** + keep notebooks as **build reference**. Filtering UI and richer work-level tags come later.
 
-See [CHANGELOG.md](CHANGELOG.md) for release history (targeting **0.2**).
+See [CHANGELOG.md](CHANGELOG.md) and [VERSIONING.md](VERSIONING.md). Next tool release: **v2.0.0** (not 0.2 — GitHub already has `v1.0` / `v1.1`).
 
 ## Layout
 
@@ -14,6 +14,7 @@ scripts/build_dump.py         # current dump builder (preferred)
 scripts/heartbeat.py          # alive/progress logs for long scrapes
 requirements.txt
 CHANGELOG.md
+VERSIONING.md
 PublicDomainSheetMusicFinder.ipynb   # original end-to-end scrape (historical reference)
 imslp_extract.ipynb                  # list works for one IMSLP composer page
 experimental/                        # unfinished 2025 refactor — superseded by scripts/

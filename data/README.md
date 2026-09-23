@@ -39,7 +39,7 @@ python scripts/build_dump.py --limit 5 --dry-run --no-pageviews --no-imslp
 python scripts/build_dump.py
 ```
 
-Writes `data/composers_YYYY-MM-DD.tsv`, optional `composers_imslp_YYYY-MM-DD.tsv`, and `dump_meta_YYYY-MM-DD.json`. Never overwrites an existing dated file.
+Writes a single `data/composers_YYYY-MM-DD.tsv` plus `dump_meta_YYYY-MM-DD.json`. Never overwrites an existing dated file.
 
 ### Target columns for v0.2+
 

@@ -2,46 +2,52 @@
 
 All notable changes to this project are documented here.
 
-Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
-Versioning aims for [SemVer](https://semver.org/) once **0.2.0** ships.
+Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).  
+Tool releases: [SemVer](https://semver.org/) Git tags.  
+Dump snapshots: dated `dump_id` — see [VERSIONING.md](VERSIONING.md).
 
-## [Unreleased]
+## [Unreleased] → targeting **v2.0.0**
 
 ### Added
-- `scripts/build_dump.py` — dated Wikipedia / pageviews / IMSLP dump builder (does not overwrite existing dumps)
-- `scripts/heartbeat.py` — periodic alive/progress logs for long scrapes
-- `data/` layout with dump manifest (`data/README.md`)
+- `scripts/build_dump.py` — dated Wikipedia / pageviews / IMSLP dump builder (never overwrites)
+- `scripts/heartbeat.py` — alive/progress logs for long scrapes
+- `data/` layout with dump manifest
+- `VERSIONING.md` — separate tool SemVer vs dump calendar ids
 - `requirements.txt`, `.gitattributes` (LF)
 
 ### Changed
-- Repo oriented around **versioned data dumps** + scripts as build reference
+- Project renamed to **eu-pd-composers** (repo: `egorpol/eu-pd-composers`)
+- Oriented around **versioned data dumps** + scripts as build reference
 - Unfinished 2025 utils refactor parked under `experimental/`
 
 ### Removed
-- `llm_parse_local.ipynb` (local LM Studio / OpenAI-compatible Wikipedia Q&A path)
+- `llm_parse_local.ipynb` (local LM Studio path)
 
-### Planned for 0.2.0
-- Fresh dated dump (`composers_YYYY-MM-DD.tsv` + meta JSON) with `eu_pd_year`
-- Repo rename (name TBD — see discussion / README notes)
-- Minimal filter UI over the dump
-- Drop or freeze legacy root notebook as pure historical reference
+### Planned before tagging v2.0.0
+- Fresh dated dump with `eu_pd_year` + `dump_meta_*.json` (`schema_version: 2`)
+- Single primary TSV (decision pending)
+- Minimal filter UI (may slip to 2.1)
 
-## [0.1.1] - 2024-04
+## [1.1.0] - 2024-04-17
+
+Published on GitHub as tag `v1.1` (release title `v.1.1`).
 
 ### Added
 - `imslp_extract.ipynb` — list works for a selected IMSLP composer
-- Experimental `llm_parse_local.ipynb` (removed in Unreleased)
+- Experimental `llm_parse_local.ipynb`
 
 ### Changed
-- Refactors / docs updates on `PublicDomainSheetMusicFinder.ipynb`
+- Refactors / docs on the main scrape notebook
 
-## [0.1.0] - 2023-08-02
+## [1.0.0] - 2024-04-17
+
+Published on GitHub as tag `v1.0`. Data files first appeared in-repo earlier (2023-08); this is the first formal release tag.
 
 ### Added
-- Initial Wikipedia → pageviews → IMSLP existence pipeline (notebook)
-- `composers.tsv` and `composers_imslp.tsv` data dumps
+- Wikipedia → pageviews → IMSLP existence pipeline (notebook)
+- `composers.tsv` / `composers_imslp.tsv`
 - MIT license
 
-[Unreleased]: https://github.com/klirr2007/PublicDomainSheetMusicFinder/compare/v0.1.1...HEAD
-[0.1.1]: https://github.com/klirr2007/PublicDomainSheetMusicFinder/compare/v0.1.0...v0.1.1
-[0.1.0]: https://github.com/klirr2007/PublicDomainSheetMusicFinder/releases/tag/v0.1.0
+[Unreleased]: https://github.com/egorpol/eu-pd-composers/compare/v1.1...HEAD
+[1.1.0]: https://github.com/egorpol/eu-pd-composers/compare/v1.0...v1.1
+[1.0.0]: https://github.com/egorpol/eu-pd-composers/releases/tag/v1.0

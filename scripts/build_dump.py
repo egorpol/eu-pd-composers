@@ -40,8 +40,8 @@ PAGEVIEWS_API = (
 
 # Identify the client; Wikimedia / IMSLP expect a contactable UA.
 USER_AGENT = (
-    "PublicDomainSheetMusicFinder/0.2 "
-    "(https://github.com/klirr2007/PublicDomainSheetMusicFinder; research dump builder)"
+    "eu-pd-composers/2.0 "
+    "(https://github.com/egorpol/eu-pd-composers; research dump builder)"
 )
 HEADERS = {"User-Agent": USER_AGENT}
 
@@ -202,27 +202,41 @@ def build(args: argparse.Namespace) -> None:
             interval_s=args.heartbeat_interval,
         )
     else:
-        log.info("Skipping IMSLP checks (--no-imslp)")
+        df["IMSLP_URL"] = df["Name"].map(imslp_category_url)
+        df["IMSLP_Exists"] = pd.NA
+        log.info("Skipping IMSLP existence checks (--no-imslp); URLs still filled")
+
+    # Stable column order for schema_version 2 (single TSV).
+    column_order = [
+        "Name",
+        "Year of birth",
+        "Year of death",
+        "Nationality",
+        "Notable 20th-century works",
+        "Remarks",
+        "URL",
+        "eu_pd_year",
+        "Pageviews",
+        "IMSLP_URL",
+        "IMSLP_Exists",
+    ]
+    df = df.reindex(columns=column_order)
 
     if args.dry_run:
         log.info("Dry run — not writing files. Columns: %s", list(df.columns))
         print(df.head(10).to_string(index=False))
         return
 
-    composers_path = write_dump(
-        df.drop(columns=[c for c in ("IMSLP_URL", "IMSLP_Exists") if c in df.columns]),
-        "composers",
-        dump_date,
-    )
-    log.info("Wrote %s", composers_path)
-
-    if args.imslp:
-        imslp_path = write_dump(df, "composers_imslp", dump_date)
-        log.info("Wrote %s", imslp_path)
+    composers_path = write_dump(df, "composers", dump_date)
+    log.info("Wrote %s (%d rows, %d cols)", composers_path, len(df), len(df.columns))
 
     meta = {
-        "dump_id": f"v0.2-{dump_date.isoformat()}",
+        "dump_id": dump_date.isoformat(),
+        "tool_version": "2.0.0-dev",
+        "schema_version": 2,
         "created_at_utc": datetime.now(timezone.utc).isoformat(),
+        "output_file": composers_path.name,
+        "columns": column_order,
         "wikipedia_list_url": WIKI_LIST_URL,
         "pageviews": bool(args.pageviews),
         "pageviews_range": [args.pageviews_start, args.pageviews_end]
