@@ -21,6 +21,7 @@ Versioned snapshots. Treat TSV + `dump_meta_*.json` as the product; scripts unde
 | EU heuristic | `eu_pd_year = Year of death + 71` |
 | IMSLP hits | 1146 / 3371 |
 | Likely EU PD in 2026 (death ≤ 1954) | 759 |
+| Pageviews null after backfill | 4 (mostly missing Wiki URLs / residual API failures) |
 
 ## Legacy dump (schema v1)
 
