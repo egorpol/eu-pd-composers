@@ -14,6 +14,8 @@ Pipeline diagram: [`docs/PIPELINE.md`](../docs/PIPELINE.md).
 
 **100%** works have a `force_family`. Residual 394 after gpt-6-luna filled by **Grok 4.7 high** (`force_family_src=llm_grok`).
 
+Prefer this dump for force/genre filters and the static viewer (`viewer/`, dump pinned via `export_viewer_json.py`).
+
 ## Dump lineage
 
 | dump_id | What |

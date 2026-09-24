@@ -15,7 +15,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 DATA_DIR = REPO_ROOT / "data"
 CACHE_DIR = DATA_DIR / "cache"
 
-TOOL_VERSION = "3.0.0-dev"
+TOOL_VERSION = "3.1.0-dev"
 SCHEMA_VERSION = 3
 
 USER_AGENT = (

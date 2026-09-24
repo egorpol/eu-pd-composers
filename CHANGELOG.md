@@ -6,7 +6,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Tool releases: [SemVer](https://semver.org/) Git tags.  
 Dump snapshots: dated `dump_id` — see [VERSIONING.md](VERSIONING.md).
 
-## [Unreleased] → targeting **v3.0.0** (schema 3)
+## [Unreleased] → targeting **v3.1.0** (schema 3 + viewer)
 
 ### Added
 - Schema **v3** dual dump: `composers_*.tsv` + `works_*.tsv` (Opus-aligned P0)
@@ -21,6 +21,8 @@ Dump snapshots: dated `dump_id` — see [VERSIONING.md](VERSIONING.md).
 - Pilot dump `2026-09-28` (80 LLM rows); full LLM dump `2026-09-29` (gpt-6-luna, 98.6%)
 - Residual Grok pass → dump `2026-09-30` (394 rows via grok-4.7-high; 100% classified)
 - `docs/PIPELINE.md` — Mermaid overview of wiki/Wikidata/IMSLP → enrich → LLM
+- Static filter viewer under `viewer/` + `scripts/export_viewer_json.py`
+- GitHub Pages workflow (`.github/workflows/pages.yml`)
 
 ### Changed
 - `scripts/build_dump.py` rebuilt for schema 3 (breaking vs schema 2 column set)
@@ -30,8 +32,6 @@ Dump snapshots: dated `dump_id` — see [VERSIONING.md](VERSIONING.md).
 - Better coverage of empty IMSLP genre cats (re-fetch / looser filters)
 - LLM style fill-ins
 - `--work-files` for `has_files`
-- Full 3371-row inventory dump
-- Filter UI
 
 ## [Unreleased] historical notes toward **v2.0.0**
 

@@ -2,38 +2,36 @@
 
 Find notable 20th-century classical composers whose works are likely safer to study or redistribute in EU-style life+70 regimes, then point at available IMSLP material.
 
-**Current direction:** versioned **composer + works** dumps (schema v3), deterministic Python builders. Style/`force_family` review comes after the IMSLP inventory. Filtering UI later.
+**Current direction:** versioned **composer + works** dumps (schema v3) + a static **filter viewer**. Tool line: **v3.1.0-dev** (schema 3).
 
-See [CHANGELOG.md](CHANGELOG.md) and [VERSIONING.md](VERSIONING.md). Tool line: **v3.0.0-dev** (schema 3); v2.0.0 tagged dump remains as schema-2 history.
+See [CHANGELOG.md](CHANGELOG.md) and [VERSIONING.md](VERSIONING.md).
 
 ## Layout
 
 ```
 data/                            # versioned TSV dumps + dump_meta_*.json
-data/cache/                      # HTTP cache (gitignored)
-scripts/build_dump.py            # orchestrator (Wikipedia → Wikidata → IMSLP)
-scripts/enrich_dump.py           # offline force_family / rollups from an existing dump
-scripts/force_family.py          # Opus force_family + genre_form mapper
-scripts/wikidata_enrich.py       # QID resolve + claims → columns
-scripts/imslp.py                 # P839/heuristic match + work listing
-scripts/common.py                # shared HTTP / pipe lists / paths
-scripts/heartbeat.py             # alive/progress logs
-requirements.txt
-CHANGELOG.md
-VERSIONING.md
-PublicDomainSheetMusicFinder.ipynb   # original scrape (historical)
-imslp_extract.ipynb                  # one-composer notebook (historical)
-experimental/                        # unfinished 2025 refactor
+viewer/                          # static filter UI (GitHub Pages)
+scripts/build_dump.py            # Wikipedia → Wikidata → IMSLP scrape
+scripts/enrich_dump.py           # offline force_family / rollups
+scripts/export_viewer_json.py    # dump → viewer/data JSON
+scripts/force_family.py
+scripts/llm_force_family.py
+scripts/wikidata_enrich.py
+scripts/imslp.py
+scripts/common.py
+scripts/heartbeat.py
+docs/PIPELINE.md
 ```
 
-See [`data/README.md`](data/README.md) for dump dates, schema, and how to build.
-See [`docs/PIPELINE.md`](docs/PIPELINE.md) for the full scrape → enrich → LLM flow (Mermaid).
+- Dumps: [`data/README.md`](data/README.md)
+- Pipeline: [`docs/PIPELINE.md`](docs/PIPELINE.md)
+- Viewer: [`viewer/README.md`](viewer/README.md)
 
 ## Sources
 
 - **Names:** Wikipedia list of 20th-century classical composers (+ optional pageviews)
-- **Structured bio / IDs:** Wikidata (citizenship, dates, styles, IMSLP P839, …)
-- **Scores:** IMSLP composer category → work pages (not per-file editions yet)
+- **Structured bio / IDs:** Wikidata
+- **Scores:** IMSLP work pages (not per-file editions yet)
 
 Public-domain status is a **heuristic**, not legal clearance.
 
@@ -46,14 +44,16 @@ pip install -r requirements.txt
 ## Usage
 
 ```bash
-# Smoke
-python scripts/build_dump.py --limit 5 --no-pageviews --dry-run
-
-# Sample / full dated dump (never overwrites)
+# Scrape / enrich dumps (see data/README.md)
 python scripts/build_dump.py --date YYYY-MM-DD
+python scripts/enrich_dump.py --from-dump YYYY-MM-DD --date YYYY-MM-DD
+
+# Refresh viewer JSON + local preview
+python scripts/export_viewer_json.py --dump 2026-09-30
+python -m http.server 8080 --directory viewer
 ```
 
-Long runs log a heartbeat every 30s (`--heartbeat-interval`). Responses cache under `data/cache/`.
+GitHub Pages deploys `viewer/` via `.github/workflows/pages.yml` (enable **Pages → GitHub Actions** once in repo settings).
 
 ## License
 

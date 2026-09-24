@@ -101,3 +101,12 @@ python scripts/llm_force_family.py --from-dump 2026-09-27 --limit 80 --date YYYY
 ```
 
 Caches: `data/cache/` (gitignored). LLM batches resume from `data/cache/llm_force_family/`.
+
+## Filter viewer
+
+```bash
+python scripts/export_viewer_json.py --dump 2026-09-30
+python -m http.server 8080 --directory viewer
+```
+
+Static UI under `viewer/`; GitHub Pages workflow publishes that folder.
