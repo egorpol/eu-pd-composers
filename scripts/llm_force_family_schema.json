@@ -1,0 +1,42 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["items"],
+  "properties": {
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "force_family"],
+        "properties": {
+          "id": { "type": "string" },
+          "force_family": {
+            "type": "string",
+            "enum": [
+              "piano_solo",
+              "piano_ensemble",
+              "organ",
+              "keyboard_other",
+              "solo_instrument",
+              "guitar",
+              "chamber",
+              "orchestral",
+              "concerto",
+              "wind_band",
+              "solo_voice",
+              "choral",
+              "stage_opera",
+              "stage_ballet",
+              "film_media",
+              "electronic",
+              "pedagogical",
+              "other",
+              "unclassified"
+            ]
+          }
+        }
+      }
+    }
+  }
+}

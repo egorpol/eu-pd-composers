@@ -41,6 +41,7 @@ from common import (  # noqa: E402
     wikipedia_title_from_url,
 )
 from heartbeat import Heartbeat  # noqa: E402
+from force_family import map_work_row  # noqa: E402
 from imslp import match_imslp, works_rows_for_composer  # noqa: E402
 from wikidata_enrich import (  # noqa: E402
     enrich_from_entity,
@@ -101,6 +102,9 @@ WORK_COLUMNS = [
     "imslp_work_url",
     "title",
     "imslp_genre_categories",
+    "force_family",
+    "force_family_src",
+    "genre_form",
     "has_files",
     "fetched_at",
 ]
@@ -371,6 +375,13 @@ def build(args: argparse.Namespace) -> None:
                     fetch_categories=args.work_categories,
                     fetch_has_files=args.work_files,
                 )
+                for wr in wrows:
+                    wr.update(
+                        map_work_row(
+                            wr.get("imslp_genre_categories") or "",
+                            wr.get("title") or "",
+                        )
+                    )
                 work_rows.extend(wrows)
                 works_count = len(wrows)
 

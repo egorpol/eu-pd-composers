@@ -12,6 +12,8 @@ See [CHANGELOG.md](CHANGELOG.md) and [VERSIONING.md](VERSIONING.md). Tool line: 
 data/                            # versioned TSV dumps + dump_meta_*.json
 data/cache/                      # HTTP cache (gitignored)
 scripts/build_dump.py            # orchestrator (Wikipedia → Wikidata → IMSLP)
+scripts/enrich_dump.py           # offline force_family / rollups from an existing dump
+scripts/force_family.py          # Opus force_family + genre_form mapper
 scripts/wikidata_enrich.py       # QID resolve + claims → columns
 scripts/imslp.py                 # P839/heuristic match + work listing
 scripts/common.py                # shared HTTP / pipe lists / paths
@@ -25,6 +27,7 @@ experimental/                        # unfinished 2025 refactor
 ```
 
 See [`data/README.md`](data/README.md) for dump dates, schema, and how to build.
+See [`docs/PIPELINE.md`](docs/PIPELINE.md) for the full scrape → enrich → LLM flow (Mermaid).
 
 ## Sources
 

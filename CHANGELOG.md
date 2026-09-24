@@ -15,13 +15,21 @@ Dump snapshots: dated `dump_id` — see [VERSIONING.md](VERSIONING.md).
 - `scripts/common.py` — shared session (no broken proxies), pipe lists, cache
 - Sample dump `2026-09-25` (`--limit 5`, 5 composers / 364 works)
 - Full dump `2026-09-26` (3371 composers / 29021 works)
+- `scripts/force_family.py` + `scripts/enrich_dump.py` — Opus force_family / genre_form mapping offline
+- Enriched dump `2026-09-27` (same inventory + force_family rollups; 59% works classified)
+- `scripts/llm_force_family.py` — Codex + gpt-6-luna fill for remaining unclassified works
+- Pilot dump `2026-09-28` (80 LLM rows); full LLM dump `2026-09-29` (gpt-6-luna, 98.6%)
+- Residual Grok pass → dump `2026-09-30` (394 rows via grok-4.7-high; 100% classified)
+- `docs/PIPELINE.md` — Mermaid overview of wiki/Wikidata/IMSLP → enrich → LLM
 
 ### Changed
 - `scripts/build_dump.py` rebuilt for schema 3 (breaking vs schema 2 column set)
 - Demoted wiki `Nationality` / notables / remarks to structured + `legacy_*` fields
 
 ### Deferred
-- `force_family` / LLM style fill-ins (Phase C)
+- Better coverage of empty IMSLP genre cats (re-fetch / looser filters)
+- LLM style fill-ins
+- `--work-files` for `has_files`
 - Full 3371-row inventory dump
 - Filter UI
 
