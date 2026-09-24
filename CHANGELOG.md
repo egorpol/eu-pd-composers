@@ -6,7 +6,26 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Tool releases: [SemVer](https://semver.org/) Git tags.  
 Dump snapshots: dated `dump_id` — see [VERSIONING.md](VERSIONING.md).
 
-## [Unreleased] → targeting **v2.0.0**
+## [Unreleased] → targeting **v3.0.0** (schema 3)
+
+### Added
+- Schema **v3** dual dump: `composers_*.tsv` + `works_*.tsv` (Opus-aligned P0)
+- `scripts/wikidata_enrich.py` — Wikipedia title → QID, citizenship, styles, P839
+- `scripts/imslp.py` — IMSLP match (P839 first) + paginated work listing
+- `scripts/common.py` — shared session (no broken proxies), pipe lists, cache
+- Sample dump `2026-09-25` (`--limit 5`, 5 composers / 364 works)
+- Full dump `2026-09-26` (3371 composers / 29021 works)
+
+### Changed
+- `scripts/build_dump.py` rebuilt for schema 3 (breaking vs schema 2 column set)
+- Demoted wiki `Nationality` / notables / remarks to structured + `legacy_*` fields
+
+### Deferred
+- `force_family` / LLM style fill-ins (Phase C)
+- Full 3371-row inventory dump
+- Filter UI
+
+## [Unreleased] historical notes toward **v2.0.0**
 
 ### Added
 - `scripts/build_dump.py` — dated Wikipedia / pageviews / IMSLP dump builder (never overwrites)
@@ -14,6 +33,7 @@ Dump snapshots: dated `dump_id` — see [VERSIONING.md](VERSIONING.md).
 - `data/` layout with dump manifest
 - `VERSIONING.md` — separate tool SemVer vs dump calendar ids
 - `requirements.txt`, `.gitattributes` (LF)
+- Schema v2 dump `composers_2026-09-24.tsv` (3371 rows)
 
 ### Changed
 - Project renamed to **eu-pd-composers** (repo: `egorpol/eu-pd-composers`)
@@ -22,11 +42,6 @@ Dump snapshots: dated `dump_id` — see [VERSIONING.md](VERSIONING.md).
 
 ### Removed
 - `llm_parse_local.ipynb` (local LM Studio path)
-
-### Planned before tagging v2.0.0
-- Fresh dated dump with `eu_pd_year` + `dump_meta_*.json` (`schema_version: 2`)
-- Single primary TSV (decision pending)
-- Minimal filter UI (may slip to 2.1)
 
 ## [1.1.0] - 2024-04-17
 

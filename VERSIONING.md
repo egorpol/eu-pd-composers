@@ -18,7 +18,8 @@ Applies to code, schema contract, docs, and UI.
 |---|---|---|
 | `v1.0` | 2024-04-17 | First formal release (notebooks + TSVs) |
 | `v1.1` | 2024-04-17 | IMSLP extract + LLM notebook (title was `v.1.1`) |
-| next | — | **`v2.0.0`** — rename, dump-first layout, builder script, drop LLM, `eu_pd_year` |
+| next | — | **`v3.0.0`** — schema 3 dual composers/works dump, Wikidata + IMSLP works |
+| next (historical) | — | **`v2.0.0`** — rename, dump-first layout, schema 2 single TSV |
 
 Do **not** reset to `0.2` — that would go backwards from published `v1.1`.
 
