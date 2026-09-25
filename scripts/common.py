@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable, Optional
 from urllib.parse import unquote
@@ -17,6 +19,11 @@ CACHE_DIR = DATA_DIR / "cache"
 
 TOOL_VERSION = "3.1.0-dev"
 SCHEMA_VERSION = 3
+
+# Product dumps use sequential revision ids (r001, r002, …). Calendar dates
+# remain valid for historical files only.
+_REV_ID_RE = re.compile(r"^r(\d+)$")
+_CALENDAR_ID_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
 USER_AGENT = (
     f"eu-pd-composers/{TOOL_VERSION} "
@@ -38,6 +45,71 @@ PAGEVIEWS_API = (
 )
 
 log = logging.getLogger("eu_pd")
+
+
+def is_revision_dump_id(dump_id: str) -> bool:
+    return bool(_REV_ID_RE.match(str(dump_id).strip()))
+
+
+def is_calendar_dump_id(dump_id: str) -> bool:
+    return bool(_CALENDAR_ID_RE.match(str(dump_id).strip()))
+
+
+def dump_tsv_path(stem: str, dump_id: str) -> Path:
+    return DATA_DIR / f"{stem}_{dump_id}.tsv"
+
+
+def dump_meta_path(dump_id: str) -> Path:
+    return DATA_DIR / f"dump_meta_{dump_id}.json"
+
+
+def list_revision_numbers() -> list[int]:
+    nums: list[int] = []
+    for path in DATA_DIR.glob("composers_r*.tsv"):
+        m = _REV_ID_RE.match(path.stem.removeprefix("composers_"))
+        if m:
+            nums.append(int(m.group(1)))
+    return sorted(set(nums))
+
+
+def next_revision_id() -> str:
+    nums = list_revision_numbers()
+    n = (max(nums) + 1) if nums else 1
+    return f"r{n:03d}"
+
+
+def format_viewer_dump_label(dump_id: str, created_at_utc: str | None = None) -> str:
+    """Human label: `dump r002 · built 2026-09-25`."""
+    built = ""
+    if created_at_utc:
+        try:
+            dt = datetime.fromisoformat(str(created_at_utc).replace("Z", "+00:00"))
+            built = dt.astimezone(timezone.utc).strftime("%Y-%m-%d")
+        except ValueError:
+            built = str(created_at_utc)[:10]
+    if built:
+        return f"dump {dump_id} · built {built}"
+    return f"dump {dump_id}"
+
+
+def write_tsv_dump(df: Any, stem: str, dump_id: str) -> Path:
+    """Write `{stem}_{dump_id}.tsv`; refuse overwrite."""
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    path = dump_tsv_path(stem, dump_id)
+    if path.exists():
+        raise FileExistsError(f"Refusing to overwrite existing dump: {path}")
+    df.to_csv(path, sep="\t", index=False)
+    return path
+
+
+def write_dump_meta(dump_id: str, meta: dict[str, Any]) -> Path:
+    path = dump_meta_path(dump_id)
+    if path.exists():
+        raise FileExistsError(f"Refusing to overwrite existing meta: {path}")
+    payload = dict(meta)
+    payload.setdefault("dump_id", dump_id)
+    path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+    return path
 
 
 def make_session() -> requests.Session:

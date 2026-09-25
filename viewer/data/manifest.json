@@ -1,11 +1,13 @@
 {
-  "dump_id": "2026-09-30",
+  "dump_id": "r006",
+  "dump_label": "dump r006 \u00b7 built 2026-09-25",
+  "created_at_utc": "2026-09-25T06:27:22.903924+00:00",
   "schema_version": 3,
-  "generated_at_utc": "2026-09-24T21:07:28.230525+00:00",
+  "generated_at_utc": "2026-09-25T06:27:24.297231+00:00",
   "counts": {
-    "composers": 3371,
-    "works": 29021,
-    "composers_with_works": 1065
+    "composers": 3370,
+    "works": 29013,
+    "composers_with_works": 1064
   },
   "files": {
     "composers": "composers.json",
@@ -45,9 +47,18 @@
     ],
     "style_tags": [
       "atonal_modernism",
+      "avant_garde",
       "electroacoustic",
+      "expressionism",
       "impressionism",
-      "neoclassicism"
+      "late_romantic",
+      "minimalism",
+      "national_folk",
+      "neoclassicism",
+      "polystylism",
+      "postminimalism",
+      "serialism",
+      "spectralism"
     ],
     "citizenship_iso": [
       "AL",

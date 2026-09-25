@@ -125,8 +125,106 @@ body {
   width: 100%;
 }
 
-.field select[multiple] {
-  min-height: 4.5rem;
+.facet {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+  align-self: start;
+}
+
+.facet legend {
+  float: left;
+  padding: 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  line-height: 1.6;
+}
+
+.facet-clear {
+  float: right;
+  font: 600 0.72rem/1.6 var(--font-body);
+  color: var(--accent);
+  background: none;
+  border: 0;
+  padding: 0 0.1rem;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.facet-clear:disabled {
+  color: var(--ink-soft);
+  text-decoration: none;
+  cursor: default;
+}
+
+.facet-options {
+  clear: both;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  margin-top: 0.3rem;
+  padding: 0.3rem 0.45rem;
+  background: #fff;
+  border: 1px solid var(--line);
+}
+
+.facet-options.scroll {
+  max-height: 8.5rem;
+  overflow-y: auto;
+}
+
+.facet-options.codes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(3.6rem, 1fr));
+}
+
+.opt {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.12rem 0;
+  font-size: 0.86rem;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.opt input,
+.check input {
+  accent-color: var(--accent);
+  margin: 0;
+}
+
+.controls-row {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 0.75rem 1.25rem;
+}
+
+.field.sort {
+  width: 11rem;
+}
+
+.actions {
+  display: flex;
+  gap: 1rem;
+  margin-left: auto;
+  padding-bottom: 0.35rem;
+}
+
+.link-btn {
+  font: 500 0.85rem var(--font-body);
+  color: var(--accent);
+  background: none;
+  border: 0;
+  padding: 0;
+  text-decoration: underline;
+  cursor: pointer;
 }
 
 .check {
@@ -136,6 +234,20 @@ body {
   font-size: 0.88rem;
   color: var(--ink-soft);
   padding-bottom: 0.35rem;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }
 
 .meta {
@@ -193,13 +305,42 @@ tbody tr {
   cursor: pointer;
 }
 
-tbody tr:hover,
-tbody tr.active {
-  background: var(--accent-soft);
+th.num,
+td.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
-.name-cell {
-  font-weight: 500;
+tbody tr:hover {
+  background: color-mix(in srgb, var(--accent-soft) 55%, #fff);
+}
+
+tbody tr.active {
+  background: var(--accent-soft);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+tbody tr.empty {
+  cursor: default;
+}
+
+tbody tr.empty:hover {
+  background: none;
+}
+
+tbody tr.empty td {
+  padding: 1.5rem 0.9rem;
+  color: var(--ink-soft);
+}
+
+.row-btn {
+  font: 500 0.9rem/1.3 var(--font-body);
+  color: var(--ink);
+  background: none;
+  border: 0;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
 }
 
 .sub {

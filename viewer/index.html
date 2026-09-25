@@ -25,7 +25,10 @@
           Composer-first filters over a versioned research dump — Wikipedia names,
           Wikidata enrichment, IMSLP work links. Heuristic only.
         </p>
-        <p class="disclaimer" id="disclaimer" role="note"></p>
+        <p class="disclaimer" id="disclaimer" role="note">
+          EU public-domain status is a death-year heuristic, not legal advice.
+          IMSLP links and force tags are research aids.
+        </p>
       </header>
 
       <section class="controls" aria-label="Filters">
@@ -39,67 +42,88 @@
           />
         </label>
 
-        <label class="field">
-          <span>EU PD status</span>
-          <select id="eu" multiple size="3"></select>
-        </label>
+        <fieldset class="facet" data-facet="eu">
+          <legend>EU PD status</legend>
+          <button type="button" class="facet-clear">Any</button>
+          <div class="facet-options" id="eu"></div>
+        </fieldset>
 
-        <label class="field">
-          <span>Scope</span>
-          <select id="scope" multiple size="3"></select>
-        </label>
+        <fieldset class="facet" data-facet="scope">
+          <legend>Scope</legend>
+          <button type="button" class="facet-clear">Any</button>
+          <div class="facet-options" id="scope"></div>
+        </fieldset>
 
-        <label class="field">
-          <span>Has force</span>
-          <select id="force" multiple size="4"></select>
-        </label>
+        <fieldset class="facet" data-facet="force">
+          <legend>Has works for</legend>
+          <button type="button" class="facet-clear">Any</button>
+          <div class="facet-options scroll" id="force"></div>
+        </fieldset>
 
-        <label class="field">
-          <span>Citizenship</span>
-          <select id="cit" multiple size="4"></select>
-        </label>
+        <fieldset class="facet" data-facet="cit">
+          <legend>Citizenship</legend>
+          <button type="button" class="facet-clear">Any</button>
+          <div class="facet-options scroll codes" id="cit"></div>
+        </fieldset>
 
-        <label class="field">
-          <span>Style</span>
-          <select id="style" multiple size="3"></select>
-        </label>
+        <fieldset class="facet" data-facet="style">
+          <legend>Style</legend>
+          <button type="button" class="facet-clear">Any</button>
+          <div class="facet-options" id="style"></div>
+        </fieldset>
 
-        <label class="field">
-          <span>Sort</span>
-          <select id="sort">
-            <option value="views">Pageviews</option>
-            <option value="name">Name</option>
-            <option value="eu_year">EU PD year</option>
-            <option value="works">Works count</option>
-          </select>
-        </label>
+        <div class="controls-row">
+          <label class="field sort">
+            <span>Sort</span>
+            <select id="sort">
+              <option value="views">Pageviews</option>
+              <option value="name">Name</option>
+              <option value="eu_year">EU PD year</option>
+              <option value="works">Works count</option>
+            </select>
+          </label>
 
-        <label class="check">
-          <input type="checkbox" id="hasWorks" checked />
-          <span>Only with IMSLP works</span>
-        </label>
+          <label class="field sort-dir">
+            <span>Order</span>
+            <select id="sortDir">
+              <option value="desc">Descending</option>
+              <option value="asc">Ascending</option>
+            </select>
+          </label>
+
+          <label class="check">
+            <input type="checkbox" id="hasWorks" checked />
+            <span>Only with IMSLP works</span>
+          </label>
+
+          <span class="actions">
+            <button type="button" id="clearAll" class="link-btn">Clear all filters</button>
+            <button type="button" id="resetDefaults" class="link-btn">Reset to defaults</button>
+          </span>
+        </div>
       </section>
 
-      <p class="meta" id="meta">Loading dump…</p>
+      <p class="meta" id="meta" role="status">Loading dump…</p>
 
       <div class="split">
         <section class="results" aria-label="Composers">
           <table>
             <thead>
               <tr>
-                <th>Composer</th>
-                <th>EU</th>
-                <th>Works</th>
-                <th>Views</th>
+                <th scope="col">Composer</th>
+                <th scope="col">EU</th>
+                <th scope="col" class="num">Works</th>
+                <th scope="col" class="num">Views</th>
               </tr>
             </thead>
             <tbody id="rows"></tbody>
           </table>
         </section>
 
-        <aside class="detail" id="detail" aria-live="polite">
+        <aside class="detail" id="detail" aria-label="Composer detail">
           <p class="detail-empty">Select a composer to see IMSLP works.</p>
         </aside>
+        <p class="sr-only" id="announce" aria-live="polite"></p>
       </div>
 
       <footer class="foot">

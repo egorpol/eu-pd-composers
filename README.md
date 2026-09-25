@@ -49,7 +49,7 @@ python scripts/build_dump.py --date YYYY-MM-DD
 python scripts/enrich_dump.py --from-dump YYYY-MM-DD --date YYYY-MM-DD
 
 # Refresh viewer JSON + local preview
-python scripts/export_viewer_json.py --dump 2026-09-30
+python scripts/export_viewer_json.py --dump r006
 python -m http.server 8080 --directory viewer
 ```
 

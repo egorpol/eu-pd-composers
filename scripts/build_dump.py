@@ -40,6 +40,7 @@ from common import (  # noqa: E402
     pipe_split,
     wikipedia_title_from_url,
 )
+from cohort import cohort_exclusion_reason  # noqa: E402
 from heartbeat import Heartbeat  # noqa: E402
 from force_family import map_work_row  # noqa: E402
 from imslp import match_imslp, works_rows_for_composer  # noqa: E402
@@ -322,20 +323,36 @@ def build(args: argparse.Namespace) -> None:
             wd = enrich_from_entity(ent) if ent else {}
 
             # Prefer Wikidata years; fall back to Wikipedia list cells.
+            list_birth = pd.to_numeric(raw.get("Year of birth"), errors="coerce")
+            list_death = pd.to_numeric(raw.get("Year of death"), errors="coerce")
+            list_birth_i = None if pd.isna(list_birth) else int(list_birth)
+            list_death_i = None if pd.isna(list_death) else int(list_death)
+
             birth_year = wd.get("birth_year")
             death_year = wd.get("death_year")
             if birth_year is None:
-                birth_year = pd.to_numeric(raw.get("Year of birth"), errors="coerce")
-                if pd.isna(birth_year):
-                    birth_year = None
-                else:
-                    birth_year = int(birth_year)
+                birth_year = list_birth_i
             if death_year is None:
-                death_year = pd.to_numeric(raw.get("Year of death"), errors="coerce")
-                if pd.isna(death_year):
-                    death_year = None
-                else:
-                    death_year = int(death_year)
+                death_year = list_death_i
+
+            skip_reason = cohort_exclusion_reason(
+                birth_year=birth_year,
+                death_year=death_year,
+                list_birth_year=list_birth_i,
+                list_death_year=list_death_i,
+            )
+            if skip_reason:
+                log.warning(
+                    "Skipping %s — cohort gate: %s (WD/list years %s–%s / list %s–%s)",
+                    name_display,
+                    skip_reason,
+                    birth_year,
+                    death_year,
+                    list_birth_i,
+                    list_death_i,
+                )
+                hb.tick()
+                continue
 
             composer_id = qid or f"wiki:{quote(title.replace(' ', '_'))}"
             cit_qids = pipe_split(wd.get("citizenship_qids"))

@@ -24,7 +24,7 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from common import DATA_DIR, CACHE_DIR, SCHEMA_VERSION, TOOL_VERSION, pipe_join  # noqa: E402
+from common import CACHE_DIR, DATA_DIR, SCHEMA_VERSION, TOOL_VERSION, next_revision_id, pipe_join  # noqa: E402
 from force_family import FORCE_FAMILIES, map_genre_form  # noqa: E402
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -226,7 +226,7 @@ def rollup_composers(composers: pd.DataFrame, works: pd.DataFrame) -> pd.DataFra
 
 def run(args: argparse.Namespace) -> None:
     src = args.from_dump
-    out_date = date.fromisoformat(args.date) if args.date else date.today()
+    out_id = getattr(args, "to", None) or next_revision_id()
     composers_path = DATA_DIR / f"composers_{src}.tsv"
     works_path = DATA_DIR / f"works_{src}.tsv"
     if not composers_path.exists() or not works_path.exists():
@@ -311,7 +311,7 @@ def run(args: argparse.Namespace) -> None:
     works = works.reindex(columns=WORK_COLUMNS)
     composers = rollup_composers(composers, works)
     composers["schema_version"] = SCHEMA_VERSION
-    composers["dump_date"] = out_date.isoformat()
+    composers["dump_date"] = out_id
 
     # column order
     cols = list(composers.columns)
@@ -325,11 +325,16 @@ def run(args: argparse.Namespace) -> None:
         cols = cols + NEW_COMPOSER_COLS
     composers = composers.reindex(columns=cols)
 
-    c_path = write_dump(composers, "composers", out_date)
-    w_path = write_dump(works, "works", out_date)
+    c_path = DATA_DIR / f"composers_{out_id}.tsv"
+    w_path = DATA_DIR / f"works_{out_id}.tsv"
+    for path in (c_path, w_path):
+        if path.exists():
+            raise FileExistsError(f"Refusing to overwrite existing dump: {path}")
+    composers.to_csv(c_path, sep="\t", index=False)
+    works.to_csv(w_path, sep="\t", index=False)
     fam_counts = Counter(works["force_family"].tolist())
     meta = {
-        "dump_id": out_date.isoformat(),
+        "dump_id": out_id,
         "tool_version": TOOL_VERSION,
         "schema_version": SCHEMA_VERSION,
         "created_at_utc": datetime.now(timezone.utc).isoformat(),
@@ -357,7 +362,7 @@ def run(args: argparse.Namespace) -> None:
             "force_family_src=llm for those rows; never overwrites imslp_tags/title",
         ],
     }
-    meta_path = DATA_DIR / f"dump_meta_{out_date.isoformat()}.json"
+    meta_path = DATA_DIR / f"dump_meta_{out_id}.json"
     if meta_path.exists():
         raise FileExistsError(f"Refusing to overwrite {meta_path}")
     meta_path.write_text(json.dumps(meta, indent=2) + "\n", encoding="utf-8")
@@ -371,11 +376,16 @@ def run(args: argparse.Namespace) -> None:
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--from-dump", required=True, help="Source dump_id with force_family")
-    p.add_argument("--date", help="Output dump_id YYYY-MM-DD")
+    p.add_argument(
+        "--to",
+        "--date",
+        dest="to",
+        help="Output dump_id (rNNN preferred; calendar still accepted)",
+    )
     p.add_argument("--batch-size", type=int, default=40)
     p.add_argument("--limit", type=int, default=None, help="Only first N unclassified")
     p.add_argument("--model", default="gpt-6-luna")
-    p.add_argument("--reasoning", default="low", help="model_reasoning_effort")
+    p.add_argument("--reasoning", default="xhigh", help="model_reasoning_effort")
     p.add_argument("--codex", default=None, help="Path to codex binary")
     p.add_argument("--sleep-s", type=float, default=0.0, help="Pause between batches")
     p.add_argument("--dry-run", action="store_true")

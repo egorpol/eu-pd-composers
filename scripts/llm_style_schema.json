@@ -1,0 +1,39 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["items"],
+  "properties": {
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "style_tags"],
+        "properties": {
+          "id": { "type": "string" },
+          "style_tags": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "impressionism",
+                "expressionism",
+                "neoclassicism",
+                "serialism",
+                "minimalism",
+                "postminimalism",
+                "spectralism",
+                "electroacoustic",
+                "avant_garde",
+                "national_folk",
+                "late_romantic",
+                "atonal_modernism",
+                "polystylism"
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+}

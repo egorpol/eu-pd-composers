@@ -28,14 +28,16 @@ flowchart TB
 
   subgraph offline [Offline enrich — no scrape]
     ENR[scripts/enrich_dump.py<br/>IMSLP tags + title → force_family]
-    LLM[scripts/llm_force_family.py<br/>gpt-6-luna via Codex CLI<br/>only unclassified rows]
-    ROLL[Composer rollups:<br/>work_categories_present,<br/>works_count_by_category]
+    GI[scripts/enrich_geninfo.py<br/>IMSLP General Information → imslp_geninfo]
+    STY[STYLE_QID remap + prepare_llm_residual]
+    LLM[scripts/llm_force_family.py<br/>gpt-6-luna xhigh via Codex<br/>residual only — run when approved]
+    ROLL[Composer rollups]
   end
 
   subgraph out [Immutable dumps data/]
-    C[composers_YYYY-MM-DD.tsv]
-    WK[works_YYYY-MM-DD.tsv]
-    META[dump_meta_YYYY-MM-DD.json]
+    C[composers_rNNN.tsv]
+    WK[works_rNNN.tsv]
+    META[dump_meta_rNNN.json]
   end
 
   WIKI --> PARSE --> QID
@@ -55,9 +57,11 @@ flowchart TB
   FF1 --> WK
   C --> ENR
   WK --> ENR
-  ENR --> LLM
+  ENR --> GI --> STY
+  STY -.->|approved| LLM
   LLM --> ROLL --> C
   LLM --> WK
+  GI --> ROLL
   C --> META
   WK --> META
 ```
@@ -68,11 +72,14 @@ flowchart TB
 flowchart LR
   A[Work row] --> B{imslp_genre_categories<br/>usable?}
   B -->|yes| C[Map For … / Operas / Songs / …<br/>force_family_src = imslp_tags]
-  B -->|no / weak| D{Title heuristics?}
+  B -->|no / weak| GI{General Information<br/>Instrumentation?}
+  GI -->|hit| GIsrc[force_family_src = imslp_geninfo]
+  GI -->|miss| D{Title heuristics?}
   D -->|hit| E[force_family_src = title]
-  D -->|miss| F[unclassified]
-  F --> G[LLM gpt-6-luna batch<br/>force_family_src = llm]
+  D -->|miss| F[unclassified / other]
+  F --> G[LLM gpt-6-luna xhigh<br/>force_family_src = llm]
   C --> H[Composer rollups]
+  GIsrc --> H
   E --> H
   G --> H
 ```
@@ -89,23 +96,28 @@ flowchart LR
 ## Typical commands
 
 ```bash
-# Full scrape (long; heartbeats every 30s)
+# Full scrape (long; heartbeats every 30s) — calendar id OK for raw scrapes
 python scripts/build_dump.py --date YYYY-MM-DD
 
-# Rules + title force_family (offline)
-python scripts/enrich_dump.py --from-dump 2026-09-26 --date YYYY-MM-DD
+# Promote into revision series
+python scripts/promote_revision.py --from-dump 2026-10-01 --to r001
 
-# LLM fill for remaining unclassified (Codex + gpt-6-luna)
-python scripts/llm_force_family.py --from-dump 2026-09-27 --date YYYY-MM-DD
-python scripts/llm_force_family.py --from-dump 2026-09-27 --limit 80 --date YYYY-MM-DD  # pilot
+# GenInfo pilot + Wikidata style remap → next revision
+python scripts/enrich_geninfo.py --from-dump r001 --to r002 --limit 200 --remap-styles
+
+# Prepare residual LLM queue (does not call Codex)
+python scripts/prepare_llm_residual.py --dump r002
+
+# LLM fill when approved (Codex + gpt-6-luna, reasoning xhigh)
+python scripts/llm_force_family.py --from-dump r002 --to r003 --reasoning xhigh
 ```
 
-Caches: `data/cache/` (gitignored). LLM batches resume from `data/cache/llm_force_family/`.
+Caches: `data/cache/` (gitignored). GenInfo under `imslp_geninfo/`; LLM batches under `llm_force_family/`.
 
 ## Filter viewer
 
 ```bash
-python scripts/export_viewer_json.py --dump 2026-09-30
+python scripts/export_viewer_json.py --dump r002
 python -m http.server 8080 --directory viewer
 ```
 

@@ -256,6 +256,104 @@ def force_family_from_title(title: str) -> tuple[str, str]:
     return "unclassified", "title_unmapped"
 
 
+def force_family_from_instrumentation(instrumentation: str) -> tuple[str, str]:
+    """Map IMSLP General Information Instrumentation text → force_family."""
+    if not instrumentation or str(instrumentation).strip() in {"", "nan", "None"}:
+        return "unclassified", "empty"
+    low = str(instrumentation).lower().strip()
+    low = re.sub(r"\s+", " ", low)
+
+    if any(
+        x in low
+        for x in (
+            "chorus",
+            "choir",
+            "choruses",
+            "mixed voices",
+            "female voices",
+            "male voices",
+            "childrens voices",
+            "children's voices",
+        )
+    ):
+        return "choral", "imslp_geninfo"
+
+    if any(x in low for x in ("band", "wind ensemble", "brass ensemble", "brass band")):
+        return "wind_band", "imslp_geninfo"
+
+    if "orchestra" in low:
+        # Soloist(s) + orchestra ≈ concerto; chorus+orchestra already caught as choral.
+        if re.search(
+            r"\b(violin|viola|cello|flute|oboe|clarinet|bassoon|trumpet|horn|"
+            r"trombone|piano|saxophone|harp|organ)\b",
+            low,
+        ) and "voice" not in low:
+            return "concerto", "imslp_geninfo"
+        return "orchestral", "imslp_geninfo"
+
+    voice_hit = bool(
+        re.search(
+            r"\b(voice|voices|soprano|mezzo|alto|contralto|tenor|baritone|"
+            r"bass-baritone|bass|narrator)s?\b",
+            low,
+        )
+    )
+    if voice_hit:
+        return "solo_voice", "imslp_geninfo"
+
+    if "organ" in low and "piano" not in low:
+        return "organ", "imslp_geninfo"
+    if re.search(r"\b(guitar|lute|ukulele|mandolin)\b", low):
+        return "guitar", "imslp_geninfo"
+
+    if re.search(
+        r"\b(piano 4 hands|4 hands|2 pianos|pianos|piano 6 hands|piano 3 hands)\b", low
+    ):
+        return "piano_ensemble", "imslp_geninfo"
+
+    # Single keyboard
+    if low in {"piano", "pianos", "piano solo", "harpsichord", "clavichord"} or (
+        re.fullmatch(r"piano(s)?", low)
+    ):
+        return "piano_solo", "imslp_geninfo"
+
+    parts = [p.strip() for p in re.split(r",|/;| and ", low) if p.strip()]
+    solo_kw = (
+        "violin",
+        "viola",
+        "cello",
+        "violoncello",
+        "flute",
+        "clarinet",
+        "oboe",
+        "bassoon",
+        "trumpet",
+        "horn",
+        "trombone",
+        "saxophone",
+        "harp",
+        "percussion",
+        "timpani",
+        "double bass",
+    )
+    if len(parts) == 1 and any(k in parts[0] for k in solo_kw):
+        return "solo_instrument", "imslp_geninfo"
+    if len(parts) == 2 and "piano" in low and any(k in low for k in solo_kw):
+        # Sonata-like duo → solo_instrument (same as IMSLP "For violin, piano")
+        return "solo_instrument", "imslp_geninfo"
+    if len(parts) >= 2 and "orchestra" not in low:
+        if low.strip() in {"piano", "organ"}:
+            return "piano_solo" if "piano" in low else "organ", "imslp_geninfo"
+        return "chamber", "imslp_geninfo"
+
+    if "piano" in low and "," not in low:
+        return "piano_solo", "imslp_geninfo"
+    if any(k in low for k in solo_kw):
+        return "solo_instrument", "imslp_geninfo"
+
+    return "other", "imslp_geninfo"
+
+
 def map_force_family(genre_cell: str, title: str = "") -> tuple[str, str]:
     family, src = force_family_from_categories(genre_cell)
     if family in {"unclassified", "other"} and title:
@@ -265,6 +363,33 @@ def map_force_family(genre_cell: str, title: str = "") -> tuple[str, str]:
         if family == "other":
             return family, src
     return family, src
+
+
+def map_force_family_with_geninfo(
+    genre_cell: str,
+    title: str = "",
+    instrumentation: str = "",
+    *,
+    current_family: str = "",
+    current_src: str = "",
+) -> tuple[str, str]:
+    """Prefer imslp_tags; then geninfo; never downgrade strong tags."""
+    if current_src == "imslp_tags" and current_family not in {"", "unclassified", "other"}:
+        return current_family, current_src
+
+    cat_family, cat_src = force_family_from_categories(genre_cell)
+    if cat_family not in {"unclassified", "other"} and cat_src == "imslp_tags":
+        return cat_family, cat_src
+
+    if instrumentation:
+        g_family, g_src = force_family_from_instrumentation(instrumentation)
+        if g_family not in {"unclassified"}:
+            return g_family, g_src
+
+    if current_family and current_src in {"imslp_geninfo"} and current_family != "unclassified":
+        return current_family, current_src
+
+    return map_force_family(genre_cell, title)
 
 
 def map_genre_form(genre_cell: str, title: str = "") -> str:

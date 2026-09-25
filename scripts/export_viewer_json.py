@@ -10,6 +10,7 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import sys
 from collections import defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
@@ -19,6 +20,9 @@ import pandas as pd
 REPO = Path(__file__).resolve().parents[1]
 DATA = REPO / "data"
 OUT = REPO / "viewer" / "data"
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from common import dump_meta_path, format_viewer_dump_label  # noqa: E402
 
 
 def _clean(v):
@@ -51,6 +55,16 @@ def export(dump_id: str, out_dir: Path) -> None:
 
     composers = pd.read_csv(composers_path, sep="\t", low_memory=False)
     works = pd.read_csv(works_path, sep="\t", low_memory=False)
+
+    created_at = None
+    meta_path = dump_meta_path(dump_id)
+    if meta_path.exists():
+        try:
+            created_at = json.loads(meta_path.read_text(encoding="utf-8")).get(
+                "created_at_utc"
+            )
+        except json.JSONDecodeError:
+            created_at = None
 
     composer_rows = []
     for _, row in composers.iterrows():
@@ -103,15 +117,17 @@ def export(dump_id: str, out_dir: Path) -> None:
         encoding="utf-8",
     )
 
-    # Facet vocabularies for the UI
     scopes = sorted({c["scope"] for c in composer_rows if c["scope"]})
     eu_statuses = sorted({c["eu"] for c in composer_rows if c["eu"]})
     forces = sorted({f for c in composer_rows for f in c["forces"]})
     styles = sorted({s for c in composer_rows for s in c["styles"]})
     countries = sorted({x for c in composer_rows for x in c["cit"]})
 
+    label = format_viewer_dump_label(dump_id, created_at)
     manifest = {
         "dump_id": dump_id,
+        "dump_label": label,
+        "created_at_utc": created_at,
         "schema_version": 3,
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
         "counts": {
@@ -147,7 +163,7 @@ def export(dump_id: str, out_dir: Path) -> None:
 
 def main() -> None:
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--dump", default="2026-09-30", help="dump_id to export")
+    p.add_argument("--dump", default="r002", help="dump_id to export")
     p.add_argument(
         "--out",
         default=str(OUT),

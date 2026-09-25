@@ -25,33 +25,46 @@ Do **not** reset to `0.2` — that would go backwards from published `v1.1`.
 
 Tags use the `vMAJOR.MINOR.PATCH` form going forward (`v2.0.0`, not `v2.0` or `v.2.0`).
 
-## 2. Dump version (calendar id) — files under `data/`
+## 2. Dump version (revision id) — files under `data/`
 
 Applies to the TSV snapshots themselves. Independent of tool SemVer.
 
 | Field | Example |
 |---|---|
-| Filename | `composers_2026-09-24.tsv` |
-| `dump_id` in meta JSON | `2026-09-24` |
-| Optional label | `v2-compatible` if the schema matches tool major 2 |
+| Filename | `composers_r002.tsv` |
+| `dump_id` in meta JSON | `r002` |
+| Viewer label | `dump r002 · built 2026-09-25` (from `created_at_utc`) |
 
-Dumps are **immutable**: never overwrite; add a new dated file. A new tool release may still serve an older dump.
+**Scheme:** `r` + zero-padded integer (`r001`, `r002`, …). Each enrich/filter ships a **new** revision; never overwrite.
 
-`data/dump_meta_YYYY-MM-DD.json` always records:
+Older **calendar** dump_ids (`2026-09-26`, …) remain as historical lineage only.
+
+Dumps are **immutable**: never overwrite; add a new revision + meta file. A new tool release may still serve an older dump.
+
+`data/dump_meta_rNNN.json` always records:
 
 ```json
 {
-  "dump_id": "2026-09-24",
-  "tool_version": "2.0.0",
-  "schema_version": 2,
+  "dump_id": "r002",
+  "tool_version": "3.1.0-dev",
+  "schema_version": 3,
   "created_at_utc": "...",
-  "sources": { "...": "..." }
+  "derived_from_dump_id": "r001",
+  "enrichment": "...",
+  "notes": ["..."]
 }
 ```
 
 - **`tool_version`**: which builder produced it  
 - **`schema_version`**: integer bumped only when columns/meaning change (usually with tool MAJOR)  
-- **`dump_id`**: when the snapshot was taken  
+- **`dump_id`**: revision snapshot id (`rNNN`)  
+- **`created_at_utc`**: when that revision was written (for the viewer “built” date)
+
+Promote a historical dump into the revision series with:
+
+```bash
+python scripts/promote_revision.py --from-dump 2026-10-01 --to r001
+```
 
 ## What consumers should pin
 

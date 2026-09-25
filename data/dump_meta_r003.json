@@ -1,0 +1,62 @@
+{
+  "dump_id": "r003",
+  "tool_version": "3.1.0-dev",
+  "schema_version": 3,
+  "created_at_utc": "2026-09-24T23:18:54.487032+00:00",
+  "derived_from_dump_id": "r002",
+  "enrichment": "llm_residual_force+style",
+  "llm": {
+    "model": "gpt-6-luna",
+    "reasoning_effort": "xhigh",
+    "works_limit": 100,
+    "composers_limit": 100,
+    "batch_size": 25,
+    "force_updated": 100,
+    "style_updated": 74,
+    "cache_dir": "data/cache/llm_residual/r002_gpt-6-luna_xhigh_w100_c100",
+    "src_label": "llm_luna_xhigh"
+  },
+  "output_files": {
+    "composers": "composers_r003.tsv",
+    "works": "works_r003.tsv"
+  },
+  "row_counts": {
+    "composers": 3370,
+    "works": 29013,
+    "force_family": {
+      "chamber": 3271,
+      "solo_instrument": 941,
+      "piano_solo": 7972,
+      "solo_voice": 6466,
+      "concerto": 1382,
+      "pedagogical": 278,
+      "other": 1320,
+      "orchestral": 2329,
+      "piano_ensemble": 535,
+      "choral": 2179,
+      "stage_ballet": 200,
+      "keyboard_other": 40,
+      "stage_opera": 862,
+      "organ": 644,
+      "wind_band": 252,
+      "film_media": 41,
+      "guitar": 243,
+      "electronic": 58
+    },
+    "force_family_src": {
+      "imslp_tags": 10722,
+      "title": 6160,
+      "llm": 11393,
+      "imslp_geninfo": 196,
+      "categories_unmapped": 49,
+      "llm_grok": 393,
+      "llm_luna_xhigh": 100
+    },
+    "style_tags_nonempty": 588
+  },
+  "notes": [
+    "force_family_src=llm_luna_xhigh for residual other/unclassified (never overwrites imslp_tags)",
+    "style_tags_src=llm_luna_xhigh for empty classical_core styles (never overwrites wikidata)",
+    "Prompts include geninfo instrumentation when present"
+  ]
+}

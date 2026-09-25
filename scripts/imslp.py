@@ -244,6 +244,94 @@ def work_has_files(
     return has
 
 
+_GENINFO_FIELDS = (
+    "Instrumentation",
+    "Piece Style",
+    "Year/Date of Composition",
+    "Opus/Catalogue Number",
+    "Work Title",
+)
+
+
+def parse_imslppage_geninfo(wikitext: str) -> dict[str, str]:
+    """Extract General Information fields from {{#fte:imslppage …}} wikitext."""
+    out: dict[str, str] = {}
+    if not wikitext:
+        return out
+    for field in _GENINFO_FIELDS:
+        # Match |Field=value up to next pipe-at-line-start or template end.
+        m = re.search(
+            rf"\|{re.escape(field)}=(.*?)(?=\n\||\n" + r"\}\}" + r"|\Z)",
+            wikitext,
+            flags=re.S,
+        )
+        if not m:
+            continue
+        raw = m.group(1).strip()
+        # Drop nested templates / wiki links lightly.
+        raw = re.sub(r"\{\{[^}]*\}\}", "", raw)
+        raw = re.sub(r"\[\[([^|\]]*\|)?([^\]]+)\]\]", r"\2", raw)
+        raw = re.sub(r"<[^>]+>", "", raw)
+        raw = re.sub(r"\s+", " ", raw).strip()
+        if raw:
+            out[field] = raw
+    return out
+
+
+def fetch_work_geninfo(
+    title: str,
+    session: requests.Session,
+    *,
+    use_cache: bool = True,
+) -> dict[str, Any]:
+    """Fetch IMSLP work-page General Information (cached)."""
+    if use_cache:
+        cached = cache_get("imslp_geninfo", title)
+        if cached is not None:
+            return cached
+
+    payload: dict[str, Any] = {
+        "title": title,
+        "ok": False,
+        "instrumentation_raw": "",
+        "piece_style_raw": "",
+        "composition_year": "",
+        "catalogue_number": "",
+        "error": "",
+    }
+    try:
+        data = request_json(
+            session,
+            IMSLP_API,
+            params={
+                "action": "parse",
+                "page": title,
+                "prop": "wikitext",
+                "format": "json",
+            },
+            timeout=60,
+            sleep_s=0.15,
+        )
+        if data.get("error"):
+            payload["error"] = str(data["error"].get("info") or data["error"])
+        else:
+            wikitext = (data.get("parse") or {}).get("wikitext", {}).get("*", "")
+            fields = parse_imslppage_geninfo(wikitext)
+            payload["ok"] = True
+            payload["instrumentation_raw"] = fields.get("Instrumentation", "")
+            payload["piece_style_raw"] = fields.get("Piece Style", "")
+            payload["composition_year"] = fields.get("Year/Date of Composition", "")
+            payload["catalogue_number"] = fields.get("Opus/Catalogue Number", "")
+            payload["fields"] = fields
+    except Exception as exc:  # noqa: BLE001
+        payload["error"] = str(exc)
+        log.warning("geninfo failed for %s: %s", title, exc)
+
+    if use_cache:
+        cache_set("imslp_geninfo", title, payload)
+    return payload
+
+
 # Keep force / form signal; drop publisher / score-hosting noise from IMSLP cats.
 _FORM_ALLOW = {
     "Sonatas",
