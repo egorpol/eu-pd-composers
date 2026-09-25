@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>eu-pd-composers</title>
+    <meta
+      name="description"
+      content="Filter likely EU life+70 public-domain composers and linked IMSLP works."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="page">
+      <header class="hero">
+        <p class="brand">eu-pd-composers</p>
+        <h1 class="tagline">Browse composers likelier to be free to study under EU life+70 rules, with linked IMSLP work pages.</h1>
+        <p class="lede">
+          Composer-first filters over a versioned research dump — Wikipedia names,
+          Wikidata enrichment, IMSLP work-page links (not a verified score-file inventory). Heuristic only.
+        </p>
+        <p class="disclaimer" id="disclaimer" role="note">
+          EU public-domain status is a death-year + 71 calendar heuristic against the dump
+          snapshot year, not legal advice — missing death years are labeled unknown_death,
+          not living. Force and style tags are research aids and often wrong — from incomplete
+          IMSLP/Wikidata data, heuristics, or LLM guesses. Verify before relying on them.
+        </p>
+      </header>
+
+      <section class="controls" aria-label="Filters">
+        <label class="field search">
+          <span>Search</span>
+          <input
+            id="q"
+            type="search"
+            placeholder="Name or alias…"
+            autocomplete="off"
+          />
+        </label>
+
+        <fieldset class="facet" data-facet="eu">
+          <legend>EU PD status</legend>
+          <button type="button" class="facet-clear">Any</button>
+          <div class="facet-options" id="eu"></div>
+        </fieldset>
+
+        <fieldset class="facet" data-facet="scope">
+          <legend>Scope</legend>
+          <button type="button" class="facet-clear">Any</button>
+          <div class="facet-options" id="scope"></div>
+        </fieldset>
+
+        <fieldset class="facet" data-facet="force">
+          <legend>Has works for</legend>
+          <button type="button" class="facet-clear">Any</button>
+          <div class="facet-options scroll" id="force"></div>
+        </fieldset>
+
+        <fieldset class="facet" data-facet="cit">
+          <legend>Citizenship</legend>
+          <button type="button" class="facet-clear">Any</button>
+          <div class="facet-options scroll codes" id="cit"></div>
+        </fieldset>
+
+        <fieldset class="facet" data-facet="style">
+          <legend>Style</legend>
+          <button type="button" class="facet-clear">Any</button>
+          <div class="facet-options" id="style"></div>
+        </fieldset>
+
+        <div class="controls-row">
+          <label class="field sort">
+            <span>Sort</span>
+            <select id="sort">
+              <option value="views">Pageviews (2025)</option>
+              <option value="name">Name</option>
+              <option value="eu_year">EU PD year</option>
+              <option value="works">Works count</option>
+            </select>
+          </label>
+
+          <label class="field sort-dir">
+            <span>Order</span>
+            <select id="sortDir">
+              <option value="desc">Descending</option>
+              <option value="asc">Ascending</option>
+            </select>
+          </label>
+
+          <label class="check">
+            <input type="checkbox" id="hasWorks" checked />
+            <span>Only with IMSLP works</span>
+          </label>
+
+          <span class="actions">
+            <button type="button" id="clearAll" class="link-btn">Clear all filters</button>
+            <button type="button" id="resetDefaults" class="link-btn">Reset to defaults</button>
+          </span>
+        </div>
+      </section>
+
+      <p class="meta" id="meta" role="status">Loading dump…</p>
+
+      <div class="split">
+        <section class="results" aria-label="Composers">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Composer</th>
+                <th scope="col">EU</th>
+                <th scope="col" class="num">Works</th>
+                <th scope="col" class="num">Views (2025)</th>
+              </tr>
+            </thead>
+            <tbody id="rows"></tbody>
+          </table>
+        </section>
+
+        <aside class="detail" id="detail" aria-label="Composer detail">
+          <p class="detail-empty">Select a composer to see IMSLP works.</p>
+        </aside>
+        <p class="sr-only" id="announce" aria-live="polite"></p>
+      </div>
+
+      <footer class="foot">
+        <span id="dumpLabel"></span>
+        ·
+        <a href="https://github.com/egorpol/eu-pd-composers">GitHub</a>
+        ·
+        <a href="https://github.com/egorpol/eu-pd-composers/blob/main/docs/PIPELINE.md">Pipeline</a>
+      </footer>
+    </div>
+    <script src="app.js" type="module"></script>
+  </body>
+</html>

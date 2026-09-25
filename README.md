@@ -1,57 +1,64 @@
+# eu-pd-composers
 
-# Public Domain Sheet Music Finder
+Find notable 20th-century classical composers whose works are likely safer to study or redistribute in EU-style life+70 regimes, then point at available IMSLP material.
 
-## Introduction
+**Current direction:** versioned **composer + works** dumps (schema v3) + a static **filter viewer**. Tool line: **v3.1.0-dev** (schema 3).
 
-PublicDomainSheetMusicFinder is a project designed to identify the works of notable 20th-century composers that might be in the public domain within the EU. The project leverages Wikipedia page views as a metric to filter relevant composers. Additionally, it incorporates an IMSLP parser to locate available links to scanned sheet music.
+See [CHANGELOG.md](CHANGELOG.md) and [VERSIONING.md](VERSIONING.md).
 
-## Version 1.1 Updates
-
-### New Features and Improvements
-
-- **PublicDomainSheetMusicFinder.ipynb**: Code optimization and refactoring for improved performance and readability.
-- **imslp_extract.ipynb**: Newly added notebook to parse all available scores for a selected composer from the IMSLP database.
-- **llm_parse_local.ipynb**: Experimental notebook for parsing, summarizing, and answering questions about a selected composer based on their Wikipedia article. This notebook utilizes local running large language models provided in LM Studio. Tested with Mistral 7B and Llama 3 models and 8192 token input.
-
-## Included Files
-
-This repository includes two TSV files: `composers.tsv` and `composers_imslp.tsv`. These files contain full data dumps based on Wikipedia data for the year 2022. `composers.tsv` includes basic information about the composers, while `composers_imslp.tsv` includes additional IMSLP links where available.
-
-This repository now includes the following notebooks alongside the original TSV files:
-- `PublicDomainSheetMusicFinder.ipynb`
-- `imslp_extract.ipynb` (New)
-- `llm_parse_local.ipynb` (New)
-
-## Table of Contents
-
-1. [Installation](#installation)
-2. [Usage](#usage)
-3. [Contributing](#contributing)
-4. [License](#license)
-
-## Installation
-
-The project requires Python and Jupyter Notebook to run. Required Python packages are:
-- requests
-- BeautifulSoup
-- pandas
-- tqdm
-- numpy
-
-These packages can be installed with pip:
+## Layout
 
 ```
-pip install requests beautifulsoup4 pandas tqdm numpy
+data/                            # versioned TSV dumps + dump_meta_*.json
+viewer/                          # static filter UI (GitHub Pages)
+scripts/build_dump.py            # Wikipedia → Wikidata → IMSLP scrape
+scripts/enrich_dump.py           # offline force_family / rollups
+scripts/export_viewer_json.py    # dump → viewer/data JSON
+scripts/force_family.py
+scripts/llm_force_family.py
+scripts/wikidata_enrich.py
+scripts/imslp.py
+scripts/common.py
+scripts/heartbeat.py
+docs/PIPELINE.md
+```
+
+- Dumps: [`data/README.md`](data/README.md)
+- Pipeline: [`docs/PIPELINE.md`](docs/PIPELINE.md)
+- Viewer: [`viewer/README.md`](viewer/README.md)
+
+## Sources
+
+- **Names:** Wikipedia list of 20th-century classical composers (+ optional pageviews)
+- **Structured bio / IDs:** Wikidata
+- **Scores:** IMSLP work pages (not per-file editions yet)
+
+Public-domain status is a **heuristic**, not legal clearance.
+
+**Force / style tags are imperfect.** They mix IMSLP categories, scraped fields, Wikidata maps, heuristics, and LLM guesses. Many will be wrong or incomplete — treat them as filters for exploration, not ground truth. Check `*_src` columns and verify on the source sites when it matters.
+
+
+## Setup
+
+```bash
+pip install -r requirements.txt
 ```
 
 ## Usage
 
-Run the Jupyter Notebooks to start the project. Each notebook contains detailed comments and explanations for each part of the code.
+```bash
+# Scrape / enrich dumps (see data/README.md)
+python scripts/build_dump.py --date YYYY-MM-DD
+python scripts/enrich_dump.py --from-dump YYYY-MM-DD --date YYYY-MM-DD
 
-## Contributing
+# Refresh viewer JSON + local preview
+python scripts/export_viewer_json.py --dump r008
+python scripts/check_release.py --dump r008 --viewer-data viewer/data
+python -m http.server 8080 --directory viewer
+```
 
-If you want to contribute to this project, please fork the repository and use a feature branch. Pull requests are warmly welcome.
+GitHub Pages deploys `viewer/` via `.github/workflows/pages.yml` on push to **`main`** (source: **GitHub Actions**).
 
 ## License
 
-The code in this project is licensed under the MIT license.
+Code: MIT (see `LICENSE`). Linked Wikipedia / IMSLP content remains under their respective terms.
