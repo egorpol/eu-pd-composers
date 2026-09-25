@@ -20,14 +20,15 @@
     <div class="page">
       <header class="hero">
         <p class="brand">eu-pd-composers</p>
-        <h1 class="tagline">Find scores that are likelier to be free to study under EU life+70 rules.</h1>
+        <h1 class="tagline">Browse composers likelier to be free to study under EU life+70 rules, with linked IMSLP work pages.</h1>
         <p class="lede">
           Composer-first filters over a versioned research dump — Wikipedia names,
-          Wikidata enrichment, IMSLP work links. Heuristic only.
+          Wikidata enrichment, IMSLP work-page links (not a verified score-file inventory). Heuristic only.
         </p>
         <p class="disclaimer" id="disclaimer" role="note">
-          EU public-domain status is a death-year heuristic, not legal advice.
-          Force and style tags are research aids and often wrong — from incomplete
+          EU public-domain status is a death-year + 71 calendar heuristic against the dump
+          snapshot year, not legal advice — missing death years are labeled unknown_death,
+          not living. Force and style tags are research aids and often wrong — from incomplete
           IMSLP/Wikidata data, heuristics, or LLM guesses. Verify before relying on them.
         </p>
       </header>
@@ -77,7 +78,7 @@
           <label class="field sort">
             <span>Sort</span>
             <select id="sort">
-              <option value="views">Pageviews</option>
+              <option value="views">Pageviews (2025)</option>
               <option value="name">Name</option>
               <option value="eu_year">EU PD year</option>
               <option value="works">Works count</option>
@@ -114,7 +115,7 @@
                 <th scope="col">Composer</th>
                 <th scope="col">EU</th>
                 <th scope="col" class="num">Works</th>
-                <th scope="col" class="num">Views</th>
+                <th scope="col" class="num">Views (2025)</th>
               </tr>
             </thead>
             <tbody id="rows"></tbody>
@@ -132,7 +133,7 @@
         ·
         <a href="https://github.com/egorpol/eu-pd-composers">GitHub</a>
         ·
-        <a href="https://github.com/egorpol/eu-pd-composers/blob/beta/docs/PIPELINE.md">Pipeline</a>
+        <a href="https://github.com/egorpol/eu-pd-composers/blob/main/docs/PIPELINE.md">Pipeline</a>
       </footer>
     </div>
     <script src="app.js" type="module"></script>

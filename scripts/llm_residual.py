@@ -13,6 +13,7 @@ Example:
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import logging
 import os
@@ -110,12 +111,17 @@ def codex_json(
     batch_idx: int,
     prefix: str,
 ) -> dict:
-    cache_file = cache_dir / f"{prefix}_{batch_idx:05d}.json"
+    schema_text = schema.read_text(encoding="utf-8") if schema.exists() else ""
+    digest = hashlib.sha256(
+        f"{model}\0{reasoning}\0{schema_text}\0{prompt}".encode("utf-8")
+    ).hexdigest()[:16]
+    cache_file = cache_dir / f"{prefix}_{batch_idx:05d}_{digest}.json"
     if cache_file.exists():
         return json.loads(cache_file.read_text(encoding="utf-8"))
+    # Do not reuse index-only legacy caches — they may be for a different prompt.
 
-    out_msg = cache_dir / f"{prefix}_{batch_idx:05d}.last.txt"
-    err_path = cache_dir / f"{prefix}_{batch_idx:05d}.err"
+    out_msg = cache_dir / f"{prefix}_{batch_idx:05d}_{digest}.last.txt"
+    err_path = cache_dir / f"{prefix}_{batch_idx:05d}_{digest}.err"
     cmd = [
         str(codex),
         "exec",
@@ -161,7 +167,12 @@ def codex_json(
         )
     raw = out_msg.read_text(encoding="utf-8") if out_msg.exists() else (proc.stdout or "")
     elapsed = time.monotonic() - started
-    payload = {"batch_idx": batch_idx, "raw": raw, "elapsed_s": elapsed}
+    payload = {
+        "batch_idx": batch_idx,
+        "cache_key": digest,
+        "raw": raw,
+        "elapsed_s": elapsed,
+    }
     # normalize JSON
     text = raw.strip()
     if text.startswith("```"):

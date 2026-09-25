@@ -204,7 +204,7 @@ def eu_pd_fields(death_year: Any, dump_year: int) -> dict[str, Any]:
     if death_year is None or (isinstance(death_year, float) and pd.isna(death_year)):
         return {
             "eu_pd_year": "",
-            "eu_pd_status": "living",
+            "eu_pd_status": "unknown_death",
             "years_until_eu_pd": "",
         }
     try:
@@ -305,6 +305,8 @@ def build(args: argparse.Namespace) -> None:
     # --- Build composer rows + IMSLP works ---
     composer_rows: list[dict[str, Any]] = []
     work_rows: list[dict[str, Any]] = []
+    seen_composer_ids: dict[str, int] = {}  # composer_id → index in composer_rows
+    imslp_fetched: set[tuple[str, str]] = set()  # (qid_or_id, category)
 
     log.info(
         "Enriching rows + IMSLP match%s",
@@ -355,6 +357,51 @@ def build(args: argparse.Namespace) -> None:
                 continue
 
             composer_id = qid or f"wiki:{quote(title.replace(' ', '_'))}"
+
+            # One row per Wikidata QID: fold later list aliases into the first row.
+            if composer_id in seen_composer_ids:
+                prev = composer_rows[seen_composer_ids[composer_id]]
+                aliases = set(pipe_split(prev.get("name_aliases") or ""))
+                if name_display and name_display != prev.get("name_display"):
+                    aliases.add(name_display)
+                for a in pipe_split(wd.get("name_aliases") or ""):
+                    aliases.add(a)
+                prev["name_aliases"] = pipe_join(
+                    sorted(a for a in aliases if a and a != prev.get("name_display"))
+                )
+                if birth_year is not None:
+                    pb = prev.get("birth_year")
+                    if pb == "" or pb is None:
+                        prev["birth_year"] = birth_year
+                    else:
+                        try:
+                            prev["birth_year"] = min(int(pb), int(birth_year))
+                        except (TypeError, ValueError):
+                            pass
+                if death_year is not None:
+                    pd_ = prev.get("death_year")
+                    if pd_ == "" or pd_ is None:
+                        prev["death_year"] = death_year
+                    else:
+                        try:
+                            prev["death_year"] = max(int(pd_), int(death_year))
+                        except (TypeError, ValueError):
+                            pass
+                    prev.update(eu_pd_fields(prev.get("death_year") or None, dump_year))
+                wiki_u = str(wiki_url or "")
+                if "and_" in wiki_u.lower() or "_and_" in wiki_u.lower():
+                    prev["wikipedia_url"] = wiki_u
+                    prev["name_display"] = name_display or prev["name_display"]
+                pv = pageviews[i]
+                if pv is not None and not (isinstance(pv, float) and np.isnan(pv)):
+                    try:
+                        prev_pv = int(prev.get("pageviews_enwiki") or 0)
+                    except (TypeError, ValueError):
+                        prev_pv = 0
+                    prev["pageviews_enwiki"] = max(prev_pv, int(pv))
+                hb.tick()
+                continue
+
             cit_qids = pipe_split(wd.get("citizenship_qids"))
             cit_iso = pipe_join(
                 cit_iso_map.get(c) for c in cit_qids if cit_iso_map.get(c)
@@ -378,16 +425,19 @@ def build(args: argparse.Namespace) -> None:
                 }
 
             works_count = 0
+            cat = match.get("imslp_category") or ""
+            fetch_key = (composer_id, cat)
             if (
                 args.imslp
                 and args.imslp_works
                 and match.get("imslp_match_status")
                 in {"matched", "unverified_heuristic"}
-                and match.get("imslp_category")
+                and cat
+                and fetch_key not in imslp_fetched
             ):
                 wrows = works_rows_for_composer(
                     composer_id=composer_id,
-                    category=match["imslp_category"],
+                    category=cat,
                     session=session,
                     fetch_categories=args.work_categories,
                     fetch_has_files=args.work_files,
@@ -401,6 +451,7 @@ def build(args: argparse.Namespace) -> None:
                     )
                 work_rows.extend(wrows)
                 works_count = len(wrows)
+                imslp_fetched.add(fetch_key)
 
             name_sort = (
                 name_sort_from_imslp_category(match.get("imslp_category"))
@@ -416,6 +467,7 @@ def build(args: argparse.Namespace) -> None:
             if pv is not None and not (isinstance(pv, float) and np.isnan(pv)):
                 pv_out = int(pv)
 
+            seen_composer_ids[composer_id] = len(composer_rows)
             composer_rows.append(
                 {
                     "composer_id": composer_id,

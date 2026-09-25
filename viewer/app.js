@@ -76,6 +76,7 @@ function lifeSpan(c, sep) {
   if (b && d) return `${b}${sep}${d}`;
   if (b) return c.eu === "living" ? `b. ${b}` : `b. ${b}, death unknown`;
   if (d) return `d. ${d}`;
+  if (c.eu === "unknown_death") return "death unknown";
   return "";
 }
 
@@ -240,6 +241,16 @@ function renderDetail() {
       ? ` · heuristic EU PD year ${escapeHtml(c.eu_year)}`
       : "";
 
+  const metaBits = [];
+  if (c.imslp_status) metaBits.push(`IMSLP match: ${escapeHtml(c.imslp_status)}`);
+  if (c.styles && c.styles.length) {
+    const src = c.style_src ? ` (${escapeHtml(c.style_src)})` : "";
+    metaBits.push(`styles: ${escapeHtml(c.styles.join(", "))}${src}`);
+  }
+  const metaLine = metaBits.length
+    ? `<p class="detail-meta">${metaBits.join(" · ")}</p>`
+    : "";
+
   let worksBlock;
   if (!works.length) {
     worksBlock = `<p class="detail-empty">No IMSLP works linked in this dump${
@@ -271,6 +282,7 @@ function renderDetail() {
   el.detail.innerHTML = `
     <h2>${escapeHtml(c.name)}</h2>
     <p class="years">${years ? escapeHtml(years) + " · " : ""}<span class="badge ${escapeHtml(c.eu)}">${escapeHtml(c.eu)}</span>${euBit}</p>
+    ${metaLine}
     <div class="detail-links">${links.join("") || "<span>No external links</span>"}</div>
     ${worksBlock}`;
   el.detail.scrollTop = 0;

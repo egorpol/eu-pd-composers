@@ -56,16 +56,38 @@ def _strip_arr(token: str) -> str:
     return re.sub(r"\s*\(arr\)\s*$", "", token, flags=re.I).strip()
 
 
+def _is_arr_token(token: str) -> bool:
+    return bool(re.search(r"\(arr\)\s*$", token, flags=re.I))
+
+
 def _tokens(genre_cell: str) -> list[str]:
     if not genre_cell or str(genre_cell) in {"nan", "None"}:
         return []
     return [t.strip() for t in str(genre_cell).split("|") if t.strip()]
 
 
+def _original_tokens(genre_cell: str) -> list[str]:
+    """Category tokens that are not arrangements — used for force_family."""
+    return [_strip_arr(t) for t in _tokens(genre_cell) if not _is_arr_token(t)]
+
+
+def _concerto_instrumentation(low: str) -> bool:
+    """True for soloist+orchestra forms; never voice/chorus+orchestra."""
+    if "voice" in low or "chorus" in low or "choir" in low:
+        return False
+    if "with soloists" in low:
+        return True
+    # e.g. "for violin, orchestra" — not "for voices, orchestra"
+    return bool(re.search(r"for (?!voices?\b)[^,]+, orchestra$", low))
+
+
 def force_family_from_categories(genre_cell: str) -> tuple[str, str]:
-    """Return (force_family, src) from IMSLP category tokens."""
-    tokens = [_strip_arr(t) for t in _tokens(genre_cell)]
+    """Return (force_family, src) from IMSLP category tokens (non-arr only)."""
+    tokens = _original_tokens(genre_cell)
     if not tokens:
+        # Only arrangement categories (or empty) — caller may fall back to title/geninfo.
+        if any(_is_arr_token(t) for t in _tokens(genre_cell)):
+            return "unclassified", "arr_only"
         return "unclassified", "empty"
 
     hits: list[str] = []
@@ -73,14 +95,14 @@ def force_family_from_categories(genre_cell: str) -> tuple[str, str]:
     for t in tokens:
         low = t.lower()
 
-        if t in {"Operas", "Operettas", "Musicals"} or low.startswith("for voices") and "stage" in low:
+        if t in {"Operas", "Operettas", "Musicals"} or (
+            low.startswith("for voices") and "stage" in low
+        ):
             hits.append("stage_opera")
         if t in {"Ballets"}:
             hits.append("stage_ballet")
 
-        if t in {"Concertos"} or "with soloists" in low or re.search(
-            r"for [^,]+, orchestra$", low
-        ):
+        if t in {"Concertos"} or _concerto_instrumentation(low):
             hits.append("concerto")
         if t in {"Symphonies", "Overtures"} or low == "for orchestra":
             hits.append("orchestral")
@@ -135,7 +157,9 @@ def force_family_from_categories(genre_cell: str) -> tuple[str, str]:
             hits.append("piano_ensemble")
         if t == "For piano" or low == "for piano":
             hits.append("piano_solo")
-        if low == "for 1 player" and any(x == "For piano" or x.lower() == "for piano" for x in tokens):
+        if low == "for 1 player" and any(
+            x == "For piano" or x.lower() == "for piano" for x in tokens
+        ):
             hits.append("piano_solo")
 
         if t == "For organ" or low == "for organ":
@@ -168,7 +192,13 @@ def force_family_from_categories(genre_cell: str) -> tuple[str, str]:
                 elif inst in {"guitar", "lute"}:
                     hits.append("guitar")
                 elif "piano" not in inst and "voice" not in inst:
-                    if inst not in {"1 player", "2 players", "3 players", "4 players", "5 players"}:
+                    if inst not in {
+                        "1 player",
+                        "2 players",
+                        "3 players",
+                        "4 players",
+                        "5 players",
+                    }:
                         hits.append("solo_instrument")
 
         if any(x in low for x in ("electronic", "tape", "electro")):
@@ -182,22 +212,26 @@ def force_family_from_categories(genre_cell: str) -> tuple[str, str]:
         return "other", "categories_unmapped"
 
     # Prefer more specific families (higher priority index among hits).
-    # But concerto should beat orchestral; piano_ensemble beat piano_solo; etc.
     best = max(hits, key=lambda h: _PRIORITY.get(h, -1))
-    # Tie-break refinements
-    if "concerto" in hits:
-        best = "concerto"
-    elif "stage_opera" in hits:
+    # Tie-break: stage / vocal beat concerto; original orchestra beats piano reductions.
+    if "stage_opera" in hits:
         best = "stage_opera"
     elif "stage_ballet" in hits:
         best = "stage_ballet"
+    elif "choral" in hits and ("solo_voice" in hits or "concerto" in hits or "orchestral" in hits):
+        best = "choral"
+    elif "solo_voice" in hits and "concerto" in hits:
+        best = "solo_voice"
+    elif "concerto" in hits:
+        best = "concerto"
+    elif "orchestral" in hits and "piano_ensemble" in hits:
+        best = "orchestral"
     elif "piano_ensemble" in hits:
         best = "piano_ensemble"
     elif "choral" in hits and "solo_voice" in hits:
         best = "choral"
     elif "chamber" in hits and "solo_instrument" in hits:
-        # Quartets beat violin+piano if both present
-        if any(_strip_arr(t) in {"Quartets", "Quintets", "Trios"} for t in _tokens(genre_cell)):
+        if any(t in {"Quartets", "Quintets", "Trios"} for t in tokens):
             best = "chamber"
     return best, "imslp_tags"
 
@@ -372,9 +406,18 @@ def map_force_family_with_geninfo(
     *,
     current_family: str = "",
     current_src: str = "",
+    recompute: bool = False,
 ) -> tuple[str, str]:
-    """Prefer imslp_tags; then geninfo; never downgrade strong tags."""
-    if current_src == "imslp_tags" and current_family not in {"", "unclassified", "other"}:
+    """Prefer imslp_tags; then geninfo; never downgrade strong tags.
+
+    When recompute=True, ignore current_family/src and re-derive from categories
+    (then geninfo, then title) — used after classifier rule fixes.
+    """
+    if (
+        not recompute
+        and current_src == "imslp_tags"
+        and current_family not in {"", "unclassified", "other"}
+    ):
         return current_family, current_src
 
     cat_family, cat_src = force_family_from_categories(genre_cell)
@@ -386,10 +429,24 @@ def map_force_family_with_geninfo(
         if g_family not in {"unclassified"}:
             return g_family, g_src
 
-    if current_family and current_src in {"imslp_geninfo"} and current_family != "unclassified":
+    if (
+        not recompute
+        and current_family
+        and current_src in {"imslp_geninfo"}
+        and current_family != "unclassified"
+    ):
         return current_family, current_src
 
-    return map_force_family(genre_cell, title)
+    mapped_family, mapped_src = map_force_family(genre_cell, title)
+    if mapped_family not in {"unclassified", "other"}:
+        return mapped_family, mapped_src
+
+    # Preserve LLM/geninfo fills when categories stay weak after a rule recompute.
+    if current_family and current_family not in {"unclassified"}:
+        if current_src.startswith("llm") or current_src == "imslp_geninfo":
+            return current_family, current_src
+
+    return mapped_family, mapped_src
 
 
 def map_genre_form(genre_cell: str, title: str = "") -> str:

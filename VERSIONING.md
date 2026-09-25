@@ -31,13 +31,13 @@ Applies to the TSV snapshots themselves. Independent of tool SemVer.
 
 | Field | Example |
 |---|---|
-| Filename | `composers_r002.tsv` |
-| `dump_id` in meta JSON | `r002` |
-| Viewer label | `dump r002 · built 2026-09-25` (from `created_at_utc`) |
+| Filename | `composers_r008.tsv` |
+| `dump_id` in meta JSON | `r008` |
+| Viewer label | `dump r008 · built 2026-09-25` (from `created_at_utc`) |
 
 **Scheme:** `r` + zero-padded integer (`r001`, `r002`, …). Each enrich/filter ships a **new** revision; never overwrite.
 
-Older **calendar** dump_ids (`2026-09-26`, …) remain as historical lineage only.
+**Git policy:** only the latest `rNNN` TSV + meta live under `data/` in the working tree. Older revisions (and former calendar dump_ids) are recoverable from **git history**. Caches under `data/cache/` are gitignored and are **not** a substitute for historical dumps.
 
 Dumps are **immutable**: never overwrite; add a new revision + meta file. A new tool release may still serve an older dump.
 
@@ -45,11 +45,11 @@ Dumps are **immutable**: never overwrite; add a new revision + meta file. A new 
 
 ```json
 {
-  "dump_id": "r002",
+  "dump_id": "r008",
   "tool_version": "3.1.0-dev",
   "schema_version": 3,
   "created_at_utc": "...",
-  "derived_from_dump_id": "r001",
+  "derived_from_dump_id": "r007",
   "enrichment": "...",
   "notes": ["..."]
 }
@@ -63,7 +63,7 @@ Dumps are **immutable**: never overwrite; add a new revision + meta file. A new 
 Promote a historical dump into the revision series with:
 
 ```bash
-python scripts/promote_revision.py --from-dump 2026-10-01 --to r001
+python scripts/promote_revision.py --from-dump <existing_id> --to rNNN
 ```
 
 ## What consumers should pin

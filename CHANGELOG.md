@@ -28,6 +28,11 @@ Dump snapshots: dated `dump_id` — see [VERSIONING.md](VERSIONING.md).
 - `scripts/build_dump.py` rebuilt for schema 3 (breaking vs schema 2 column set)
 - Demoted wiki `Nationality` / notables / remarks to structured + `legacy_*` fields
 
+### Removed
+- Legacy notebooks (`PublicDomainSheetMusicFinder.ipynb`, `imslp_extract.ipynb`) — replaced by `scripts/` + `viewer/`
+- `experimental/` unfinished 2025 utils park
+- Transient `docs/REVIEW_pre_main_sol.md`
+
 ### Deferred
 - Better coverage of empty IMSLP genre cats (re-fetch / looser filters)
 - LLM style fill-ins

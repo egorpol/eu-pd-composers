@@ -70,9 +70,9 @@ flowchart TB
 
 ```mermaid
 flowchart LR
-  A[Work row] --> B{imslp_genre_categories<br/>usable?}
+  A[Work row] --> B{Non-arr IMSLP categories<br/>usable?}
   B -->|yes| C[Map For … / Operas / Songs / …<br/>force_family_src = imslp_tags]
-  B -->|no / weak| GI{General Information<br/>Instrumentation?}
+  B -->|no / arr-only / weak| GI{General Information<br/>Instrumentation?}
   GI -->|hit| GIsrc[force_family_src = imslp_geninfo]
   GI -->|miss| D{Title heuristics?}
   D -->|hit| E[force_family_src = title]
@@ -83,6 +83,8 @@ flowchart LR
   E --> H
   G --> H
 ```
+
+Arrangement `(arr)` category tokens never set force; opera/voice beat concerto; original orchestra beats piano reductions.
 
 ## Match statuses (IMSLP)
 
@@ -100,25 +102,29 @@ flowchart LR
 python scripts/build_dump.py --date YYYY-MM-DD
 
 # Promote into revision series
-python scripts/promote_revision.py --from-dump 2026-10-01 --to r001
+python scripts/promote_revision.py --from-dump YYYY-MM-DD --to rNNN
+
+# Recompute force + merge duplicate QIDs + PD labels → next revision
+python scripts/remap_force.py --from-dump r007 --to r008
 
 # GenInfo pilot + Wikidata style remap → next revision
-python scripts/enrich_geninfo.py --from-dump r001 --to r002 --limit 200 --remap-styles
+python scripts/enrich_geninfo.py --from-dump rNNN --to rNNN+1 --limit 200 --remap-styles
 
 # Prepare residual LLM queue (does not call Codex)
-python scripts/prepare_llm_residual.py --dump r002
+python scripts/prepare_llm_residual.py --dump rNNN
 
 # LLM fill when approved (Codex + gpt-6-luna, reasoning xhigh)
-python scripts/llm_force_family.py --from-dump r002 --to r003 --reasoning xhigh
+python scripts/llm_residual.py --from-dump rNNN --to rNNN+1 --reasoning xhigh
 ```
 
-Caches: `data/cache/` (gitignored). GenInfo under `imslp_geninfo/`; LLM batches under `llm_force_family/`.
+Caches: `data/cache/` (gitignored). GenInfo under `imslp_geninfo/`; LLM batches under hashed cache keys. Older dumps: git history only.
 
 ## Filter viewer
 
 ```bash
-python scripts/export_viewer_json.py --dump r002
+python scripts/export_viewer_json.py --dump r008
+python scripts/check_release.py --dump r008 --viewer-data viewer/data
 python -m http.server 8080 --directory viewer
 ```
 
-Static UI under `viewer/`; GitHub Pages workflow publishes that folder.
+Static UI under `viewer/`; GitHub Pages workflow publishes that folder from **`main`**.

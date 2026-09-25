@@ -1,0 +1,25 @@
+{
+  "dump_id": "r008",
+  "tool_version": "3.1.0-dev",
+  "schema_version": 3,
+  "created_at_utc": "2026-09-25T07:13:06.944282+00:00",
+  "derived_from_dump_id": "r007",
+  "enrichment": "remap_force_ids_pd",
+  "output_files": {
+    "composers": "composers_r008.tsv",
+    "works": "works_r008.tsv"
+  },
+  "row_counts": {
+    "composers": 3368,
+    "works": 28993,
+    "force_rows_changed": 1084,
+    "pd_rows_changed": 719,
+    "duplicate_composer_rows_removed": 2,
+    "work_rows_deduped": 20
+  },
+  "notes": [
+    "Recomputed force_family ignoring (arr) tokens; opera/voice beat concerto",
+    "Merged duplicate composer_id rows; deduped works by imslp_pageid",
+    "Missing death_year \u2192 eu_pd_status=unknown_death"
+  ]
+}

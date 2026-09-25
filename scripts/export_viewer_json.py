@@ -83,11 +83,13 @@ def export(dump_id: str, out_dir: Path) -> None:
                 "eu_year": _clean(row.get("eu_pd_year")),
                 "eu": str(_clean(row.get("eu_pd_status"))),
                 "styles": _pipe_list(row.get("style_tags")),
+                "style_src": str(_clean(row.get("style_tags_src"))),
                 "imslp": str(_clean(row.get("imslp_url"))),
                 "imslp_status": str(_clean(row.get("imslp_match_status"))),
                 "forces": _pipe_list(row.get("work_categories_present")),
                 "works_n": int(_clean(row.get("works_count_total")) or 0),
                 "views": _clean(row.get("pageviews_enwiki")) or 0,
+                "views_window": str(_clean(row.get("pageviews_window"))),
             }
         )
 
@@ -147,10 +149,14 @@ def export(dump_id: str, out_dir: Path) -> None:
             "citizenship_iso": countries,
         },
         "disclaimer": (
-            "EU public-domain status is a death-year + 71 calendar heuristic, "
-            "not legal advice. Force and style tags are research aids and often wrong "
-            "(incomplete IMSLP/Wikidata data, heuristics, or LLM guesses)—verify before relying on them."
+            "EU public-domain status is a death-year + 71 calendar heuristic against "
+            "the dump snapshot year, not legal advice; missing death years are "
+            "unknown_death (not living). Linked IMSLP entries are work pages, not a "
+            "verified score-file inventory. Force and style tags are research aids and "
+            "often wrong (incomplete IMSLP/Wikidata data, heuristics, or LLM guesses)—"
+            "verify before relying on them."
         ),
+        "pageviews_window_label": "2025",
     }
     manifest_out.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
 
@@ -164,7 +170,7 @@ def export(dump_id: str, out_dir: Path) -> None:
 
 def main() -> None:
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--dump", default="r007", help="dump_id to export")
+    p.add_argument("--dump", default="r008", help="dump_id to export")
     p.add_argument(
         "--out",
         default=str(OUT),

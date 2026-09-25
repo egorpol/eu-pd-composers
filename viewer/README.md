@@ -6,7 +6,7 @@ Composer-first UI over the versioned dump. No backend.
 
 ```bash
 # Refresh JSON from a dump
-python scripts/export_viewer_json.py --dump r007
+python scripts/export_viewer_json.py --dump r008
 
 # Serve (module scripts need HTTP)
 python -m http.server 8080 --directory viewer
@@ -23,6 +23,6 @@ python -m http.server 8080 --directory viewer
 
 ## GitHub Pages
 
-Workflow: `.github/workflows/pages.yml` publishes the `viewer/` folder on push to `beta`/`main`.
+Workflow: `.github/workflows/pages.yml` publishes the `viewer/` folder on push to **`main`**.
 
 In the GitHub repo: **Settings → Pages → Source = GitHub Actions**.

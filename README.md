@@ -52,11 +52,12 @@ python scripts/build_dump.py --date YYYY-MM-DD
 python scripts/enrich_dump.py --from-dump YYYY-MM-DD --date YYYY-MM-DD
 
 # Refresh viewer JSON + local preview
-python scripts/export_viewer_json.py --dump r007
+python scripts/export_viewer_json.py --dump r008
+python scripts/check_release.py --dump r008 --viewer-data viewer/data
 python -m http.server 8080 --directory viewer
 ```
 
-GitHub Pages deploys `viewer/` via `.github/workflows/pages.yml` (source: **GitHub Actions**).
+GitHub Pages deploys `viewer/` via `.github/workflows/pages.yml` on push to **`main`** (source: **GitHub Actions**).
 
 ## License
 
