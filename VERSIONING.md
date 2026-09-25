@@ -18,8 +18,7 @@ Applies to code, schema contract, docs, and UI.
 |---|---|---|
 | `v1.0` | 2024-04-17 | First formal release (notebooks + TSVs) |
 | `v1.1` | 2024-04-17 | IMSLP extract + LLM notebook (title was `v.1.1`) |
-| next | — | **`v3.0.0`** — schema 3 dual composers/works dump, Wikidata + IMSLP works |
-| next (historical) | — | **`v2.0.0`** — rename, dump-first layout, schema 2 single TSV |
+| `v3.0.0` | 2026-09-25 | Schema 3 dual dumps, Wikidata + IMSLP works, filter viewer + Pages |
 
 Do **not** reset to `0.2` — that would go backwards from published `v1.1`.
 
@@ -46,7 +45,7 @@ Dumps are **immutable**: never overwrite; add a new revision + meta file. A new 
 ```json
 {
   "dump_id": "r008",
-  "tool_version": "3.1.0-dev",
+  "tool_version": "3.0.0",
   "schema_version": 3,
   "created_at_utc": "...",
   "derived_from_dump_id": "r007",

@@ -25,4 +25,6 @@ python -m http.server 8080 --directory viewer
 
 Workflow: `.github/workflows/pages.yml` publishes the `viewer/` folder on push to **`main`**.
 
+Live site: https://egorpol.github.io/eu-pd-composers/
+
 In the GitHub repo: **Settings → Pages → Source = GitHub Actions**.

@@ -2,7 +2,9 @@
 
 Find notable 20th-century classical composers whose works are likely safer to study or redistribute in EU-style life+70 regimes, then point at available IMSLP material.
 
-**Current direction:** versioned **composer + works** dumps (schema v3) + a static **filter viewer**. Tool line: **v3.1.0-dev** (schema 3).
+**Live viewer:** [egorpol.github.io/eu-pd-composers](https://egorpol.github.io/eu-pd-composers/)
+
+**Current direction:** versioned **composer + works** dumps (schema v3) + a static **filter viewer**. Tool line: **v3.0.0** (schema 3).
 
 See [CHANGELOG.md](CHANGELOG.md) and [VERSIONING.md](VERSIONING.md).
 
@@ -57,7 +59,11 @@ python scripts/check_release.py --dump r008 --viewer-data viewer/data
 python -m http.server 8080 --directory viewer
 ```
 
-GitHub Pages deploys `viewer/` via `.github/workflows/pages.yml` on push to **`main`** (source: **GitHub Actions**).
+## GitHub Pages
+
+The filter UI is published at **https://egorpol.github.io/eu-pd-composers/**.
+
+Workflow [`.github/workflows/pages.yml`](.github/workflows/pages.yml) deploys the `viewer/` folder on every push to **`main`** (Pages source: GitHub Actions). Local preview uses the same files via `python -m http.server` as above.
 
 ## License
 
