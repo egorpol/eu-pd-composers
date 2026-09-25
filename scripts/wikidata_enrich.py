@@ -28,47 +28,35 @@ _PRECISION_MAP = {
     7: "century",
 }
 
-# P135 / P136 → controlled style_tags (Opus-ish, P0 subset)
-# Omit ultra-broad QIDs (opera, classical music, contemporary classical, jazz, song, …).
+# P135 / P136 → controlled style_tags (verified Wikidata labels 2026-09-25).
+# Only music-genre / technique items — never form QIDs (symphony, chamber music, …).
 STYLE_QID_TO_TAG: dict[str, str] = {
-    "Q207338": "impressionism",
-    "Q164800": "impressionism",
     "Q837182": "impressionism",  # impressionism in music
-    "Q317557": "expressionism",
-    "Q80113": "expressionism",  # Expressionism
-    "Q189201": "neoclassicism",
-    "Q189268": "serialism",
-    "Q131433": "serialism",  # twelve-tone technique
-    "Q221686": "serialism",  # twelve-tone technique (alt)
+    "Q613707": "expressionism",  # expressionist music
+    "Q535611": "neoclassicism",  # 20th-c neoclassicism in music
+    "Q106576145": "neoclassicism",  # neoclassical music
     "Q507246": "serialism",
-    "Q206466": "minimalism",
+    "Q221686": "serialism",  # twelve-tone technique
     "Q572901": "minimalism",  # minimalist music
-    "Q1168885": "postminimalism",
-    "Q189212": "spectralism",
-    # electroacoustic / tape — NOT Q1338153 (that is "20th-century classical music")
-    "Q1326777": "electroacoustic",  # electroacoustic music
+    "Q2394116": "postminimalism",
+    "Q98528143": "postminimalism",  # post-minimalism (music genre)
+    "Q1245902": "spectralism",  # spectral music
+    "Q1326777": "electroacoustic",
     "Q823560": "electroacoustic",  # musique concrète
-    "Q243370": "avant_garde",
-    "Q102932": "avant_garde",
     "Q2332751": "avant_garde",  # avant-garde music
     "Q1640319": "avant_garde",  # experimental music
+    "Q102932": "avant_garde",
     "Q108908": "avant_garde",  # Fluxus
-    "Q1770252": "national_folk",
+    "Q1196170": "national_folk",  # musical nationalism
     "Q235858": "national_folk",  # traditional folk music
     "Q1413570": "national_folk",  # sardana
-    "Q148163": "national_folk",  # zarzuela (national stage idiom)
-    "Q426816": "late_romantic",
+    "Q148163": "national_folk",  # zarzuela
     "Q207591": "late_romantic",  # Romantic music
-    "Q37068": "late_romantic",  # Romanticism (narrow use on composers)
-    "Q9734": "atonal_modernism",
+    "Q136774417": "late_romantic",  # late romantic music
+    "Q1125039": "late_romantic",  # Post-romanticism
+    "Q37068": "late_romantic",  # Romanticism (broad)
     "Q211745": "atonal_modernism",  # atonality
-    "Q1168883": "polystylism",
-    # Intentionally omit broad / noisy QIDs, e.g.:
-    # Q1338153 20th-century classical music (was wrongly mapped to electroacoustic),
-    # Q9778 electronic music (too broad — tags Schoenberg-era composers wrongly),
-    # Q193207 ambient, Q1344 opera, Q9730 classical music, Q612024 contemporary classical,
-    # Q8341 jazz, Q1583807 art music, Q7366 song, Q41425 ballet,
-    # Q492264 film score, Q4631020 21st-century classical.
+    "Q3269212": "polystylism",
 }
 
 # P106 → occupation slug

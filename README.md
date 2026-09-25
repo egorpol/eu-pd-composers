@@ -35,6 +35,9 @@ docs/PIPELINE.md
 
 Public-domain status is a **heuristic**, not legal clearance.
 
+**Force / style tags are imperfect.** They mix IMSLP categories, scraped fields, Wikidata maps, heuristics, and LLM guesses. Many will be wrong or incomplete — treat them as filters for exploration, not ground truth. Check `*_src` columns and verify on the source sites when it matters.
+
+
 ## Setup
 
 ```bash
@@ -49,11 +52,11 @@ python scripts/build_dump.py --date YYYY-MM-DD
 python scripts/enrich_dump.py --from-dump YYYY-MM-DD --date YYYY-MM-DD
 
 # Refresh viewer JSON + local preview
-python scripts/export_viewer_json.py --dump r006
+python scripts/export_viewer_json.py --dump r007
 python -m http.server 8080 --directory viewer
 ```
 
-GitHub Pages deploys `viewer/` via `.github/workflows/pages.yml` (enable **Pages → GitHub Actions** once in repo settings).
+GitHub Pages deploys `viewer/` via `.github/workflows/pages.yml` (source: **GitHub Actions**).
 
 ## License
 

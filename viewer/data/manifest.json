@@ -1,9 +1,9 @@
 {
-  "dump_id": "r006",
-  "dump_label": "dump r006 \u00b7 built 2026-09-25",
-  "created_at_utc": "2026-09-25T06:27:22.903924+00:00",
+  "dump_id": "r007",
+  "dump_label": "dump r007 \u00b7 built 2026-09-25",
+  "created_at_utc": "2026-09-25T06:56:41.763052+00:00",
   "schema_version": 3,
-  "generated_at_utc": "2026-09-25T06:27:24.297231+00:00",
+  "generated_at_utc": "2026-09-25T06:56:43.453509+00:00",
   "counts": {
     "composers": 3370,
     "works": 29013,
@@ -160,5 +160,5 @@
       "ZA"
     ]
   },
-  "disclaimer": "EU public-domain status is a death-year + 71 calendar heuristic, not legal advice. IMSLP links and force_family tags are research aids."
+  "disclaimer": "EU public-domain status is a death-year + 71 calendar heuristic, not legal advice. Force and style tags are research aids and often wrong (incomplete IMSLP/Wikidata data, heuristics, or LLM guesses)\u2014verify before relying on them."
 }

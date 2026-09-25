@@ -26,6 +26,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/configure-pages@v5
+        with:
+          # Creates/activates a Pages site on first run if none exists yet.
+          enablement: true
       - uses: actions/upload-pages-artifact@v3
         with:
           path: viewer

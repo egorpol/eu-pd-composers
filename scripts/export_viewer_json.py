@@ -148,7 +148,8 @@ def export(dump_id: str, out_dir: Path) -> None:
         },
         "disclaimer": (
             "EU public-domain status is a death-year + 71 calendar heuristic, "
-            "not legal advice. IMSLP links and force_family tags are research aids."
+            "not legal advice. Force and style tags are research aids and often wrong "
+            "(incomplete IMSLP/Wikidata data, heuristics, or LLM guesses)—verify before relying on them."
         ),
     }
     manifest_out.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
@@ -163,7 +164,7 @@ def export(dump_id: str, out_dir: Path) -> None:
 
 def main() -> None:
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--dump", default="r002", help="dump_id to export")
+    p.add_argument("--dump", default="r007", help="dump_id to export")
     p.add_argument(
         "--out",
         default=str(OUT),

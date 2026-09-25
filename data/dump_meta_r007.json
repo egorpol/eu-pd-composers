@@ -1,22 +1,22 @@
 {
-  "dump_id": "r005",
+  "dump_id": "r007",
   "tool_version": "3.1.0-dev",
   "schema_version": 3,
-  "created_at_utc": "2026-09-25T06:23:46.890545+00:00",
-  "derived_from_dump_id": "r004",
+  "created_at_utc": "2026-09-25T06:56:41.763052+00:00",
+  "derived_from_dump_id": "r006",
   "enrichment": "remap_styles_wikidata",
   "output_files": {
-    "composers": "composers_r005.tsv",
-    "works": "works_r005.tsv"
+    "composers": "composers_r007.tsv",
+    "works": "works_r007.tsv"
   },
   "row_counts": {
     "composers": 3370,
     "works": 29013,
-    "style_tags_filled": 517,
-    "style_tags_nonempty": 535,
-    "style_tags_still_empty": 2779
+    "style_tags_filled": 468,
+    "style_tags_nonempty": 228,
+    "style_tags_still_empty": 2828
   },
-  "style_qid_map_size": 31,
+  "style_qid_map_size": 26,
   "notes": [
     "Re-applied STYLE_QID_TO_TAG from data/cache/wikidata_entity",
     "Does not overwrite existing non-empty style_tags unless --overwrite"
