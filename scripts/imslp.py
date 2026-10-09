@@ -182,11 +182,13 @@ def fetch_page_categories(
     batch_size: int = 50,
     sleep_s: float = 0.15,
 ) -> dict[int, dict[str, Any]]:
-    """Map IMSLP page ids → {title, categories, missing, fetched_at}.
+    """Map IMSLP page ids → {title, categories, missing, redirect, fetched_at}.
 
     Follows category continuation until every page in a batch is complete, and
     only then caches. API-level errors raise instead of becoming empty lists.
     Categories are returned without the `Category:` prefix, unfiltered.
+    `redirect` marks pages IMSLP has since merged into another page; those
+    carry no categories of their own.
     """
     out: dict[int, dict[str, Any]] = {}
     pending: list[int] = []
@@ -203,7 +205,7 @@ def fetch_page_categories(
         params: dict[str, Any] = {
             "action": "query",
             "pageids": "|".join(str(p) for p in batch),
-            "prop": "categories",
+            "prop": "categories|info",
             "cllimit": "max",
             "format": "json",
         }
@@ -216,10 +218,17 @@ def fetch_page_categories(
                 pid = int(page.get("pageid") or key)
                 entry = pages.setdefault(
                     pid,
-                    {"title": page.get("title", ""), "categories": [], "missing": False},
+                    {
+                        "title": page.get("title", ""),
+                        "categories": [],
+                        "missing": False,
+                        "redirect": False,
+                    },
                 )
                 if "missing" in page or "invalid" in page:
                     entry["missing"] = True
+                if "redirect" in page:
+                    entry["redirect"] = True
                 for c in page.get("categories", []):
                     ctitle = c.get("title", "")
                     if ctitle.startswith("Category:"):
@@ -233,7 +242,9 @@ def fetch_page_categories(
 
         now = datetime.now(timezone.utc).isoformat()
         for pid in batch:
-            entry = pages.get(pid, {"title": "", "categories": [], "missing": True})
+            entry = pages.get(
+                pid, {"title": "", "categories": [], "missing": True, "redirect": False}
+            )
             entry = {"pageid": pid, **entry, "fetched_at": now}
             out[pid] = entry
             if use_cache:

@@ -110,3 +110,11 @@ def test_cached_pages_are_not_refetched():
     out = imslp.fetch_page_categories([4], session, sleep_s=0)
     assert out[4]["categories"] == ["For piano"]
     assert session.calls == []
+
+
+def test_redirect_pages_are_flagged():
+    session = FakeSession([{"query": {"pages": {"8": {"pageid": 8, "title": "Old", "redirect": ""}}}}])
+    out = imslp.fetch_page_categories([8], session, sleep_s=0)
+    assert out[8]["redirect"] is True
+    assert out[8]["categories"] == []
+    assert session.calls[0]["prop"] == "categories|info"

@@ -178,7 +178,8 @@ def refresh_genre_categories(
     """Rebuild imslp_genre_categories from the complete `imslp_page_cats` cache (offline).
 
     Rows whose page is not cached keep their old cell; pages IMSLP reports as
-    missing keep their old cell too and are counted for review.
+    missing or now redirects (merged into another page) keep their old cell
+    too and are counted for review.
     """
     stats = Counter()
     composer_cat = dict(
@@ -198,6 +199,9 @@ def refresh_genre_categories(
             continue
         if entry.get("missing"):
             stats["missing_on_imslp"] += 1
+            continue
+        if entry.get("redirect"):
+            stats["redirect_on_imslp"] += 1
             continue
         if entry.get("title") and entry["title"] != _as_str(row.get("work_id")):
             stats["renamed_on_imslp"] += 1

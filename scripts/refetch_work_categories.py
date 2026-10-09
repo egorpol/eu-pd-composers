@@ -61,6 +61,8 @@ def run(args: argparse.Namespace) -> None:
             stats["not_fetched"] += 1
         elif entry.get("missing"):
             stats["missing_on_imslp"] += 1
+        elif entry.get("redirect"):
+            stats["redirect_on_imslp"] += 1
         elif not entry.get("categories"):
             stats["empty_categories"] += 1
         else:
