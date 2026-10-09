@@ -1,0 +1,17 @@
+composer_id	field	value	reason	source	reviewer	date
+Q325381	composer_id	Q6831259	List links Michael_Howard (politician Q325381); list row 1922–2002 is the English organist and composer	https://en.wikipedia.org/wiki/Michael_Howard_(musician)	egorpol	2026-10-09
+Q325381	wikipedia_url	https://en.wikipedia.org/wiki/Michael_Howard_(musician)	Article of the composer, not the politician	https://www.wikidata.org/wiki/Q6831259	egorpol	2026-10-09
+Q325381	pageviews_enwiki	2041	2025 enwiki views of the composer's article (old value 128451 was the politician's)	https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia.org/all-access/all-agents/Michael_Howard_(musician)/monthly/2025010100/2025123100	egorpol	2026-10-09
+Q1553920	composer_id	Q330862	Q1553920 is a disambiguation page; list row 1864–1907 Mexican is Ricardo Castro the composer (P839 Category:Castro,_Ricardo)	https://www.wikidata.org/wiki/Q330862	egorpol	2026-10-09
+Q1553920	wikipedia_url	https://en.wikipedia.org/wiki/Ricardo_Castro_(composer)	Article of the composer, not the disambiguation page	https://www.wikidata.org/wiki/Q330862	egorpol	2026-10-09
+Q1553920	pageviews_enwiki		No 2025 pageview data for the composer's article; old 5748 were disambiguation-page views	https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia.org/all-access/all-agents/Ricardo_Castro_(composer)/monthly/2025010100/2025123100	egorpol	2026-10-09
+Q4731864	composer_id	Q4731863	Q4731864 is the painter Allen Sapp (1928–2015); list row 1922–1999 is the American composer	https://www.wikidata.org/wiki/Q4731863	egorpol	2026-10-09
+Q4731864	wikipedia_url	https://en.wikipedia.org/wiki/Allen_Sapp_(composer)	Article of the composer, not the painter	https://www.wikidata.org/wiki/Q4731863	egorpol	2026-10-09
+Q4731864	pageviews_enwiki	2142	2025 enwiki views of the composer's article	https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia.org/all-access/all-agents/Allen_Sapp_(composer)/monthly/2025010100/2025123100	egorpol	2026-10-09
+Q956296	composer_id	Q709658	Q956296 is the writer (1868–1950); list row 1892–1958 and IMSLP Category:Kvapil,_Jaroslav are the composer	https://www.wikidata.org/wiki/Q709658	egorpol	2026-10-09
+Q956296	wikipedia_url	https://en.wikipedia.org/wiki/Jaroslav_Kvapil_(composer)	Article of the composer, not the writer	https://www.wikidata.org/wiki/Q709658	egorpol	2026-10-09
+Q956296	pageviews_enwiki	1982	2025 enwiki views of the composer's article	https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia.org/all-access/all-agents/Jaroslav_Kvapil_(composer)/monthly/2025010100/2025123100	egorpol	2026-10-09
+Q10319927	composer_id	Q276413	Q10319927 is the duo “Louis and Bebe Barron”; row is Bebe Barron (1925–2008). The Wikipedia list swaps Bebe's and Louis's years	https://www.wikidata.org/wiki/Q276413	egorpol	2026-10-09
+Q447355	composer_id	wiki:John_Mitchell	List row “John Mitchell” (b. 1941, American) is unlinked plain text; Q447355 is a disambiguation page, identity unknown	https://en.wikipedia.org/wiki/List_of_20th-century_classical_composers	egorpol	2026-10-09
+Q20804685	qa_flags		Verified Welsh composer (enwiki); Wikidata P106 only lists musician (Q639669)	https://en.wikipedia.org/wiki/David_Vaughan_Thomas	egorpol	2026-10-09
+Q192506	qa_flags		Correct person: pianist who also composed (IMSLP Category:Horowitz,_Vladimir); Wikidata P106 only lists pianist	https://www.wikidata.org/wiki/Q192506	egorpol	2026-10-09

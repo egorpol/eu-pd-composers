@@ -20,6 +20,7 @@ Applies to code, schema contract, docs, and UI.
 | `v1.1` | 2024-04-17 | IMSLP extract + LLM notebook (title was `v.1.1`) |
 | `v3.0.0` | 2026-09-25 | Schema 3 dual dumps, Wikidata + IMSLP works, filter viewer + Pages |
 | `v3.1.0` | 2026-10-09 | Complete IMSLP categories, parsed force rules, rank-aware Wikidata dates, `is_film_composer` + `qa_flags`; dump r010 |
+| `v3.2.0` | 2026-10-09 | IMSLP identity check by life dates, collision rule, reviewed overrides; dump r012 |
 
 Do **not** reset to `0.2` — that would go backwards from published `v1.1`.
 

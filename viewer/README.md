@@ -6,7 +6,7 @@ Composer-first UI over the versioned dump. No backend.
 
 ```bash
 # Refresh JSON from a dump
-python scripts/export_viewer_json.py --dump r010
+python scripts/export_viewer_json.py --dump r012
 
 # Serve (module scripts need HTTP)
 python -m http.server 8080 --directory viewer

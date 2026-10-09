@@ -252,6 +252,80 @@ def fetch_page_categories(
     return out
 
 
+# Raw wikitext of composer category pages ({{#fte:person |Born Year=… }}),
+# keyed by the category title as stored in composers.imslp_category.
+CAT_PAGE_NAMESPACE = "imslp_cat_page"
+
+
+def fetch_category_pages(
+    categories: list[str],
+    session: requests.Session,
+    *,
+    use_cache: bool = True,
+    batch_size: int = 50,
+    sleep_s: float = 0.15,
+) -> dict[str, dict[str, Any]]:
+    """Map composer category titles → {title, resolved_title, wikitext, missing, redirect, fetched_at}.
+
+    Redirects are followed; `resolved_title` is the page the wikitext came from.
+    API-level errors raise instead of becoming empty observations.
+    """
+    out: dict[str, dict[str, Any]] = {}
+    pending: list[str] = []
+    for cat in dict.fromkeys(categories):
+        if not cat:
+            continue
+        if use_cache:
+            cached = cache_get(CAT_PAGE_NAMESPACE, cat)
+            if cached is not None:
+                out[cat] = cached
+                continue
+        pending.append(cat)
+
+    for i in range(0, len(pending), batch_size):
+        batch = pending[i : i + batch_size]
+        api_titles = {c: (c if c.startswith("Category:") else f"Category:{c}").replace("_", " ") for c in batch}
+        data = request_json(
+            session,
+            IMSLP_API,
+            params={
+                "action": "query",
+                "titles": "|".join(api_titles.values()),
+                "prop": "revisions",
+                "rvprop": "content",
+                "redirects": 1,
+                "format": "json",
+            },
+            timeout=60,
+            sleep_s=sleep_s,
+        )
+        if data.get("error"):
+            raise RuntimeError(f"IMSLP API error for category batch: {data['error']}")
+        query = data.get("query", {})
+        normalized = {n["from"]: n["to"] for n in query.get("normalized", [])}
+        redirects = {r["from"]: r["to"] for r in query.get("redirects", [])}
+        by_title = {p.get("title"): p for p in (query.get("pages") or {}).values()}
+        now = datetime.now(timezone.utc).isoformat()
+        for cat, api_title in api_titles.items():
+            title = normalized.get(api_title, api_title)
+            resolved = redirects.get(title, title)
+            page = by_title.get(resolved, {})
+            missing = not page or "missing" in page or "invalid" in page
+            wikitext = "" if missing else ((page.get("revisions") or [{}])[0].get("*", ""))
+            entry = {
+                "title": cat,
+                "resolved_title": resolved,
+                "wikitext": wikitext,
+                "missing": missing,
+                "redirect": resolved != title,
+                "fetched_at": now,
+            }
+            out[cat] = entry
+            if use_cache:
+                cache_set(CAT_PAGE_NAMESPACE, cat, entry)
+    return out
+
+
 def work_has_files(
     title: str,
     session: requests.Session,

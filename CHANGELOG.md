@@ -9,12 +9,31 @@ Dump snapshots: revision `dump_id` (`rNNN`) — see [VERSIONING.md](VERSIONING.m
 ## [Unreleased]
 
 ### Deferred
-- Heuristic IMSLP match collisions (e.g. two Leo Smits; 9 pages under two composers) and review of `qa_flags` identity cases
+- Louis Barron (1920–1989) missing: the Wikipedia list links both Barrons to the duo article and swaps their years
+- Unresolved identities: John Mitchell (b. 1941, unlinked on the list), Robert Graham Manson (`no_composer_occupation`); 7 `unverified_heuristic` matches
+- Upstream fixes on Wikipedia (list links) and Wikidata (4 wrong P839 values)
 - IMSLP style / copyright-flag / first-publication categories as work columns (already in the page-category cache)
 - Viewer: label-source filter, PD-year range presets, client-side PD year, URL state
 - Scheduled crawl workflow (refresh → PR with diff), LLM decision ledger
 - LLM style fill-ins
 - `--work-files` for `has_files`
+
+## [3.2.0] - 2026-10-09
+
+Identity release. Schema stays **3** (one added column, two added status values). Shipped dump: **r012** (via r011).
+
+### Fixed
+- Name-guessed IMSLP categories were never checked against the person: they are now compared with IMSLP's own life dates and Wikipedia link. 279 of 298 guesses confirmed, 10 rejected as someone else's page (e.g. composer Karl Marx → the philosopher, William Wordsworth → the poet), 7 still unverified
+- Four Wikidata P839 links point at a different person's IMSLP page (John White, Jindřich Feld → his father, John Lambert, Karl Höller → Georg Höller); rejected with `imslp_p839_wrong`
+- Category collisions: the younger Leo Smit (1921–1999) and William Reed (1910–2002) no longer receive the works of their PD namesakes; no IMSLP page is listed under two composers
+- Six composers pointed at the wrong Wikidata item (politician, painter, writer, disambiguation pages, a duo); re-keyed via overrides with Wikidata fields re-derived. Jaroslav Kvapil (†1958) is no longer marked `pd`
+
+### Added
+- `data/overrides/composers.tsv` + `scripts/overrides.py` / `apply_overrides.py`: validated, sourced, hand-reviewed overrides applied last (re-key with re-derivation, value overrides, drops)
+- `scripts/refetch_composer_pages.py` (IMSLP composer pages into `imslp_cat_page` cache), `scripts/imslp_identity.py`, `scripts/remap_imslp_matches.py`
+- Column `imslp_match_evidence`; statuses `rejected_heuristic`, `rejected_p839`; methods `exact_name+life_dates`, `exact_name+wikilink`; qa flags `imslp_dates_conflict`, `imslp_p839_wrong`, `manual_override`
+- `check_release.py` gates: an IMSLP category held by more than one active composer; works owned by composers without an active match
+- Dumps **r011** (overrides) and **r012** (identity check)
 
 ## [3.1.0] - 2026-10-09
 
