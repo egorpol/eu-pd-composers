@@ -71,14 +71,130 @@ def _original_tokens(genre_cell: str) -> list[str]:
     return [_strip_arr(t) for t in _tokens(genre_cell) if not _is_arr_token(t)]
 
 
-def _concerto_instrumentation(low: str) -> bool:
-    """True for soloist+orchestra forms; never voice/chorus+orchestra."""
-    if "voice" in low or "chorus" in low or "choir" in low:
-        return False
-    if "with soloists" in low:
-        return True
-    # e.g. "for violin, orchestra" — not "for voices, orchestra"
-    return bool(re.search(r"for (?!voices?\b)[^,]+, orchestra$", low))
+# --- IMSLP "For …" instrumentation categories -------------------------------
+# Parsed into parts ("For 2 violins, viola, cello" → 2 violins | viola | cello)
+# and classified by whole words, never by substring ("flute" ≠ "lute").
+
+_PART_SPLIT = re.compile(r",\s*|\s+with\s+|\s+and\s+")
+_COUNT = re.compile(r"^(\d+)\s+(.+)$")
+_CHORUS_RE = re.compile(r"\b(chorus|choruses|choir|choirs)\b")
+_VOICE_RE = re.compile(r"\b(voices?|narrators?|speakers?)\b")
+_ORCH_RE = re.compile(r"\borchestras?\b|^strings$|^string orchestra$")
+_BAND_RE = re.compile(r"\bbands?\b|\b(wind|brass) ensembles?\b|^winds$")
+_ELECTRONIC_RE = re.compile(r"\b(electronics?|electronic sounds|tape|synthesizers?|computer)\b")
+_GUITAR_RE = re.compile(r"\b(guitars?|lutes?|archlutes?|vihuelas?|theorbos?)\b")
+_KEYBOARD_OTHER_RE = re.compile(
+    r"\b(harpsichords?|clavichords?|celestas?|harmoniums?|fortepianos?|virginals?|spinets?)\b"
+)
+_PIANO_RE = re.compile(r"^pianos?(\s+(\d+\s+hands|left hand|right hand))?$")
+_PLAYERS_RE = re.compile(r"^players?$")
+
+
+def _for_parts(low: str) -> list[tuple[str, int, str]]:
+    """'for 2 violins, viola' → [('instrument', 2, 'violins'), ('instrument', 1, 'viola')]."""
+    body = low[len("for ") :] if low.startswith("for ") else low
+    parts: list[tuple[str, int, str]] = []
+    for raw in _PART_SPLIT.split(body):
+        part = raw.strip()
+        if not part:
+            continue
+        count = 1
+        m = _COUNT.match(part)
+        if m:
+            count, part = int(m.group(1)), m.group(2).strip()
+        unaccompanied = part.startswith("unaccompanied ")
+        name = part.removeprefix("unaccompanied ").strip()
+        if _CHORUS_RE.search(name):
+            kind = "chorus"
+        elif _VOICE_RE.search(name):
+            kind = "voice_unacc" if unaccompanied else "voice"
+        elif _ORCH_RE.search(name):
+            kind = "orchestra"
+        elif _BAND_RE.search(name):
+            kind = "band"
+        elif _ELECTRONIC_RE.search(name):
+            kind = "electronic"
+        elif name in {"soloist", "soloists"}:
+            kind = "soloists"
+        elif _PLAYERS_RE.match(name):
+            kind = "players"
+        elif _PIANO_RE.match(name):
+            hands = re.search(r"(\d+)\s+hands", name)
+            if hands and int(hands.group(1)) >= 3:
+                count = max(count, 2)
+            kind = "piano"
+        elif name == "organ" or name == "organs":
+            kind = "organ"
+        elif _KEYBOARD_OTHER_RE.search(name) or name == "keyboard":
+            kind = "keyboard_other" if name != "keyboard" else "keyboard"
+        elif _GUITAR_RE.search(name):
+            kind = "guitar"
+        else:
+            kind = "instrument"
+        parts.append((kind, count, name))
+    return parts
+
+
+def force_family_from_for_category(token: str) -> Optional[str]:
+    """Map one IMSLP 'For …' category to a force family.
+
+    Returns None for tokens that carry no force on their own ('For 1 player').
+    Conventions: any chorus → choral; solo voice(s) with any accompaniment →
+    solo_voice; 3+ unaccompanied voices → choral; soloist(s) + orchestra or
+    string orchestra → concerto; one instrument ± one keyboard → solo_instrument;
+    2+ instrumentalists otherwise → chamber.
+    """
+    low = token.lower().strip()
+    if not low.startswith("for "):
+        return None
+    parts = _for_parts(low)
+    if not parts:
+        return None
+    kinds = [k for k, _, _ in parts]
+
+    if "chorus" in kinds:
+        return "choral"
+    if "voice" in kinds or "voice_unacc" in kinds:
+        voice_parts = [(k, n) for k, n, _ in parts if k.startswith("voice")]
+        if len(voice_parts) == len(parts):
+            if "voice_unacc" in kinds or sum(n for _, n in voice_parts) >= 3:
+                return "choral"
+        if "stage" in low:
+            return "stage_opera"
+        return "solo_voice"
+    if "orchestra" in kinds:
+        others = [k for k in kinds if k != "orchestra"]
+        return "concerto" if others else "orchestral"
+    if "band" in kinds:
+        return "wind_band"
+    if "electronic" in kinds:
+        return "electronic"
+    if kinds == ["players"]:
+        return "chamber" if parts[0][1] >= 2 else None
+    if "guitar" in kinds:
+        return "guitar"
+
+    keyboards = [(k, n) for k, n, _ in parts if k in {"piano", "organ", "keyboard_other", "keyboard"}]
+    others = [(k, n) for k, n, _ in parts if k not in {"piano", "organ", "keyboard_other", "keyboard"}]
+    if not others:
+        total = sum(n for _, n in keyboards)
+        kb_kinds = {k for k, _ in keyboards}
+        if kb_kinds == {"piano"}:
+            return "piano_ensemble" if total >= 2 else "piano_solo"
+        if kb_kinds == {"organ"}:
+            return "organ"
+        if kb_kinds <= {"keyboard_other", "keyboard"}:
+            return "keyboard_other"
+        return "piano_ensemble"
+    players = sum(n for _, n in others)
+    if players == 1 and sum(n for _, n in keyboards) <= 1:
+        return "solo_instrument"
+    return "chamber"
+
+
+# Ensemble-size labels only decide when no explicit instrumentation does
+# ('For 2 players' must not turn a 'For violin, piano' sonata into chamber).
+_WEAK_CHAMBER_TOKENS = {"Quartets", "Quintets", "Trios", "Duets", "Sextets", "Septets", "Octets"}
 
 
 def force_family_from_categories(genre_cell: str) -> tuple[str, str]:
@@ -91,116 +207,35 @@ def force_family_from_categories(genre_cell: str) -> tuple[str, str]:
         return "unclassified", "empty"
 
     hits: list[str] = []
+    weak_hits: list[str] = []
 
     for t in tokens:
         low = t.lower()
 
-        if t in {"Operas", "Operettas", "Musicals"} or (
-            low.startswith("for voices") and "stage" in low
-        ):
+        if low.startswith("for "):
+            family = force_family_from_for_category(t)
+            if family is None:
+                continue
+            if re.match(r"for \d+ players?$", low):
+                weak_hits.append(family)
+            else:
+                hits.append(family)
+            continue
+
+        if t in {"Operas", "Operettas", "Musicals"}:
             hits.append("stage_opera")
         if t in {"Ballets"}:
             hits.append("stage_ballet")
-
-        if t in {"Concertos"} or _concerto_instrumentation(low):
+        if t in {"Concertos"}:
             hits.append("concerto")
-        if t in {"Symphonies", "Overtures"} or low == "for orchestra":
+        if t in {"Symphonies", "Overtures"}:
             hits.append("orchestral")
-        if "orchestra" in low and "solo" not in low and t not in {"Concertos"}:
-            if low.startswith("for orchestra") or "chorus, orchestra" in low:
-                if "chorus" in low or "voices" in low:
-                    hits.append("choral")
-                else:
-                    hits.append("orchestral")
-
-        if any(
-            x in low
-            for x in (
-                "band",
-                "wind ensemble",
-                "brass ensemble",
-                "for wind",
-                "for brass",
-            )
-        ):
-            hits.append("wind_band")
-
         if t in {"Songs", "Lieder", "Mélodies", "Chansons", "Arias"}:
             hits.append("solo_voice")
-        if low in {
-            "for voice, piano",
-            "for voices with keyboard",
-            "for voice, orchestra",
-            "for voices with orchestra",
-            "for voices with solo instruments",
-        } or low.startswith("for voice"):
-            if "chorus" not in low and "choir" not in low:
-                hits.append("solo_voice")
-
-        if any(
-            x in low
-            for x in (
-                "chorus",
-                "choir",
-                "choral",
-                "for mixed chorus",
-                "unaccompanied chorus",
-                "for voices and chorus",
-                "for voices, mixed chorus",
-            )
-        ):
-            hits.append("choral")
         if t in {"Masses", "Requiems", "Cantatas", "Oratorios", "Motets"}:
             hits.append("choral")
-
-        if t in {"For piano 4 hands", "For 2 pianos", "For 3 pianos"} or "piano 4 hands" in low or "2 pianos" in low:
-            hits.append("piano_ensemble")
-        if t == "For piano" or low == "for piano":
-            hits.append("piano_solo")
-        if low == "for 1 player" and any(
-            x == "For piano" or x.lower() == "for piano" for x in tokens
-        ):
-            hits.append("piano_solo")
-
-        if t == "For organ" or low == "for organ":
-            hits.append("organ")
-        if any(x in low for x in ("harpsichord", "clavichord", "celesta", "harmonium")):
-            hits.append("keyboard_other")
-
-        if any(x in low for x in ("guitar", "lute", "vihuela", "theorbo")):
-            hits.append("guitar")
-
-        if t in {"Quartets", "Quintets", "Trios", "Duets", "Sextets", "Septets", "Octets"}:
-            hits.append("chamber")
-        if re.match(r"for [2-9] players$", low):
-            hits.append("chamber")
-        if re.match(r"for 2 violins, viola, cello$", low):
-            hits.append("chamber")
-        if re.search(r"for [^,]+, [^,]+, [^,]+", low) and "orchestra" not in low and "piano" in low:
-            hits.append("chamber")
-        if re.match(r"for [^,]+, piano$", low) and not low.startswith("for voice"):
-            # violin, piano / cello, piano → solo_instrument (sonata duo)
-            hits.append("solo_instrument")
-
-        if low.startswith("for ") and "orchestra" not in low and "chorus" not in low:
-            # generic solo instruments without piano already handled
-            solo_only = re.match(r"for ([a-z0-9 \-]+)$", low)
-            if solo_only:
-                inst = solo_only.group(1)
-                if inst in {"piano", "organ"}:
-                    pass
-                elif inst in {"guitar", "lute"}:
-                    hits.append("guitar")
-                elif "piano" not in inst and "voice" not in inst:
-                    if inst not in {
-                        "1 player",
-                        "2 players",
-                        "3 players",
-                        "4 players",
-                        "5 players",
-                    }:
-                        hits.append("solo_instrument")
-
+        if t in _WEAK_CHAMBER_TOKENS:
+            weak_hits.append("chamber")
         if any(x in low for x in ("electronic", "tape", "electro")):
             hits.append("electronic")
         if t in {"Etudes", "Studies", "Methods", "Exercises"}:
@@ -208,6 +243,8 @@ def force_family_from_categories(genre_cell: str) -> tuple[str, str]:
         if any(x in low for x in ("film", "incidental", "radio")):
             hits.append("film_media")
 
+    if not hits:
+        hits = weak_hits
     if not hits:
         return "other", "categories_unmapped"
 
@@ -230,9 +267,6 @@ def force_family_from_categories(genre_cell: str) -> tuple[str, str]:
         best = "piano_ensemble"
     elif "choral" in hits and "solo_voice" in hits:
         best = "choral"
-    elif "chamber" in hits and "solo_instrument" in hits:
-        if any(t in {"Quartets", "Quintets", "Trios"} for t in tokens):
-            best = "chamber"
     return best, "imslp_tags"
 
 
@@ -312,28 +346,39 @@ def force_family_from_instrumentation(instrumentation: str) -> tuple[str, str]:
     ):
         return "choral", "imslp_geninfo"
 
-    if any(x in low for x in ("band", "wind ensemble", "brass ensemble", "brass band")):
-        return "wind_band", "imslp_geninfo"
-
-    if "orchestra" in low:
-        # Soloist(s) + orchestra ≈ concerto; chorus+orchestra already caught as choral.
-        if re.search(
-            r"\b(violin|viola|cello|flute|oboe|clarinet|bassoon|trumpet|horn|"
-            r"trombone|piano|saxophone|harp|organ)\b",
-            low,
-        ) and "voice" not in low:
-            return "concerto", "imslp_geninfo"
-        return "orchestral", "imslp_geninfo"
-
+    # Instrument names containing a voice word ("double bass", "alto saxophone")
+    # must not read as singers.
+    no_instruments = re.sub(
+        r"\b(double bass|contrabass|(soprano|alto|tenor|baritone|bass)\s+"
+        r"(saxophone|clarinet|flute|recorder|trombone|tuba|oboe|viol|drum|guitar)s?)\b",
+        "",
+        low,
+    )
     voice_hit = bool(
         re.search(
             r"\b(voice|voices|soprano|mezzo|alto|contralto|tenor|baritone|"
             r"bass-baritone|bass|narrator)s?\b",
-            low,
+            no_instruments,
         )
     )
     if voice_hit:
         return "solo_voice", "imslp_geninfo"
+
+    if re.search(r"\b(band|wind ensemble|brass ensemble|brass band)\b", low):
+        return "wind_band", "imslp_geninfo"
+
+    parts = [p.strip() for p in re.split(r",|/|;|\+| and ", low) if p.strip()]
+    if "orchestra" in low:
+        # "violin and orchestra" ≈ concerto; a full orchestral roster that happens
+        # to list piano or harp is still orchestral.
+        soloist = re.search(
+            r"\b(violin|viola|cello|flute|oboe|clarinet|bassoon|trumpet|horn|"
+            r"trombone|piano|saxophone|harp|organ)\b",
+            low,
+        )
+        if soloist and len(parts) <= 3:
+            return "concerto", "imslp_geninfo"
+        return "orchestral", "imslp_geninfo"
 
     if "organ" in low and "piano" not in low:
         return "organ", "imslp_geninfo"
@@ -345,13 +390,11 @@ def force_family_from_instrumentation(instrumentation: str) -> tuple[str, str]:
     ):
         return "piano_ensemble", "imslp_geninfo"
 
-    # Single keyboard
-    if low in {"piano", "pianos", "piano solo", "harpsichord", "clavichord"} or (
-        re.fullmatch(r"piano(s)?", low)
-    ):
+    if low in {"harpsichord", "clavichord", "harmonium", "celesta"}:
+        return "keyboard_other", "imslp_geninfo"
+    if low in {"piano", "pianos", "piano solo"} or re.fullmatch(r"piano(s)?", low):
         return "piano_solo", "imslp_geninfo"
 
-    parts = [p.strip() for p in re.split(r",|/;| and ", low) if p.strip()]
     solo_kw = (
         "violin",
         "viola",
