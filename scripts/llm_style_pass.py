@@ -50,7 +50,9 @@ from style_vocab import (  # noqa: E402
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger("llm_style_pass")
 
-PROMPT_VERSION = "style-v1"
+# Versioned per condition so a grounded-only prompt change leaves closed rows valid.
+# style-v1 grounded was lead-only ("abstain if the lead is insufficient"): 65% abstained in the r014 pilot.
+PROMPT_VERSIONS = {"closed": "style-v1", "grounded": "style-v2"}
 SCHEMA_PATH = Path(__file__).resolve().parent / "llm_style_pass_schema.json"
 LEDGER_DIR = DATA_DIR / "llm_ledger"
 LABELS_PATH = LEDGER_DIR / "style_labels.jsonl"
@@ -138,7 +140,7 @@ def canonical_json(obj: Any) -> str:
     return json.dumps(obj, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
 
 
-def input_hash(record: dict[str, Any], prompt_version: str = PROMPT_VERSION) -> str:
+def input_hash(record: dict[str, Any], prompt_version: str) -> str:
     payload = {"prompt_version": prompt_version, "record": record}
     return hashlib.sha256(canonical_json(payload).encode("utf-8")).hexdigest()
 
@@ -208,13 +210,15 @@ def build_prompt(records: list[dict[str, Any]], *, condition: str) -> str:
         )
     else:
         condition_rule = (
-            "Grounded condition: base the answer on the supplied wikipedia_lead text for each "
-            "person. If the text is insufficient, abstain rather than guessing from memory."
+            "Grounded condition: each person comes with a wikipedia_lead. Use it to identify the "
+            "person and as evidence, together with your own knowledge of their music. Where the "
+            "lead and your memory conflict, prefer the lead. Abstain only if you cannot tell who "
+            "the person is or what kind of music they wrote."
         )
     eras = "|".join(ERA_SLUGS)
     return f"""You label classical composers with styles from a controlled vocabulary.
 
-Prompt version: {PROMPT_VERSION}
+Prompt version: {PROMPT_VERSIONS[condition]}
 
 Task: for each composer in the input, choose 0–3 style slugs (most characteristic first),
 one primary_period, and a confidence.
@@ -649,16 +653,17 @@ def run(args: argparse.Namespace) -> int:
 
     LEDGER_DIR.mkdir(parents=True, exist_ok=True)
     existing = load_ledger_keys(LABELS_PATH)
+    prompt_version = PROMPT_VERSIONS[args.condition]
     todo: list[dict[str, Any]] = []
     skipped = 0
     for rec in records:
-        h = input_hash(rec, PROMPT_VERSION)
+        h = input_hash(rec, prompt_version)
         key = (
             rec["composer_id"],
             args.condition,
             args.model,
             effort,
-            PROMPT_VERSION,
+            prompt_version,
             h,
         )
         if key in existing:
@@ -728,7 +733,7 @@ def run(args: argparse.Namespace) -> int:
             if cid in failed or cid not in by_id:
                 continue
             lab = by_id[cid]
-            h = input_hash(rec, PROMPT_VERSION)
+            h = input_hash(rec, prompt_version)
             rows_out.append(
                 {
                     "composer_id": cid,
@@ -736,7 +741,7 @@ def run(args: argparse.Namespace) -> int:
                     "backend": args.backend,
                     "model": args.model,
                     "effort": effort,
-                    "prompt_version": PROMPT_VERSION,
+                    "prompt_version": prompt_version,
                     "input_hash": h,
                     "styles": lab["styles"],
                     "primary_period": lab["primary_period"],
@@ -769,7 +774,7 @@ def run(args: argparse.Namespace) -> int:
             "ids": args.ids,
             "limit": args.limit,
             "batch_size": batch_size,
-            "prompt_version": PROMPT_VERSION,
+            "prompt_version": prompt_version,
         },
         "backend_cli_version": version,
         "model": args.model,

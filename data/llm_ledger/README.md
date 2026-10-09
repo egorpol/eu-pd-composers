@@ -25,7 +25,7 @@ pipeline.
 | `backend` | `codex` or `cursor` |
 | `model` | Pinned model id passed to the CLI |
 | `effort` | Reasoning effort (codex); empty string when unused |
-| `prompt_version` | Prompt constant, currently `style-v1` |
+| `prompt_version` | Per condition (`PROMPT_VERSIONS`): `closed` = `style-v1`; `grounded` = `style-v2` (lead + own knowledge). `style-v1` grounded rows are the strict lead-only variant, kept as a finding |
 | `input_hash` | sha256 of canonical JSON `{"prompt_version","record"}` for the input sent to the model |
 | `styles` | 0–3 vocabulary slugs, most characteristic first |
 | `primary_period` | One of `ERA_SLUGS` or `unknown` |

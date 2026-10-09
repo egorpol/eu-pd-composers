@@ -72,6 +72,7 @@ def test_build_report_fixture():
             "composer_id": "Q1",
             "model": "mA",
             "condition": "closed",
+            "prompt_version": "style-v1",
             "styles": ["serialism"],
             "primary_period": "modern",
             "confidence": "high",
@@ -80,6 +81,7 @@ def test_build_report_fixture():
             "composer_id": "Q2",
             "model": "mA",
             "condition": "closed",
+            "prompt_version": "style-v1",
             "styles": [],
             "primary_period": "unknown",
             "confidence": "low",
@@ -88,6 +90,7 @@ def test_build_report_fixture():
             "composer_id": "Q3",
             "model": "mA",
             "condition": "closed",
+            "prompt_version": "style-v1",
             "styles": ["minimalism"],
             "primary_period": "modern",
             "confidence": "medium",
@@ -96,6 +99,7 @@ def test_build_report_fixture():
             "composer_id": "Q1",
             "model": "mA",
             "condition": "grounded",
+            "prompt_version": "style-v2",
             "styles": ["serialism", "avant_garde"],
             "primary_period": "modern",
             "confidence": "high",
@@ -104,6 +108,7 @@ def test_build_report_fixture():
             "composer_id": "Q1",
             "model": "mB",
             "condition": "closed",
+            "prompt_version": "style-v1",
             "styles": ["avant_garde"],
             "primary_period": "early_20th_century",
             "confidence": "medium",
@@ -113,7 +118,7 @@ def test_build_report_fixture():
     assert "ground truth" in report["disclaimer"].lower() or "Not ground" in report["disclaimer"] or "no source is ground truth" in report["disclaimer"].lower()
 
     closed_a = next(
-        r for r in report["per_model_condition"] if r["model"] == "mA" and r["condition"] == "closed"
+        r for r in report["per_model_condition"] if r["model"] == "mA" and r["condition"] == "closed@style-v1"
     )
     assert closed_a["coverage_n"] == 3
     assert closed_a["abstain_n"] == 1
@@ -127,15 +132,35 @@ def test_build_report_fixture():
     assert closed_a["imslp_primary_period"]["accuracy"] == 1.0
 
     # inter-model on closed for Q1
-    im = next(r for r in report["inter_model"] if r["condition"] == "closed")
+    im = next(r for r in report["inter_model"] if r["condition"] == "closed@style-v1")
     assert im["n"] == 1
     assert im["mean_jaccard_styles"] == 0.0  # serialism vs avant_garde
 
     cvg = next(r for r in report["closed_vs_grounded"] if r["model"] == "mA")
     assert cvg["n"] == 1
+    assert (cvg["closed"], cvg["grounded"]) == ("closed@style-v1", "grounded@style-v2")
     assert cvg["mean_jaccard_styles"] == 0.5  # {serialism} vs {serialism, avant_garde}
 
     md = sa.render_markdown(report)
     assert "Wikidata" in md
     assert "IMSLP" in md
     assert "not ground truth" in md.lower() or "Not ground truth" in md
+
+
+def test_pair_agreement_counts_both_abstain_separately():
+    a = {
+        "Q1": {"styles": [], "primary_period": "unknown"},
+        "Q2": {"styles": ["romantic"], "primary_period": "romantic"},
+        "Q3": {"styles": ["baroque"], "primary_period": "baroque"},
+    }
+    b = {
+        "Q1": {"styles": [], "primary_period": "unknown"},
+        "Q2": {"styles": ["romantic"], "primary_period": "romantic"},
+        "Q3": {"styles": [], "primary_period": "unknown"},
+    }
+    out = sa.pair_agreement(a, b, ["Q1", "Q2", "Q3"])
+    assert out["n"] == 3
+    assert out["n_both_abstain_styles"] == 1
+    assert out["n_styles_labelled"] == 2
+    assert out["mean_jaccard_styles"] == 0.5  # Q2 = 1.0, Q3 = 0.0; Q1 not scored
+    assert out["n_period_known"] == 1

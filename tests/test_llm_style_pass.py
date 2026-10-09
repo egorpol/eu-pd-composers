@@ -43,6 +43,7 @@ def test_prompt_contains_no_forbidden_fields():
         assert field not in prompt
     assert "Ada Example" in prompt
     assert "style-v1" in prompt
+    assert "style-v2" in lsp.build_prompt(records, condition="grounded")
     # grounded adds lead only
     g = dict(records[0])
     g["wikipedia_lead"] = "A German composer of piano music."
@@ -226,14 +227,14 @@ def test_ledger_resume_skip(tmp_path, monkeypatch):
         "death_year": 1970,
         "citizenship_iso": "PL",
     }
-    h = lsp.input_hash(rec)
+    h = lsp.input_hash(rec, "style-v1")
     row = {
         "composer_id": "Q9",
         "condition": "closed",
         "backend": "codex",
         "model": "gpt-test",
         "effort": "low",
-        "prompt_version": lsp.PROMPT_VERSION,
+        "prompt_version": "style-v1",
         "input_hash": h,
         "styles": ["romantic"],
         "primary_period": "romantic",
@@ -249,13 +250,14 @@ def test_ledger_resume_skip(tmp_path, monkeypatch):
         "closed",
         "gpt-test",
         "low",
-        lsp.PROMPT_VERSION,
+        "style-v1",
         h,
     ) in keys
     # Different input_hash must not skip
     rec2 = dict(rec)
     rec2["citizenship_iso"] = "DE"
-    assert lsp.input_hash(rec2) != h
+    assert lsp.input_hash(rec2, "style-v1") != h
+    assert lsp.input_hash(rec, "style-v2") != h
 
 
 def test_scrub_child_env_drops_appimage_leaks(monkeypatch):

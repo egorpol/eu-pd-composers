@@ -106,6 +106,33 @@ def is_abstain(row: dict[str, Any]) -> bool:
     return (not styles) and str(row.get("primary_period", "")) == "unknown"
 
 
+def pair_agreement(
+    a: dict[str, dict[str, Any]], b: dict[str, dict[str, Any]], common: list[str]
+) -> dict[str, Any]:
+    """Agreement of two label sets on shared composers.
+
+    Both-abstain pairs are counted separately: scoring them as Jaccard 1.0 would let
+    shared silence pass for agreement on labels.
+    """
+    sa = {c: a[c].get("styles") or [] for c in common}
+    sb = {c: b[c].get("styles") or [] for c in common}
+    labelled = [c for c in common if sa[c] or sb[c]]
+    jacs = [jaccard(sa[c], sb[c]) for c in labelled]
+    pairs = [
+        (str(a[c].get("primary_period", "")), str(b[c].get("primary_period", "")))
+        for c in common
+    ]
+    known = [(x, y) for x, y in pairs if x != "unknown" and y != "unknown"]
+    return {
+        "n": len(common),
+        "n_both_abstain_styles": len(common) - len(labelled),
+        "n_styles_labelled": len(labelled),
+        "mean_jaccard_styles": sum(jacs) / len(jacs) if jacs else None,
+        "n_period_known": len(known),
+        "cohens_kappa_primary_period": cohens_kappa(known),
+    }
+
+
 def dominant_imslp_period(periods: list[str]) -> set[str]:
     """Most frequent mapped IMSLP period slug among works; ties → set."""
     counts: Counter[str] = Counter()
@@ -147,10 +174,11 @@ def build_report(
             periods.extend(pipe_split(val))
         imslp_dom[str(cid)] = dominant_imslp_period(periods)
 
-    # Group ledger by (model, condition); keep latest line per composer if duplicates
+    # Group ledger by (model, condition@prompt_version); keep latest line per composer if duplicates
     groups: dict[tuple[str, str], dict[str, dict[str, Any]]] = defaultdict(dict)
     for row in ledger:
-        key = (str(row.get("model", "")), str(row.get("condition", "")))
+        cond = f"{row.get('condition', '')}@{row.get('prompt_version', '')}"
+        key = (str(row.get("model", "")), cond)
         cid = str(row.get("composer_id", ""))
         groups[key][cid] = row
 
@@ -245,25 +273,12 @@ def build_report(
                 common = sorted(set(models[m1]) & set(models[m2]))
                 if not common:
                     continue
-                jacs = [
-                    jaccard(models[m1][c].get("styles") or [], models[m2][c].get("styles") or [])
-                    for c in common
-                ]
-                pairs = [
-                    (
-                        str(models[m1][c].get("primary_period", "")),
-                        str(models[m2][c].get("primary_period", "")),
-                    )
-                    for c in common
-                ]
                 inter_model.append(
                     {
                         "condition": condition,
                         "model_a": m1,
                         "model_b": m2,
-                        "n": len(common),
-                        "mean_jaccard_styles": sum(jacs) / len(jacs) if jacs else None,
-                        "cohens_kappa_primary_period": cohens_kappa(pairs),
+                        **pair_agreement(models[m1], models[m2], common),
                         "note": "pairwise model agreement; neither side is ground truth",
                     }
                 )
@@ -276,34 +291,20 @@ def build_report(
     for (model, condition), by_composer in groups.items():
         by_model[model][condition] = by_composer
     for model, conds in sorted(by_model.items()):
-        if "closed" not in conds or "grounded" not in conds:
-            continue
-        common = sorted(set(conds["closed"]) & set(conds["grounded"]))
-        if not common:
-            continue
-        jacs = [
-            jaccard(
-                conds["closed"][c].get("styles") or [],
-                conds["grounded"][c].get("styles") or [],
-            )
-            for c in common
-        ]
-        pairs = [
-            (
-                str(conds["closed"][c].get("primary_period", "")),
-                str(conds["grounded"][c].get("primary_period", "")),
-            )
-            for c in common
-        ]
-        closed_vs_grounded.append(
-            {
-                "model": model,
-                "n": len(common),
-                "mean_jaccard_styles": sum(jacs) / len(jacs) if jacs else None,
-                "cohens_kappa_primary_period": cohens_kappa(pairs),
-                "note": "closed vs grounded; neither condition is ground truth",
-            }
-        )
+        for closed in sorted(c for c in conds if c.startswith("closed@")):
+            for grounded in sorted(c for c in conds if c.startswith("grounded@")):
+                common = sorted(set(conds[closed]) & set(conds[grounded]))
+                if not common:
+                    continue
+                closed_vs_grounded.append(
+                    {
+                        "model": model,
+                        "closed": closed,
+                        "grounded": grounded,
+                        **pair_agreement(conds[closed], conds[grounded], common),
+                        "note": "closed vs grounded; neither condition is ground truth",
+                    }
+                )
 
     return {
         "disclaimer": (
@@ -406,17 +407,22 @@ def render_markdown(report: dict[str, Any]) -> str:
     lines.append("## Inter-model agreement")
     lines.append("")
     lines.append(
-        "Same condition, different models. κ on `primary_period`, mean Jaccard on styles. "
+        "Same condition, different models. Mean Jaccard on styles over pairs where at least "
+        "one model gave styles; κ on `primary_period` over pairs where both gave a period. "
         "Neither model is ground truth."
     )
     lines.append("")
     if report["inter_model"]:
-        lines.append("| condition | model A | model B | n | mean Jaccard | κ period |")
-        lines.append("|---|---|---|---:|---:|---:|")
+        lines.append(
+            "| condition | model A | model B | n | both abstain | Jaccard n | mean Jaccard "
+            "| κ n | κ period |"
+        )
+        lines.append("|---|---|---|---:|---:|---:|---:|---:|---:|")
         for row in report["inter_model"]:
             lines.append(
                 f"| {row['condition']} | {row['model_a']} | {row['model_b']} | {row['n']} | "
-                f"{fmt_num(row['mean_jaccard_styles'])} | "
+                f"{row['n_both_abstain_styles']} | {row['n_styles_labelled']} | "
+                f"{fmt_num(row['mean_jaccard_styles'])} | {row['n_period_known']} | "
                 f"{fmt_num(row['cohens_kappa_primary_period'])} |"
             )
     else:
@@ -425,16 +431,21 @@ def render_markdown(report: dict[str, Any]) -> str:
     lines.append("## Closed vs grounded agreement")
     lines.append("")
     lines.append(
-        "Same model, closed vs grounded. κ on `primary_period`, mean Jaccard on styles. "
+        "Same model, closed vs grounded. Same pair rules as above. "
         "Neither condition is ground truth."
     )
     lines.append("")
     if report["closed_vs_grounded"]:
-        lines.append("| model | n | mean Jaccard | κ period |")
-        lines.append("|---|---:|---:|---:|")
+        lines.append(
+            "| model | closed | grounded | n | both abstain | Jaccard n | mean Jaccard "
+            "| κ n | κ period |"
+        )
+        lines.append("|---|---|---|---:|---:|---:|---:|---:|---:|")
         for row in report["closed_vs_grounded"]:
             lines.append(
-                f"| {row['model']} | {row['n']} | {fmt_num(row['mean_jaccard_styles'])} | "
+                f"| {row['model']} | {row['closed']} | {row['grounded']} | {row['n']} | "
+                f"{row['n_both_abstain_styles']} | {row['n_styles_labelled']} | "
+                f"{fmt_num(row['mean_jaccard_styles'])} | {row['n_period_known']} | "
                 f"{fmt_num(row['cohens_kappa_primary_period'])} |"
             )
     else:
