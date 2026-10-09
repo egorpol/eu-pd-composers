@@ -22,6 +22,7 @@ from build_dump import eu_pd_fields  # noqa: E402
 from common import (  # noqa: E402
     SCHEMA_VERSION,
     TOOL_VERSION,
+    cache_get,
     dump_meta_path,
     dump_tsv_path,
     next_revision_id,
@@ -35,6 +36,7 @@ from force_family import (  # noqa: E402
     map_force_family_with_geninfo,
     map_genre_form,
 )
+from imslp import PAGE_CATS_NAMESPACE, filter_imslp_genre_categories  # noqa: E402
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger("remap_force")
@@ -170,6 +172,54 @@ def rollup_composers(composers: pd.DataFrame, works: pd.DataFrame) -> pd.DataFra
     return out
 
 
+def refresh_genre_categories(
+    works: pd.DataFrame, composers: pd.DataFrame
+) -> tuple[pd.DataFrame, dict[str, int]]:
+    """Rebuild imslp_genre_categories from the complete `imslp_page_cats` cache (offline).
+
+    Rows whose page is not cached keep their old cell; pages IMSLP reports as
+    missing keep their old cell too and are counted for review.
+    """
+    stats = Counter()
+    composer_cat = dict(
+        zip(
+            composers["composer_id"].astype(str),
+            composers["imslp_category"].map(_as_str),
+        )
+    )
+    works = works.copy()
+    works["imslp_genre_categories"] = works["imslp_genre_categories"].astype(object)
+    works["fetched_at"] = works["fetched_at"].astype(object)
+    for idx, row in works.iterrows():
+        pid = _as_int(row.get("imslp_pageid"))
+        entry = cache_get(PAGE_CATS_NAMESPACE, str(pid)) if pid is not None else None
+        if entry is None:
+            stats["not_in_cache"] += 1
+            continue
+        if entry.get("missing"):
+            stats["missing_on_imslp"] += 1
+            continue
+        if entry.get("title") and entry["title"] != _as_str(row.get("work_id")):
+            stats["renamed_on_imslp"] += 1
+        old = _as_str(row.get("imslp_genre_categories"))
+        new = pipe_join(
+            filter_imslp_genre_categories(
+                entry.get("categories", []),
+                composer_cat.get(str(row.get("composer_id")), ""),
+            )
+        )
+        stats["refreshed"] += 1
+        if new != old:
+            stats["cells_changed"] += 1
+            if not old and new:
+                stats["empty_to_nonempty"] += 1
+        if not new:
+            stats["still_empty"] += 1
+        works.at[idx, "imslp_genre_categories"] = new
+        works.at[idx, "fetched_at"] = entry.get("fetched_at") or row.get("fetched_at")
+    return works, dict(stats)
+
+
 def dump_year_from_meta(src: str) -> int:
     path = dump_meta_path(src)
     if path.exists():
@@ -200,7 +250,13 @@ def run(args: argparse.Namespace) -> None:
         len(works),
     )
 
+    category_stats: dict[str, int] = {}
+    if args.refresh_categories:
+        works, category_stats = refresh_genre_categories(works, composers)
+        log.info("imslp_genre_categories refresh: %s", category_stats)
+
     dump_year = dump_year_from_meta(src)
+    old_force = works[["force_family", "force_family_src"]].copy()
     changed_force = 0
     for idx, row in works.iterrows():
         genre = _as_str(row.get("imslp_genre_categories"))
@@ -255,6 +311,20 @@ def run(args: argparse.Namespace) -> None:
         if fam_counts.get(fam):
             log.info("  %5d  %s", fam_counts[fam], fam)
 
+    src_transitions = Counter(
+        f"{a} → {b}"
+        for a, b in zip(old_force["force_family_src"].map(_as_str), works["force_family_src"])
+        if a != b
+    )
+    family_transitions = Counter(
+        f"{a} → {b}"
+        for a, b in zip(old_force["force_family"].map(_as_str), works["force_family"])
+        if a != b
+    )
+    log.info("force_family_src transitions: %s", dict(src_transitions.most_common()))
+    log.info("force_family transitions (top 25): %s", dict(family_transitions.most_common(25)))
+    log.info("force_family_src now: %s", dict(Counter(works["force_family_src"]).most_common()))
+
     if args.dry_run:
         g = "imslp_genre_categories"
         ops = works[
@@ -292,7 +362,19 @@ def run(args: argparse.Namespace) -> None:
                 "duplicate_composer_rows_removed": merge_stats["duplicate_rows_removed"],
                 "work_rows_deduped": works_dropped,
             },
-            "notes": [
+            "category_refresh": category_stats,
+            "force_family_src_counts": dict(Counter(works["force_family_src"]).most_common()),
+            "force_family_src_transitions": dict(src_transitions.most_common()),
+            "force_family_transitions": dict(family_transitions.most_common()),
+            "notes": (
+                [
+                    "imslp_genre_categories rebuilt from complete per-page IMSLP categories "
+                    "(fixes truncated batch fetch: cllimit per batch, continuation ignored)"
+                ]
+                if args.refresh_categories
+                else []
+            )
+            + [
                 "Recomputed force_family ignoring (arr) tokens; opera/voice beat concerto",
                 "Merged duplicate composer_id rows; deduped works by imslp_pageid",
                 "Missing death_year → eu_pd_status=unknown_death",
@@ -306,6 +388,12 @@ def main() -> None:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--from-dump", required=True)
     p.add_argument("--to", help="Output revision id (default: next rNNN)")
+    p.add_argument(
+        "--refresh-categories",
+        action="store_true",
+        help="Rebuild imslp_genre_categories from the imslp_page_cats cache first "
+        "(fill it with refetch_work_categories.py)",
+    )
     p.add_argument("--dry-run", action="store_true")
     run(p.parse_args())
 

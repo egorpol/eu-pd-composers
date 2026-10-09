@@ -19,7 +19,12 @@ import pandas as pd
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from common import DATA_DIR, dump_meta_path, dump_tsv_path  # noqa: E402
+from force_family import force_family_from_categories  # noqa: E402
 from wikidata_enrich import STYLE_QID_TO_TAG  # noqa: E402
+
+# Share of works without any IMSLP genre/force category. r008 shipped 62.8%
+# because of a truncated category fetch; a complete crawl is well under 5%.
+MAX_EMPTY_CATEGORY_SHARE = 0.05
 
 # Known form / non-genre QIDs that must never appear in STYLE_QID_TO_TAG.
 STYLE_QID_DENYLIST = {
@@ -45,15 +50,104 @@ def _as_str(value) -> str:
     return text
 
 
-def check(dump_id: str, viewer_data: Path | None) -> list[str]:
+def _as_int(value) -> int | None:
+    text = _as_str(value)
+    try:
+        return int(float(text)) if text else None
+    except ValueError:
+        return None
+
+
+def check_data_quality(
+    composers: pd.DataFrame, works: pd.DataFrame, meta: dict
+) -> tuple[list[str], list[str]]:
+    """Invariants that would have caught the r008 crawl / rule / PD defects."""
     errors: list[str] = []
+    warnings: list[str] = []
+
+    # --- IMSLP category completeness ---
+    if "imslp_genre_categories" in works.columns and len(works):
+        empty = works["imslp_genre_categories"].map(_as_str).eq("").sum()
+        share = empty / len(works)
+        if share > MAX_EMPTY_CATEGORY_SHARE:
+            errors.append(
+                f"works with empty imslp_genre_categories: {empty} ({share:.1%}) "
+                f"> {MAX_EMPTY_CATEGORY_SHARE:.0%} — incomplete category crawl?"
+            )
+
+    # --- Stored imslp_tags labels match current category rules ---
+    if {"force_family", "force_family_src", "imslp_genre_categories"} <= set(works.columns):
+        tagged = works[works["force_family_src"].map(_as_str) == "imslp_tags"]
+        stale = [
+            (r.work_id, r.force_family, expected)
+            for r in tagged.itertuples()
+            for expected in [force_family_from_categories(_as_str(r.imslp_genre_categories))[0]]
+            if expected != _as_str(r.force_family)
+        ]
+        if stale:
+            examples = "; ".join(f"{w}: {got}≠{exp}" for w, got, exp in stale[:5])
+            errors.append(
+                f"imslp_tags labels disagree with current rules: {len(stale)} (e.g. {examples})"
+            )
+
+    # --- Composer rollups match works ---
+    if "works_count_total" in composers.columns:
+        actual = works.groupby(works["composer_id"].astype(str)).size()
+        stored = composers.set_index(composers["composer_id"].astype(str))["works_count_total"]
+        diff = (stored.map(_as_int).fillna(0) - actual.reindex(stored.index).fillna(0)).ne(0).sum()
+        if diff:
+            errors.append(f"works_count_total disagrees with works rows for {int(diff)} composers")
+    orphans = ~works["composer_id"].astype(str).isin(composers["composer_id"].astype(str))
+    if orphans.any():
+        errors.append(f"works rows with unknown composer_id: {int(orphans.sum())}")
+
+    # --- PD arithmetic (death_year + 71 vs. dump year) ---
+    created = str(meta.get("created_at_utc") or "")
+    if created[:4].isdigit() and {"death_year", "eu_pd_year", "eu_pd_status"} <= set(composers.columns):
+        year = int(created[:4])
+        bad = 0
+        for r in composers.itertuples():
+            death = _as_int(r.death_year)
+            if death is None:
+                ok = _as_str(r.eu_pd_status) == "unknown_death"
+            else:
+                expected = "pd" if death + 71 <= year else "not_pd"
+                ok = _as_int(r.eu_pd_year) == death + 71 and _as_str(r.eu_pd_status) == expected
+            bad += not ok
+        if bad:
+            errors.append(f"eu_pd_year/eu_pd_status inconsistent with death_year: {bad}")
+
+    # --- Review items (do not fail the release) ---
+    if "imslp_pageid" in works.columns:
+        shared = works.dropna(subset=["imslp_pageid"]).groupby("imslp_pageid")["composer_id"].nunique()
+        n_shared = int((shared > 1).sum())
+        if n_shared:
+            warnings.append(f"IMSLP pages listed under more than one composer: {n_shared}")
+    if "qa_flags" in composers.columns:
+        flags = composers["qa_flags"].map(_as_str).str.split("|").explode()
+        counts = flags[flags.ne("")].value_counts()
+        if len(counts):
+            warnings.append("composer qa_flags: " + ", ".join(f"{k}={v}" for k, v in counts.items()))
+    if "force_family_src" in works.columns:
+        llm = works["force_family_src"].map(_as_str).str.startswith("llm").sum()
+        warnings.append(f"LLM-derived force labels: {int(llm)} ({llm / max(len(works), 1):.1%})")
+
+    return errors, warnings
+
+
+def check(dump_id: str, viewer_data: Path | None) -> tuple[list[str], list[str]]:
+    errors: list[str] = []
+    warnings: list[str] = []
     c_path = dump_tsv_path("composers", dump_id)
     w_path = dump_tsv_path("works", dump_id)
     m_path = dump_meta_path(dump_id)
     if not c_path.exists() or not w_path.exists():
-        return [f"missing dump files for {dump_id}"]
+        return [f"missing dump files for {dump_id}"], warnings
     composers = pd.read_csv(c_path, sep="\t", low_memory=False)
     works = pd.read_csv(w_path, sep="\t", low_memory=False)
+    meta = json.loads(m_path.read_text(encoding="utf-8")) if m_path.exists() else {}
+    dq_errors, warnings = check_data_quality(composers, works, meta)
+    errors.extend(dq_errors)
 
     # --- IDs ---
     dup_c = composers["composer_id"].duplicated().sum()
@@ -148,7 +242,7 @@ def check(dump_id: str, viewer_data: Path | None) -> list[str]:
         for p in (manifest_path, composers_json, works_json):
             if not p.exists():
                 errors.append(f"missing viewer file {p}")
-                return errors
+                return errors, warnings
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
         if manifest.get("dump_id") != dump_id:
             errors.append(
@@ -169,7 +263,7 @@ def check(dump_id: str, viewer_data: Path | None) -> list[str]:
         if int(counts.get("works", -1)) != len(works):
             errors.append("manifest counts.works mismatch")
 
-    return errors
+    return errors, warnings
 
 
 def main() -> None:
@@ -181,7 +275,9 @@ def main() -> None:
         help="Optional viewer/data dir to cross-check JSON export",
     )
     args = p.parse_args()
-    errors = check(args.dump, args.viewer_data)
+    errors, warnings = check(args.dump, args.viewer_data)
+    for w in warnings:
+        print(f"  warn: {w}")
     if errors:
         print("FAIL")
         for e in errors:
