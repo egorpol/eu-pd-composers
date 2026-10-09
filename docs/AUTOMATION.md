@@ -27,7 +27,7 @@ On success it writes `data/{composers,works}_rNEXT.tsv`, `data/dump_meta_rNEXT.j
 
 Earlier **LLM** and **GenInfo** decisions are **carried forward** where the new crawl still leaves a work unclassified (same trust order as the manual pipeline: IMSLP tags → GenInfo → title → prior `llm*` fills). The refresh job does **not** call models in CI; residual LLM passes stay a maintained, approved local step (see [`PIPELINE.md`](PIPELINE.md)).
 
-Expect roughly **45–60 minutes** wall time for a cold crawl, on the order of **~6k IMSLP API requests** at **≤ 1 request/s**, using the contact User-Agent from `scripts/common.py` (`eu-pd-composers/…; research dump builder` + repo URL).
+Expect roughly **2–2.5 hours** wall time for a cold crawl: on the order of **~6k IMSLP API requests**, capped at **≤ 1 request/s** for every IMSLP call by `common.request_json` (`EU_PD_IMSLP_MIN_INTERVAL`, default 1.0 s), plus about 15 minutes of Wikimedia pageviews, using the contact User-Agent from `scripts/common.py` (`eu-pd-composers/…; research dump builder` + repo URL).
 
 After the pipeline, the workflow always re-runs offline checks in-process:
 
@@ -43,7 +43,7 @@ If `summary.json` has `has_data_changes: false`, the job finishes successfully *
 
 1. Repo → **Actions** → **Monthly dump refresh** → **Run workflow**.
 2. Optional input `date` (`YYYY-MM-DD`, UTC). Leave empty to use today UTC.
-3. Wait for the run (up to ~5 hours timeout; typical cold crawl is under an hour).
+3. Wait for the run (about 2–2.5 hours; the job times out after 5 hours).
 4. If data changed, review the opened PR; if not, read the job summary (“no data changes”).
 
 Equivalent local dry-run once the scripts exist (network + long):

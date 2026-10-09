@@ -10,7 +10,7 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable, Optional
-from urllib.parse import unquote
+from urllib.parse import unquote, urlparse
 
 import requests
 
@@ -18,7 +18,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 DATA_DIR = Path(os.environ.get("EU_PD_DATA_DIR", REPO_ROOT / "data"))
 CACHE_DIR = Path(os.environ.get("EU_PD_CACHE_DIR", REPO_ROOT / "data" / "cache"))
 
-TOOL_VERSION = "3.4.0"
+TOOL_VERSION = "3.4.1"
 SCHEMA_VERSION = 3
 
 # Product dumps use sequential revision ids (r001, r002, …). Calendar dates
@@ -164,6 +164,36 @@ def cache_set(namespace: str, key: str, payload: Any) -> None:
     path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
 
 
+# Politeness caps: minimum seconds between request starts per host. IMSLP was
+# told "at most 1 request per second"; every IMSLP call goes through here.
+MIN_INTERVAL_BY_HOST: dict[str, float] = {
+    "imslp.org": float(os.environ.get("EU_PD_IMSLP_MIN_INTERVAL", "1.0")),
+}
+_last_request_at: dict[str, float] = {}
+
+
+def _throttle(url: str) -> None:
+    host = (urlparse(url).hostname or "").lower()
+    interval = next(
+        (v for h, v in MIN_INTERVAL_BY_HOST.items() if host == h or host.endswith("." + h)),
+        0.0,
+    )
+    if interval <= 0:
+        return
+    wait = _last_request_at.get(host, float("-inf")) + interval - time.monotonic()
+    if wait > 0:
+        time.sleep(wait)
+    _last_request_at[host] = time.monotonic()
+
+
+def _retry_after(response: requests.Response) -> Optional[float]:
+    value = response.headers.get("Retry-After")
+    try:
+        return min(300.0, max(0.0, float(value))) if value else None
+    except ValueError:
+        return None
+
+
 def request_json(
     session: requests.Session,
     url: str,
@@ -176,10 +206,13 @@ def request_json(
     last_exc: Optional[Exception] = None
     for attempt in range(max_retries):
         try:
+            _throttle(url)
             response = session.get(url, params=params, timeout=timeout)
-            if response.status_code == 429:
-                wait = min(60.0, 2.0**attempt + 1.0)
-                log.warning("429 from %s — sleep %.1fs", url, wait)
+            if response.status_code in (429, 503):
+                wait = _retry_after(response)
+                if wait is None:
+                    wait = min(60.0, 2.0**attempt + 1.0)
+                log.warning("%d from %s — sleep %.1fs", response.status_code, url, wait)
                 time.sleep(wait)
                 continue
             response.raise_for_status()
