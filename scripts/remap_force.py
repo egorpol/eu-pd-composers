@@ -230,6 +230,8 @@ def dump_year_from_meta(src: str) -> int:
     if path.exists():
         try:
             meta = json.loads(path.read_text(encoding="utf-8"))
+            if meta.get("pd_reference_year") is not None:
+                return int(meta["pd_reference_year"])
             created = meta.get("created_at_utc") or ""
             if created[:4].isdigit():
                 return int(created[:4])
@@ -241,8 +243,8 @@ def dump_year_from_meta(src: str) -> int:
 def run(args: argparse.Namespace) -> None:
     src = args.from_dump
     out_id = args.to or next_revision_id()
-    composers = pd.read_csv(dump_tsv_path("composers", src), sep="\t", low_memory=False)
-    works = pd.read_csv(dump_tsv_path("works", src), sep="\t", low_memory=False)
+    composers = pd.read_csv(dump_tsv_path("composers", src), sep="\t", dtype=str, keep_default_na=False)
+    works = pd.read_csv(dump_tsv_path("works", src), sep="\t", dtype=str, keep_default_na=False)
     log.info("Loaded %d composers, %d works from %s", len(composers), len(works), src)
 
     composers, merge_stats = merge_composers(composers)
@@ -306,7 +308,8 @@ def run(args: argparse.Namespace) -> None:
     log.info("eu_pd_status rows changed: %d", pd_fixed)
 
     composers = rollup_composers(composers, works)
-    composers["dump_date"] = out_id
+    if "dump_date" in composers.columns:
+        composers["dump_date"] = out_id
     composers["schema_version"] = SCHEMA_VERSION
     if "dump_date" in works.columns:
         works["dump_date"] = out_id
@@ -358,6 +361,7 @@ def run(args: argparse.Namespace) -> None:
             "created_at_utc": datetime.now(timezone.utc).isoformat(),
             "derived_from_dump_id": src,
             "enrichment": "remap_force_ids_pd",
+            "pd_reference_year": dump_year,
             "output_files": {"composers": c_path.name, "works": w_path.name},
             "row_counts": {
                 "composers": int(len(composers)),

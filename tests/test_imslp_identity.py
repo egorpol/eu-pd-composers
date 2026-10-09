@@ -47,6 +47,17 @@ def composer(qid, name, birth, death, category, *, status="unverified_heuristic"
     }
 
 
+def test_preserves_collision_winner_audit_when_loser_is_already_rejected():
+    composers = pd.DataFrame([
+        composer("Q1", "Test Person", "1900", "1943", "Category:Test", status="matched",
+                 imslp_match_evidence="dates_agree|wikilink_agree|collision_won"),
+        composer("Q2", "Different Person", "1980", "", "Category:Test", status="rejected_heuristic",
+                 imslp_match_evidence="dates_conflict_strong|collision_lost"),
+    ])
+    out, _ = identity.resolve_matches(composers, {"Category:Test": page()})
+    assert out.imslp_match_evidence.tolist() == composers.imslp_match_evidence.tolist()
+
+
 @pytest.mark.parametrize("kind", ["person", "composer", "imslpcomposer", "performer"])
 def test_parse_all_templates(kind):
     text = page(kind=kind)["wikitext"].replace("|Biography Link", "|Alternate Names=Leopold Smit; Leo Smit, L. Smit\n|Biography Link")

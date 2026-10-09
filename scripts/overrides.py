@@ -301,6 +301,7 @@ def apply_composer_overrides(
         "overrides_applied": 0,
         "value_changes": [],
         "rekeys": [],
+        "already_applied": [],
         "drops": [],
         "works_rekeyed": 0,
         "works_dropped": 0,
@@ -322,6 +323,9 @@ def apply_composer_overrides(
 
     composer_ids = set(composers["composer_id"].map(str))
     allowed_fields = set(composers.columns) | {OP_DROP}
+    rekey_rows = tmp[tmp["field"] == OP_REKEY]
+    targets = {row["composer_id"]: _as_str(row["value"]).strip()
+               for _, row in rekey_rows.iterrows()}
 
     for i, row in tmp.iterrows():
         cid = _as_str(row["composer_id"]).strip()
@@ -329,10 +333,9 @@ def apply_composer_overrides(
         line = int(i) + 2
         if field and field not in allowed_fields:
             errors.append(f"line {line}: unknown field `{field}`")
-        if cid and cid not in composer_ids:
+        if cid and cid not in composer_ids and targets.get(cid) not in composer_ids:
             errors.append(f"line {line}: composer_id `{cid}` not present in dump")
 
-    rekey_rows = tmp[tmp["field"] == OP_REKEY]
     rekey_targets: dict[str, str] = {}
     for _, row in rekey_rows.iterrows():
         old = row["composer_id"]
@@ -340,14 +343,14 @@ def apply_composer_overrides(
         if not new:
             errors.append(f"{old}: re-key target is empty")
             continue
-        if new in composer_ids and new != old:
+        if old in composer_ids and new in composer_ids and new != old:
             errors.append(
                 f"{old}: re-key target `{new}` already exists as another composer"
             )
         if new in rekey_targets.values():
             errors.append(f"{old}: re-key target `{new}` is used by another re-key")
         rekey_targets[old] = new
-        if _is_qid(new) and common.cache_get("wikidata_entity", new) is None:
+        if old in composer_ids and _is_qid(new) and common.cache_get("wikidata_entity", new) is None:
             errors.append(
                 f"re-key target `{new}` has no cached wikidata_entity "
                 f"(fetch it into data/cache before applying overrides)"
@@ -357,6 +360,7 @@ def apply_composer_overrides(
 
     value_changes: list[dict[str, Any]] = []
     rekeys_report: list[dict[str, Any]] = []
+    already_applied: list[dict[str, str]] = []
     drops_report: list[dict[str, Any]] = []
     works_rekeyed = 0
     works_dropped = 0
@@ -374,6 +378,11 @@ def apply_composer_overrides(
             continue
         row = rekey.iloc[0]
         new_id = _as_str(row["value"]).strip()
+        if cid not in composer_ids and new_id in composer_ids:
+            old_to_new[cid] = new_id
+            touched.add(new_id)
+            already_applied.append({"old_composer_id": cid, "new_composer_id": new_id})
+            continue
         cmask = composers["composer_id"] == cid
         wmask = works["composer_id"] == cid
         n_works = int(wmask.sum())
@@ -517,6 +526,8 @@ def apply_composer_overrides(
         if not mask.any():
             continue
         old_id = new_to_old.get(cid, cid)
+        if old_id not in before_by_id.index and cid in before_by_id.index:
+            old_id = cid
         if old_id not in before_by_id.index:
             continue
         changes = _row_diff(before_by_id.loc[old_id], composers.loc[mask].iloc[0])
@@ -544,6 +555,7 @@ def apply_composer_overrides(
         "overrides_applied": int(len(overrides)),
         "value_changes": value_changes,
         "rekeys": rekeys_report,
+        "already_applied": already_applied,
         "drops": drops_report,
         "works_rekeyed": works_rekeyed,
         "works_dropped": works_dropped,

@@ -131,6 +131,15 @@ def test_existing_new_columns_and_missing_entity_are_preserved(source):
     assert report["qa_flags_counts"]["not_human"] == 1
 
 
+def test_preserves_qa_flags_from_later_pipeline_stages(source):
+    composers, _ = source
+    composers["qa_flags"] = ["death_rank_conflict|manual_override|imslp_dates_conflict",
+                              "imslp_p839_wrong", "manual_override"]
+    out, _ = remap_composers.remap_composers(composers, 2026)
+    assert out.qa_flags.tolist() == ["manual_override|imslp_dates_conflict",
+                                    "death_imprecise|imslp_p839_wrong", "manual_override"]
+
+
 @pytest.fixture
 def dump_files(tmp_path, monkeypatch, source):
     composers, calls = source

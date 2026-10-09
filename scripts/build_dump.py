@@ -572,6 +572,7 @@ def build(args: argparse.Namespace) -> None:
         "tool_version": TOOL_VERSION,
         "schema_version": SCHEMA_VERSION,
         "created_at_utc": datetime.now(timezone.utc).isoformat(),
+        "pd_reference_year": dump_year,
         "output_files": {
             "composers": composers_path.name,
             "works": works_path.name if works_path else None,

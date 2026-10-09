@@ -212,6 +212,8 @@ def run(args: argparse.Namespace) -> None:
     )
     log.info("Loaded %d composers, %d works from %s", len(composers), len(works), src)
     works_out, report = remap_work_evidence(composers, works)
+    if getattr(args, "preserve_schema", False):
+        works_out = works_out.reindex(columns=works.columns)
     composers_out = composers.copy()
     if "dump_date" in composers_out.columns:
         composers_out["dump_date"] = out_id
@@ -268,6 +270,7 @@ def main() -> None:
     parser.add_argument("--from-dump", required=True)
     parser.add_argument("--to", help="Output revision id (default: next rNNN)")
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--preserve-schema", action="store_true", help="Refresh existing evidence columns without adding columns")
     run(parser.parse_args())
 
 

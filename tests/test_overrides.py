@@ -817,3 +817,45 @@ def test_cli_empty_file_writes_dump_date_only(dump_dir):
             assert written[col].tolist() == source[col].tolist()
     meta = json.loads((dump_dir / "dump_meta_r998.json").read_text(encoding="utf-8"))
     assert meta["overrides"]["rows_applied"] == 0
+
+
+@pytest.mark.parametrize("target", ["Q88", "wiki:Person"])
+def test_already_rekeyed_applies_value_overrides_without_cache(tmp_path, monkeypatch, target):
+    monkeypatch.setattr(common, "CACHE_DIR", tmp_path)
+    composers = composers_frame()
+    works = works_frame()
+    composers.loc[composers.composer_id == "Q1", "composer_id"] = target
+    works.loc[works.composer_id == "Q1", "composer_id"] = target
+    ov = overrides_df([override_row("Q1", "composer_id", target),
+                       override_row("Q1", "name_display", "Alicia"),
+                       override_row("Q1", "death_year", "1949")])
+    out_c, out_w, report = overrides.apply_composer_overrides(composers, works, ov, pd_year=2026)
+    row = out_c[out_c.composer_id == target].iloc[0]
+    assert row.name_display == "Alicia"
+    assert row.death_year == "1949"
+    assert row.eu_pd_year == "2020"
+    assert "manual_override" in row.qa_flags
+    assert row.style_tags == "serialism"
+    assert report["rekeys"] == []
+    assert report["works_rekeyed"] == 0
+    assert report["already_applied"] == [{"old_composer_id": "Q1", "new_composer_id": target}]
+    pd.testing.assert_frame_equal(works, out_w)
+
+
+def test_rekey_then_reapply_is_idempotent(tmp_path, monkeypatch):
+    monkeypatch.setattr(common, "CACHE_DIR", tmp_path)
+    cache_entity("Q88", entity("Q88", birth=1910, death=1940))
+    ov = overrides_df([override_row("Q1", "composer_id", "Q88"), override_row("Q1", "name_aliases", "Reviewed")])
+    first_c, first_w, _ = overrides.apply_composer_overrides(composers_frame(), works_frame(), ov, pd_year=2026)
+    next_c, next_w, report = overrides.apply_composer_overrides(first_c, first_w, ov, pd_year=2026)
+    pd.testing.assert_frame_equal(first_c, next_c)
+    pd.testing.assert_frame_equal(first_w, next_w)
+    assert len(report["already_applied"]) == 1
+
+
+def test_rekey_is_stale_only_when_both_keys_missing(tmp_path, monkeypatch):
+    monkeypatch.setattr(common, "CACHE_DIR", tmp_path)
+    ov = overrides_df([override_row("Q999", "composer_id", "wiki:Absent"),
+                       override_row("Q999", "name_display", "Missing")])
+    with pytest.raises(ValueError, match="not present in dump"):
+        overrides.apply_composer_overrides(composers_frame(), works_frame(), ov, pd_year=2026)

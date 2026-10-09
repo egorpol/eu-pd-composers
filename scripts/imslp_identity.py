@@ -204,6 +204,8 @@ def resolve_matches(
             evidence.append("performer_page")
         if page_missing:
             evidence.append("page_missing")
+        if "collision_won" in common.pipe_split(row.get(EVIDENCE_COLUMN)):
+            evidence.append("collision_won")
         if entry is None:
             reason = "page_not_cached"
         elif page_missing:
