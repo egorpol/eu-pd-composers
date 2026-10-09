@@ -8,11 +8,24 @@ Pipeline diagram: [`docs/PIPELINE.md`](../docs/PIPELINE.md).
 
 | File | Rows | dump_id |
 |---|---|---|
-| `composers_r012.tsv` | 3368 | `r012` |
-| `works_r012.tsv` | 28980 | `r012` |
-| `dump_meta_r012.json` | — | companion meta |
+| `composers_r013.tsv` | 3368 | `r013` |
+| `works_r013.tsv` | 28980 | `r013` |
+| `dump_meta_r013.json` | — | companion meta |
 
-Only the **latest** revision is kept in `data/` in git. Older `rNNN` / calendar dumps are recoverable from **git history** (not from gitignored `data/cache/`). Prefer `r012` for the viewer (`scripts/export_viewer_json.py --dump r012`).
+Only the **latest** revision is kept in `data/` in git. Older `rNNN` / calendar dumps are recoverable from **git history** (not from gitignored `data/cache/`). Prefer `r013` for the viewer (`scripts/export_viewer_json.py --dump r013`).
+
+### What changed since r012
+
+- **r013 — work-level IMSLP evidence**, built with `scripts/pipeline.py derive` (one revision; the stages are listed in its meta). Four new works columns come from each work page's own IMSLP categories:
+
+| Column | Coverage | Content |
+|---|---|---|
+| `imslp_style` | 99.7% | IMSLP period style, pipe list (`Romantic`, `Early 20th century`, `Modern`, …) |
+| `imslp_first_published` | 73.8% | earliest `Works first published in YYYY` |
+| `imslp_copyright_flags` | — | IMSLP's own flags, normalised: `nonpd_eu` (4,575 works), `nonpd_us`, `pd_eu_rost`, `pd_ca_rost`, `nonpd_ca_text`, `permission_granted` |
+| `imslp_librettists` | 27.2% | `Last, First` from `…/Librettist` categories |
+
+  IMSLP flags 4,510 of 7,825 works by `not_pd` composers as not PD in the EU, but only 65 of 20,351 works by `pd` composers. Those 65 are mostly vocal or posthumously published works, the cases a composer-only heuristic cannot see. The flag is IMSLP's judgement, not legal advice either.
 
 ### What changed since r010
 
@@ -76,13 +89,20 @@ python scripts/remap_force.py --from-dump r008 --to r009 --refresh-categories
 # Wikidata dates / scope / qa_flags from cache (offline)
 python scripts/remap_composers.py --from-dump r009 --to r010
 
+# Since v3.3.0 the whole chain is one command (docs/PIPELINE.md):
+python scripts/pipeline.py derive --from-dump r012 --to r013      # offline stages
+python scripts/pipeline.py refresh --base r013                     # crawl + all stages (docs/AUTOMATION.md)
+
+# Individual steps (what the pipeline runs):
 # Hand-reviewed overrides (offline), then IMSLP identity check (composer pages: network, ~1 min)
 python scripts/apply_overrides.py --from-dump r010 --to r011
 python scripts/refetch_composer_pages.py --dump r011
 python scripts/remap_imslp_matches.py --from-dump r011 --to r012
 
-python scripts/export_viewer_json.py --dump r012
-python scripts/check_release.py --dump r012 --viewer-data viewer/data
+python scripts/remap_work_evidence.py --from-dump r012 --to r013
+
+python scripts/export_viewer_json.py --dump r013
+python scripts/check_release.py --dump r013 --viewer-data viewer/data
 ```
 
 Caches: `data/cache/` (gitignored).
