@@ -1,13 +1,13 @@
 {
-  "dump_id": "r013",
-  "dump_label": "dump r013 \u00b7 built 2026-10-09",
-  "created_at_utc": "2026-10-09T15:29:07.119781+00:00",
+  "dump_id": "r014",
+  "dump_label": "dump r014 \u00b7 built 2026-10-09",
+  "created_at_utc": "2026-10-09T23:28:40.359622+00:00",
   "schema_version": 3,
-  "generated_at_utc": "2026-10-09T18:02:42.010090+00:00",
+  "generated_at_utc": "2026-10-09T23:28:44.781453+00:00",
   "counts": {
-    "composers": 3368,
-    "works": 28980,
-    "composers_with_works": 1057
+    "composers": 3369,
+    "works": 29026,
+    "composers_with_works": 1058
   },
   "files": {
     "composers": "composers.json",
@@ -160,9 +160,9 @@
       "ZA"
     ],
     "imslp_style": {
-      "Romantic": 16016,
-      "Early 20th century": 9815,
-      "Modern": 2772,
+      "Romantic": 16048,
+      "Early 20th century": 9841,
+      "Modern": 2775,
       "Classical": 73,
       "Jazz": 72,
       "Baroque": 44,
@@ -175,6 +175,7 @@
     "force_family_src": [
       "arr_only",
       "categories_unmapped",
+      "empty",
       "imslp_geninfo",
       "imslp_tags",
       "llm",
@@ -185,10 +186,10 @@
   },
   "style_tags_coverage": {
     "tagged": 227,
-    "total": 3368,
+    "total": 3369,
     "wikidata": 153,
     "llm": 74
   },
   "disclaimer": "EU public-domain status is a live death-year + 70 years heuristic (counted from 1 January), not legal advice; composers without a death date are shown as having no death date. Linked IMSLP entries are work pages, not a verified score-file inventory. Force and style tags are research aids and often wrong (incomplete IMSLP/Wikidata data, heuristics, or LLM guesses)\u2014verify before relying on them.",
-  "pageviews_window_label": "2025"
+  "pageviews_window_label": "2025-10..2026-09"
 }

@@ -1,40 +1,40 @@
 {
-  "dump_id": "r013",
-  "tool_version": "3.3.0",
+  "dump_id": "r014",
+  "tool_version": "3.4.2",
   "schema_version": 3,
-  "created_at_utc": "2026-10-09T15:29:07.119781+00:00",
-  "derived_from_dump_id": "r012",
-  "enrichment": "pipeline_derive",
+  "created_at_utc": "2026-10-09T23:28:40.359622+00:00",
+  "derived_from_dump_id": "r013",
+  "enrichment": "pipeline_refresh",
   "output_files": {
-    "composers": "composers_r013.tsv",
-    "works": "works_r013.tsv"
+    "composers": "composers_r014.tsv",
+    "works": "works_r014.tsv"
   },
   "row_counts": {
-    "composers": 3368,
-    "works": 28980
+    "composers": 3369,
+    "works": 29026
   },
   "coverage": {
     "imslp_style": {
-      "count": 28903,
-      "pct": 99.73
+      "count": 28964,
+      "pct": 99.79
     },
     "imslp_first_published": {
-      "count": 21390,
-      "pct": 73.81
+      "count": 21443,
+      "pct": 73.88
     },
     "imslp_copyright_flags": {
-      "count": 6445,
-      "pct": 22.24
+      "count": 6461,
+      "pct": 22.26
     },
     "imslp_librettists": {
-      "count": 7891,
-      "pct": 27.23
+      "count": 7913,
+      "pct": 27.26
     }
   },
   "style_counts": {
-    "Romantic": 16015,
-    "Early 20th century": 9815,
-    "Modern": 2772,
+    "Romantic": 16047,
+    "Early 20th century": 9841,
+    "Modern": 2775,
     "Classical": 73,
     "Jazz": 72,
     "Baroque": 44,
@@ -48,20 +48,20 @@
   },
   "copyright_token_counts": {
     "nonpd_ca_text": 35,
-    "nonpd_eu": 4575,
-    "nonpd_us": 3503,
+    "nonpd_eu": 4587,
+    "nonpd_us": 3516,
     "pd_ca_rost": 32,
     "pd_eu_rost": 342,
     "permission_granted": 1
   },
   "unmapped_copyright_categories": {},
-  "distinct_librettists": 3805,
+  "distinct_librettists": 3818,
   "eu_pd_status_x_nonpd_eu": {
-    "not_pd \u00d7 no_nonpd_eu": 3315,
-    "not_pd \u00d7 nonpd_eu": 4510,
-    "pd \u00d7 no_nonpd_eu": 20286,
+    "not_pd \u00d7 no_nonpd_eu": 3307,
+    "not_pd \u00d7 nonpd_eu": 4522,
+    "pd \u00d7 no_nonpd_eu": 20324,
     "pd \u00d7 nonpd_eu": 65,
-    "unknown_death \u00d7 no_nonpd_eu": 804
+    "unknown_death \u00d7 no_nonpd_eu": 808
   },
   "pd_composer_nonpd_eu_examples": [
     {
@@ -171,7 +171,7 @@
     }
   ],
   "missing_cache": 0,
-  "redirect_or_missing_page": 17,
+  "redirect_or_missing_page": 61,
   "notes": [
     "Offline parse of cached IMSLP work-page categories (imslp_page_cats)",
     "Added imslp_style, imslp_first_published, imslp_copyright_flags, imslp_librettists after composition_year",
@@ -181,15 +181,26 @@
     "Composers copied unchanged except dump_date; works dump_date stamped only when present"
   ],
   "pd_reference_year": 2026,
-  "source_dump_id": "r012",
+  "source_dump_id": "2026-10-09",
   "stages": [
+    {
+      "script": "build_dump.py",
+      "dump_id": "2026-10-09",
+      "enrichment": "build_dump",
+      "row_counts": {
+        "composers": 3369,
+        "works": 29039,
+        "imslp_matched_p839": 976,
+        "imslp_unverified_heuristic": 299
+      }
+    },
     {
       "script": "remap_force.py",
       "dump_id": "pipeline_stage_01",
       "enrichment": "remap_force_ids_pd",
       "row_counts": {
-        "composers": 3368,
-        "works": 28980,
+        "composers": 3369,
+        "works": 29039,
         "force_rows_changed": 0,
         "pd_rows_changed": 0,
         "duplicate_composer_rows_removed": 0,
@@ -201,8 +212,8 @@
       "dump_id": "pipeline_stage_02",
       "enrichment": "carry_forward",
       "row_counts": {
-        "composers": 3368,
-        "works": 28980
+        "composers": 3369,
+        "works": 29039
       }
     },
     {
@@ -210,8 +221,8 @@
       "dump_id": "pipeline_stage_03",
       "enrichment": "remap_composers_wikidata",
       "row_counts": {
-        "composers": 3368,
-        "works": 28980
+        "composers": 3369,
+        "works": 29039
       }
     },
     {
@@ -219,8 +230,8 @@
       "dump_id": "pipeline_stage_04",
       "enrichment": "apply_composer_overrides",
       "row_counts": {
-        "composers": 3368,
-        "works": 28980
+        "composers": 3369,
+        "works": 29039
       }
     },
     {
@@ -228,8 +239,8 @@
       "dump_id": "pipeline_stage_05",
       "enrichment": "remap_imslp_identity",
       "row_counts": {
-        "composers": 3368,
-        "works": 28980
+        "composers": 3369,
+        "works": 29026
       }
     },
     {
@@ -237,13 +248,16 @@
       "dump_id": "pipeline_stage_06",
       "enrichment": "remap_work_evidence",
       "row_counts": {
-        "composers": 3368,
-        "works": 28980
+        "composers": 3369,
+        "works": 29026
       }
     }
   ],
-  "crawl_date": null,
-  "pageviews_range": null,
+  "crawl_date": "2026-10-09",
+  "pageviews_range": [
+    "20251001",
+    "20260930"
+  ],
   "composer_columns": [
     "composer_id",
     "name_display",
@@ -276,15 +290,15 @@
     "imslp_match_method",
     "imslp_match_evidence",
     "imslp_works_count",
-    "work_categories_present",
-    "works_count_by_category",
-    "works_count_total",
     "pageviews_enwiki",
     "pageviews_window",
     "schema_version",
     "dump_date",
     "legacy_notable_works_raw",
-    "legacy_remarks_raw"
+    "legacy_remarks_raw",
+    "work_categories_present",
+    "works_count_by_category",
+    "works_count_total"
   ],
   "work_columns": [
     "work_id",
@@ -307,27 +321,224 @@
     "imslp_librettists"
   ],
   "carry_forward": {
-    "base_dump_id": "r012",
+    "base_dump_id": "r013",
     "carried_forward": {
-      "force_family": 0,
-      "instrumentation_raw": 0,
-      "piece_style_raw": 0,
-      "composition_year": 0,
-      "style_tags": 0
+      "force_family": 366,
+      "instrumentation_raw": 198,
+      "piece_style_raw": 200,
+      "composition_year": 94,
+      "style_tags": 74
     },
     "lost_rows": {
-      "works": [],
-      "composers": []
+      "works": [
+        [
+          "Q330862",
+          "249764"
+        ],
+        [
+          "Q330862",
+          "1349127"
+        ],
+        [
+          "Q330862",
+          "26913"
+        ],
+        [
+          "Q330862",
+          "988352"
+        ],
+        [
+          "Q330862",
+          "1485099"
+        ],
+        [
+          "Q330862",
+          "1521171"
+        ],
+        [
+          "Q330862",
+          "777549"
+        ],
+        [
+          "Q330862",
+          "782244"
+        ],
+        [
+          "Q330862",
+          "1469036"
+        ],
+        [
+          "Q330862",
+          "1513007"
+        ],
+        [
+          "Q330862",
+          "1498633"
+        ],
+        [
+          "Q330862",
+          "1324836"
+        ],
+        [
+          "Q330862",
+          "1635521"
+        ],
+        [
+          "Q330862",
+          "144988"
+        ],
+        [
+          "Q330862",
+          "102726"
+        ],
+        [
+          "Q330862",
+          "1326036"
+        ],
+        [
+          "Q330862",
+          "458520"
+        ],
+        [
+          "Q330862",
+          "1328591"
+        ],
+        [
+          "Q330862",
+          "102873"
+        ],
+        [
+          "Q330862",
+          "1568538"
+        ],
+        [
+          "Q330862",
+          "1544506"
+        ],
+        [
+          "Q330862",
+          "1348470"
+        ],
+        [
+          "Q330862",
+          "1368136"
+        ],
+        [
+          "Q330862",
+          "1365884"
+        ],
+        [
+          "Q330862",
+          "102788"
+        ],
+        [
+          "Q330862",
+          "102770"
+        ],
+        [
+          "Q503005",
+          "1528902"
+        ],
+        [
+          "Q503005",
+          "1528428"
+        ],
+        [
+          "Q503005",
+          "1528333"
+        ],
+        [
+          "Q503005",
+          "1528416"
+        ],
+        [
+          "Q503005",
+          "1528038"
+        ],
+        [
+          "Q503005",
+          "1528342"
+        ],
+        [
+          "Q503005",
+          "1528250"
+        ],
+        [
+          "Q503005",
+          "1528141"
+        ],
+        [
+          "Q503005",
+          "1528904"
+        ],
+        [
+          "Q503005",
+          "1528331"
+        ],
+        [
+          "Q503005",
+          "1528418"
+        ],
+        [
+          "Q503005",
+          "1528332"
+        ],
+        [
+          "Q503005",
+          "1528419"
+        ],
+        [
+          "Q503005",
+          "1528556"
+        ],
+        [
+          "Q503005",
+          "1528903"
+        ],
+        [
+          "Q503005",
+          "1528088"
+        ],
+        [
+          "Q557525",
+          "1640386"
+        ],
+        [
+          "Q709658",
+          "943126"
+        ]
+      ],
+      "composers": [
+        "Q6831259",
+        "Q330862",
+        "Q4731863",
+        "Q709658",
+        "Q276413",
+        "wiki:John_Mitchell"
+      ]
     },
     "lost_decisions": {
-      "force_family": [],
+      "force_family": [
+        [
+          "Q503005",
+          "1528333"
+        ],
+        [
+          "Q503005",
+          "1528088"
+        ],
+        [
+          "Q557525",
+          "1640386"
+        ]
+      ],
       "instrumentation_raw": [],
       "piece_style_raw": [],
       "composition_year": [],
       "style_tags": []
     },
     "lost_decision_counts": {
-      "force_family": 0,
+      "force_family": 3,
       "instrumentation_raw": 0,
       "piece_style_raw": 0,
       "composition_year": 0,
