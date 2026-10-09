@@ -236,7 +236,7 @@ def export(dump_id: str, out_dir: Path) -> None:
             "EU public-domain status is a live death-year + 70 years heuristic "
             "(counted from 1 January), not legal advice; composers without a death "
             "date are shown as having no death date. Linked IMSLP entries are work "
-            "pages, not a verified score-file inventory. Force, period, and movement "
+            "pages, not a verified score-file inventory. Force and style "
             "tags are research aids and often wrong (incomplete IMSLP/Wikidata data, "
             "heuristics, or LLM guesses)—verify before relying on them."
         ),
