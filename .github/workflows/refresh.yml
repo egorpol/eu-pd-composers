@@ -1,0 +1,223 @@
+name: Monthly dump refresh
+
+on:
+  workflow_dispatch:
+    inputs:
+      date:
+        description: "Refresh date (YYYY-MM-DD, UTC). Leave empty for today."
+        required: false
+        type: string
+        default: ""
+  # schedule:
+  #   - cron: "17 3 2 * *"  # enable after IMSLP has been notified (see docs/AUTOMATION.md)
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements*.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt
+
+      - name: Validate date
+        env:
+          INPUT_DATE: ${{ inputs.date }}
+        run: |
+          set -euo pipefail
+          if [ -z "${INPUT_DATE}" ]; then
+            DATE="$(date -u +%Y-%m-%d)"
+          else
+            if ! printf '%s\n' "${INPUT_DATE}" | grep -Eq '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'; then
+              echo "Invalid date input (expected YYYY-MM-DD): ${INPUT_DATE}" >&2
+              exit 1
+            fi
+            DATE="${INPUT_DATE}"
+          fi
+          echo "DATE=${DATE}" >> "${GITHUB_ENV}"
+          echo "Using refresh date ${DATE}"
+
+      - name: Find PREV revision
+        id: prev
+        run: |
+          set -euo pipefail
+          PREV="$(ls data/composers_r*.tsv | sed -E 's/.*composers_(r[0-9]+)\.tsv/\1/' | sort | tail -1)"
+          if [ -z "${PREV}" ]; then
+            echo "No composers_r*.tsv found under data/" >&2
+            exit 1
+          fi
+          echo "PREV=${PREV}" >> "${GITHUB_ENV}"
+          echo "prev=${PREV}" >> "${GITHUB_OUTPUT}"
+          echo "Base revision: ${PREV}"
+
+      - name: Run refresh pipeline
+        id: pipeline
+        env:
+          TQDM_MININTERVAL: "60"  # progress bars every minute, not per item, in non-TTY logs
+        run: |
+          set -euo pipefail
+          # stdout is captured for the REVISION= line; stderr (progress heartbeats) streams live.
+          set +e
+          python scripts/pipeline.py refresh --base "${PREV}" --date "${DATE}" \
+            >pipeline.stdout 2> >(tee pipeline.stderr >&2)
+          pipeline_rc=$?
+          set -e
+          cat pipeline.stdout pipeline.stderr > pipeline.log
+          if [ "${pipeline_rc}" -ne 0 ]; then
+            echo "pipeline exited ${pipeline_rc}" >&2
+            exit "${pipeline_rc}"
+          fi
+          REVISION_LINE="$(tail -n 1 pipeline.stdout)"
+          case "${REVISION_LINE}" in
+            REVISION=r[0-9]*)
+              NEXT="${REVISION_LINE#REVISION=}"
+              ;;
+            *)
+              echo "Pipeline did not end with REVISION=rNNN (got: ${REVISION_LINE})" >&2
+              exit 1
+              ;;
+          esac
+          echo "NEXT=${NEXT}" >> "${GITHUB_ENV}"
+          echo "next=${NEXT}" >> "${GITHUB_OUTPUT}"
+          echo "New revision: ${NEXT}"
+
+      - name: Unit tests (offline)
+        run: python -m pytest tests -q
+
+      - name: Release gates (new dump vs PREV)
+        run: |
+          set -euo pipefail
+          python scripts/check_release.py \
+            --dump "${NEXT}" \
+            --viewer-data viewer/data \
+            --against "${PREV}"
+
+      - name: Diff dumps
+        id: diff
+        run: |
+          set -euo pipefail
+          python scripts/diff_dumps.py "${PREV}" "${NEXT}" \
+            --out diff.md \
+            --summary-json summary.json
+          HAS_CHANGES="$(python -c 'import json; print("true" if json.load(open("summary.json"))["has_data_changes"] else "false")')"
+          echo "has_data_changes=${HAS_CHANGES}" >> "${GITHUB_OUTPUT}"
+          echo "has_data_changes=${HAS_CHANGES}" >> "${GITHUB_ENV}"
+          echo "has_data_changes=${HAS_CHANGES}"
+
+      - name: Open refresh PR
+        if: env.has_data_changes == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          BRANCH="refresh/${NEXT}-${DATE}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "${BRANCH}"
+
+          git rm -f "data/composers_${PREV}.tsv" "data/works_${PREV}.tsv" "data/dump_meta_${PREV}.json"
+          git add \
+            "data/composers_${NEXT}.tsv" \
+            "data/works_${NEXT}.tsv" \
+            "data/dump_meta_${NEXT}.json" \
+            viewer/data
+
+          git commit -m "Refresh dump ${NEXT} (${DATE})"
+          git push -u origin "${BRANCH}"
+
+          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          {
+            echo "## Data refresh \`${NEXT}\`"
+            echo
+            echo "- **Date:** ${DATE}"
+            echo "- **Revision:** \`${PREV}\` → \`${NEXT}\`"
+            echo "- **Workflow run:** ${RUN_URL}"
+            echo
+            echo "Tests and release gates passed in this run (PRs created with \`GITHUB_TOKEN\` do not trigger \`checks.yml\`)."
+            echo
+            echo "---"
+            echo
+            cat diff.md
+          } > pr-body.md
+
+          PR_URL="$(gh pr create \
+            --title "Refresh dump ${NEXT} (${DATE})" \
+            --body-file pr-body.md \
+            --base main \
+            --head "${BRANCH}")"
+          echo "PR_URL=${PR_URL}" >> "${GITHUB_ENV}"
+          echo "Opened ${PR_URL}"
+
+          if gh label list --json name -q '.[].name' | grep -Fxq 'data-refresh'; then
+            gh pr edit "${PR_URL}" --add-label data-refresh
+          else
+            echo "Label data-refresh not present; skipping"
+          fi
+
+      - name: Skip PR (no data changes)
+        if: env.has_data_changes == 'false'
+        run: |
+          echo "No data changes between ${PREV} and ${NEXT}; finishing without a PR."
+
+      - name: Upload refresh artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: refresh-${{ github.run_id }}
+          retention-days: 14
+          if-no-files-found: warn
+          # The pipeline keeps its staging dir (.pipeline-*) only when a stage fails.
+          include-hidden-files: true
+          path: |
+            pipeline.log
+            diff.md
+            summary.json
+            .pipeline-*/
+
+      - name: Job summary
+        if: always()
+        run: |
+          set -euo pipefail
+          {
+            echo "## Dump refresh"
+            echo
+            echo "- **Date:** ${DATE:-unknown}"
+            echo "- **PREV:** ${PREV:-unknown}"
+            echo "- **NEXT:** ${NEXT:-n/a}"
+            echo "- **has_data_changes:** ${has_data_changes:-n/a}"
+            if [ -n "${PR_URL:-}" ]; then
+              echo "- **PR:** ${PR_URL}"
+            elif [ "${has_data_changes:-}" = "true" ]; then
+              echo "- **PR:** attempted (see logs)"
+            elif [ "${has_data_changes:-}" = "false" ]; then
+              echo "- **PR:** skipped (no data changes)"
+            else
+              echo "- **PR:** not opened (pipeline or gates may have failed)"
+            fi
+            echo
+            echo "Artifacts (pipeline.log, diff.md, summary.json, staging if present) are retained for 14 days."
+            if [ -f summary.json ]; then
+              echo
+              echo "### Diff summary"
+              echo
+              echo '```json'
+              cat summary.json
+              echo
+              echo '```'
+            fi
+          } >> "${GITHUB_STEP_SUMMARY}"

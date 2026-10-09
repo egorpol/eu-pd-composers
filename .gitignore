@@ -27,3 +27,6 @@ data/cache/
 
 # Local LLM reassessment writeups (not for publish)
 assessments/
+
+# Pipeline staging dirs (kept on failure)
+.pipeline-*/

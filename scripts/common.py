@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import re
 import time
 from datetime import datetime, timezone
@@ -14,10 +15,10 @@ from urllib.parse import unquote
 import requests
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-DATA_DIR = REPO_ROOT / "data"
-CACHE_DIR = DATA_DIR / "cache"
+DATA_DIR = Path(os.environ.get("EU_PD_DATA_DIR", REPO_ROOT / "data"))
+CACHE_DIR = Path(os.environ.get("EU_PD_CACHE_DIR", REPO_ROOT / "data" / "cache"))
 
-TOOL_VERSION = "3.2.0"
+TOOL_VERSION = "3.3.0"
 SCHEMA_VERSION = 3
 
 # Product dumps use sequential revision ids (r001, r002, …). Calendar dates

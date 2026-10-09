@@ -11,18 +11,20 @@ import argparse
 import json
 import math
 import sys
-from collections import defaultdict
+from collections import Counter, defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
 
 import pandas as pd
 
 REPO = Path(__file__).resolve().parents[1]
-DATA = REPO / "data"
 OUT = REPO / "viewer" / "data"
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from common import dump_meta_path, format_viewer_dump_label  # noqa: E402
+from common import DATA_DIR, dump_meta_path, format_viewer_dump_label  # noqa: E402
+
+# Follows EU_PD_DATA_DIR, so staged pipeline runs export the dump they just built.
+DATA = DATA_DIR
 
 
 def _clean(v):
@@ -47,6 +49,34 @@ def _pipe_list(v) -> list[str]:
     return [p for p in text.split("|") if p]
 
 
+def _optional_int(v):
+    cleaned = _clean(v)
+    if cleaned == "" or cleaned is None:
+        return None
+    try:
+        return int(cleaned)
+    except (TypeError, ValueError):
+        return None
+
+
+def _pageviews_window_label(windows: list[str]) -> str:
+    """Derive a short label (e.g. '2025') from pageviews_window values in the dump."""
+    counts: Counter[str] = Counter(w for w in windows if w)
+    if not counts:
+        return ""
+    window = counts.most_common(1)[0][0]
+    # "2025-01..2025-12" → "2025" when both ends share a year; else keep raw.
+    parts = window.split("..")
+    years = []
+    for part in parts:
+        token = part.strip()[:4]
+        if token.isdigit():
+            years.append(token)
+    if years and len(set(years)) == 1:
+        return years[0]
+    return window
+
+
 def export(dump_id: str, out_dir: Path) -> None:
     composers_path = DATA / f"composers_{dump_id}.tsv"
     works_path = DATA / f"works_{dump_id}.tsv"
@@ -55,6 +85,10 @@ def export(dump_id: str, out_dir: Path) -> None:
 
     composers = pd.read_csv(composers_path, sep="\t", low_memory=False)
     works = pd.read_csv(works_path, sep="\t", low_memory=False)
+
+    has_imslp_style = "imslp_style" in works.columns
+    has_imslp_fp = "imslp_first_published" in works.columns
+    has_imslp_cf = "imslp_copyright_flags" in works.columns
 
     created_at = None
     meta_path = dump_meta_path(dump_id)
@@ -68,42 +102,62 @@ def export(dump_id: str, out_dir: Path) -> None:
 
     composer_rows = []
     for _, row in composers.iterrows():
-        composer_rows.append(
-            {
-                "id": str(_clean(row.get("composer_id"))),
-                "name": str(_clean(row.get("name_display"))),
-                "sort": str(_clean(row.get("name_sort"))),
-                "aliases": _pipe_list(row.get("name_aliases")),
-                "birth": _clean(row.get("birth_year")),
-                "death": _clean(row.get("death_year")),
-                "wiki": str(_clean(row.get("wikipedia_url"))),
-                "wikidata": str(_clean(row.get("wikidata_url"))),
-                "cit": _pipe_list(row.get("citizenship_iso")),
-                "scope": str(_clean(row.get("scope_class")) or "classical_core"),
-                "eu_year": _clean(row.get("eu_pd_year")),
-                "eu": str(_clean(row.get("eu_pd_status"))),
-                "styles": _pipe_list(row.get("style_tags")),
-                "style_src": str(_clean(row.get("style_tags_src"))),
-                "imslp": str(_clean(row.get("imslp_url"))),
-                "imslp_status": str(_clean(row.get("imslp_match_status"))),
-                "forces": _pipe_list(row.get("work_categories_present")),
-                "works_n": int(_clean(row.get("works_count_total")) or 0),
-                "views": _clean(row.get("pageviews_enwiki")) or 0,
-                "views_window": str(_clean(row.get("pageviews_window"))),
-            }
-        )
+        views = _optional_int(row.get("pageviews_enwiki"))
+        entry = {
+            "id": str(_clean(row.get("composer_id"))),
+            "name": str(_clean(row.get("name_display"))),
+            "sort": str(_clean(row.get("name_sort"))),
+            "aliases": _pipe_list(row.get("name_aliases")),
+            "birth": _clean(row.get("birth_year")),
+            "death": _clean(row.get("death_year")),
+            "wiki": str(_clean(row.get("wikipedia_url"))),
+            "wikidata": str(_clean(row.get("wikidata_url"))),
+            "cit": _pipe_list(row.get("citizenship_iso")),
+            "scope": str(_clean(row.get("scope_class")) or "classical_core"),
+            "eu_year": _clean(row.get("eu_pd_year")),
+            "eu": str(_clean(row.get("eu_pd_status"))),
+            "styles": _pipe_list(row.get("style_tags")),
+            "style_src": str(_clean(row.get("style_tags_src"))),
+            "imslp": str(_clean(row.get("imslp_url"))),
+            "imslp_status": str(_clean(row.get("imslp_match_status"))),
+            "forces": _pipe_list(row.get("work_categories_present")),
+            "works_n": int(_clean(row.get("works_count_total")) or 0),
+            "views": views,
+            "views_window": str(_clean(row.get("pageviews_window"))),
+        }
+        if str(_clean(row.get("is_film_composer"))).lower() == "true":
+            entry["film"] = True
+        composer_rows.append(entry)
 
     by_composer: dict[str, list] = defaultdict(list)
+    imslp_style_counts: Counter[str] = Counter()
+    force_src_tiers: set[str] = set()
+
     for _, row in works.iterrows():
         cid = str(_clean(row.get("composer_id")))
-        by_composer[cid].append(
-            {
-                "t": str(_clean(row.get("title"))),
-                "u": str(_clean(row.get("imslp_work_url"))),
-                "f": str(_clean(row.get("force_family"))),
-                "s": str(_clean(row.get("force_family_src"))),
-            }
-        )
+        src = str(_clean(row.get("force_family_src")))
+        if src:
+            force_src_tiers.add(src)
+        work_entry: dict = {
+            "t": str(_clean(row.get("title"))),
+            "u": str(_clean(row.get("imslp_work_url"))),
+            "f": str(_clean(row.get("force_family"))),
+            "s": src,
+        }
+        if has_imslp_style:
+            styles = _pipe_list(row.get("imslp_style"))
+            if styles:
+                work_entry["st"] = styles
+                imslp_style_counts.update(styles)
+        if has_imslp_fp:
+            fp = _optional_int(row.get("imslp_first_published"))
+            if fp is not None:
+                work_entry["fp"] = fp
+        if has_imslp_cf:
+            flags = _pipe_list(row.get("imslp_copyright_flags"))
+            if flags:
+                work_entry["cf"] = flags
+        by_composer[cid].append(work_entry)
 
     out_dir.mkdir(parents=True, exist_ok=True)
     composers_out = out_dir / "composers.json"
@@ -124,6 +178,9 @@ def export(dump_id: str, out_dir: Path) -> None:
     forces = sorted({f for c in composer_rows for f in c["forces"]})
     styles = sorted({s for c in composer_rows for s in c["styles"]})
     countries = sorted({x for c in composer_rows for x in c["cit"]})
+    imslp_styles = dict(
+        sorted(imslp_style_counts.items(), key=lambda kv: (-kv[1], kv[0]))
+    )
 
     label = format_viewer_dump_label(dump_id, created_at)
     manifest = {
@@ -147,6 +204,8 @@ def export(dump_id: str, out_dir: Path) -> None:
             "force_family": forces,
             "style_tags": styles,
             "citizenship_iso": countries,
+            "imslp_style": imslp_styles,
+            "force_family_src": sorted(force_src_tiers),
         },
         "disclaimer": (
             "EU public-domain status is a death-year + 71 calendar heuristic against "
@@ -156,15 +215,23 @@ def export(dump_id: str, out_dir: Path) -> None:
             "often wrong (incomplete IMSLP/Wikidata data, heuristics, or LLM guesses)—"
             "verify before relying on them."
         ),
-        "pageviews_window_label": "2025",
+        "pageviews_window_label": _pageviews_window_label(
+            [c["views_window"] for c in composer_rows]
+        ),
     }
     manifest_out.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
 
+    def _rel(path: Path) -> str:
+        try:
+            return str(path.relative_to(REPO))
+        except ValueError:
+            return str(path)
+
     print(
-        f"Wrote {composers_out.relative_to(REPO)} "
+        f"Wrote {_rel(composers_out)} "
         f"({composers_out.stat().st_size // 1024} KB), "
-        f"{works_out.relative_to(REPO)} ({works_out.stat().st_size // 1024} KB), "
-        f"{manifest_out.relative_to(REPO)}"
+        f"{_rel(works_out)} ({works_out.stat().st_size // 1024} KB), "
+        f"{_rel(manifest_out)}"
     )
 
 

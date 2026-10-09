@@ -12,11 +12,39 @@ Dump snapshots: revision `dump_id` (`rNNN`) — see [VERSIONING.md](VERSIONING.m
 - Louis Barron (1920–1989) missing: the Wikipedia list links both Barrons to the duo article and swaps their years
 - Unresolved identities: John Mitchell (b. 1941, unlinked on the list), Robert Graham Manson (`no_composer_occupation`); 7 `unverified_heuristic` matches
 - Upstream fixes on Wikipedia (list links) and Wikidata (4 wrong P839 values)
-- IMSLP style / copyright-flag / first-publication categories as work columns (already in the page-category cache)
-- Viewer: label-source filter, PD-year range presets, client-side PD year, URL state
-- Scheduled crawl workflow (refresh → PR with diff), LLM decision ledger
+- Enable the monthly refresh schedule once IMSLP has been notified (`refresh.yml`, commented out)
+- Lyricist-aware PD flags: librettist life dates (names are now in `imslp_librettists`)
+- LLM decision ledger (today: carry-forward from the previous revision)
+- Dataset licence + `CITATION.cff`; gold set and error rates
 - LLM style fill-ins
 - `--work-files` for `has_files`
+
+## [3.3.0] - 2026-10-09
+
+Automation release. Schema stays **3** (four added works columns). Shipped dump: **r013**.
+
+### Added
+- `scripts/pipeline.py`: `refresh` (crawl + every stage in a staging dir, promotes one revision, exports the viewer, gates) and `derive` (offline stages). Failures promote nothing and keep the staging dir
+- `scripts/carry_forward.py`: earlier LLM force labels, GenInfo fields and LLM styles survive a fresh crawl, joined on stable keys and never over a category-derived label; lost decisions are reported
+- `scripts/diff_dumps.py`: review report between revisions (PD flips, identity changes, works added/removed, label transitions, schema changes)
+- `check_release.py --against rPREV`: fails on >3% composer change, >5% works drop, or a lost column
+- `.github/workflows/refresh.yml` (manual; monthly schedule ready but commented out) and `docs/AUTOMATION.md`. The job validates itself (tests + gates) and opens a PR with the diff
+- Works columns `imslp_style`, `imslp_first_published`, `imslp_copyright_flags`, `imslp_librettists` (`scripts/remap_work_evidence.py`)
+- Viewer:
+  - label-source filter (all / no LLM / category-based);
+  - IMSLP style facet; work filters combine per work;
+  - matching-works count and sort;
+  - PD presets computed in the browser ("PD now", "enters PD next 1 January", "within 5 years");
+  - IMSLP copyright badges and first-publication year;
+  - shareable URL state;
+  - unknown values sort last;
+  - plain-language IMSLP match statuses
+
+### Changed
+- `EU_PD_DATA_DIR` / `EU_PD_CACHE_DIR` env overrides; the cache no longer moves with the data dir
+- PD reference year is recorded at crawl time and propagated (`pd_reference_year`), so a January refresh computes the new year
+- All remap steps are re-runnable: string-safe reads, `dump_date` stamped only where the column exists, overrides skip re-keys already applied, later-stage QA flags and collision evidence preserved
+- Viewer export: missing pageviews are `null` (not 0); the pageview window label comes from the data
 
 ## [3.2.0] - 2026-10-09
 

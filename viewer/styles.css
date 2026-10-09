@@ -144,6 +144,14 @@ body {
   line-height: 1.6;
 }
 
+.facet legend .as-of {
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--ink-soft);
+  opacity: 0.85;
+}
+
 .facet-clear {
   float: right;
   font: 600 0.72rem/1.6 var(--font-body);
@@ -207,7 +215,21 @@ body {
 }
 
 .field.sort {
-  width: 11rem;
+  width: 12.5rem;
+}
+
+.field.label-src {
+  width: 13.5rem;
+}
+
+.match-n {
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.match-sep {
+  margin: 0 0.1rem;
+  color: var(--ink-soft);
 }
 
 .actions {
@@ -461,6 +483,26 @@ tbody tr.empty td {
   color: var(--ink-soft);
   text-transform: uppercase;
   letter-spacing: 0.03em;
+}
+
+.ev-badge {
+  display: inline-block;
+  margin-left: 0.35rem;
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  padding: 0.08rem 0.32rem;
+  color: var(--not);
+  border: 1px solid color-mix(in srgb, var(--not) 55%, transparent);
+  background: color-mix(in srgb, var(--warn-bg) 70%, #fff);
+  vertical-align: middle;
+}
+
+.pub-year {
+  display: inline-block;
+  margin-left: 0.35rem;
+  font-size: 0.72rem;
+  color: var(--ink-soft);
 }
 
 .foot {

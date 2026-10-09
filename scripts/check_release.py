@@ -3,8 +3,8 @@
 
 Exit 0 on success; non-zero with printed failures otherwise.
 
-  python scripts/check_release.py --dump r012
-  python scripts/check_release.py --dump r012 --viewer-data viewer/data
+  python scripts/check_release.py --dump r013
+  python scripts/check_release.py --dump r013 --viewer-data viewer/data
 """
 
 from __future__ import annotations
@@ -18,7 +18,8 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from common import DATA_DIR, dump_meta_path, dump_tsv_path  # noqa: E402
+import common  # noqa: E402
+from common import dump_meta_path, dump_tsv_path  # noqa: E402
 from force_family import force_family_from_categories  # noqa: E402
 from wikidata_enrich import STYLE_QID_TO_TAG  # noqa: E402
 
@@ -79,7 +80,7 @@ def check_data_quality(
     if {"force_family", "force_family_src", "imslp_genre_categories"} <= set(works.columns):
         tagged = works[works["force_family_src"].map(_as_str) == "imslp_tags"]
         stale = [
-            (r.work_id, r.force_family, expected)
+            (getattr(r, "work_id", "(unknown work)"), r.force_family, expected)
             for r in tagged.itertuples()
             for expected in [force_family_from_categories(_as_str(r.imslp_genre_categories))[0]]
             if expected != _as_str(r.force_family)
@@ -120,7 +121,7 @@ def check_data_quality(
             )
 
     # --- PD arithmetic (death_year + 71 vs. dump year) ---
-    created = str(meta.get("created_at_utc") or "")
+    created = str(meta.get("pd_reference_year") or meta.get("created_at_utc") or "")
     if created[:4].isdigit() and {"death_year", "eu_pd_year", "eu_pd_status"} <= set(composers.columns):
         year = int(created[:4])
         bad = 0
@@ -137,7 +138,8 @@ def check_data_quality(
 
     # --- Review items (do not fail the release) ---
     if "imslp_pageid" in works.columns:
-        shared = works.dropna(subset=["imslp_pageid"]).groupby("imslp_pageid")["composer_id"].nunique()
+        identified = works.loc[works["imslp_pageid"].map(_as_str).ne("")]
+        shared = identified.groupby("imslp_pageid")["composer_id"].nunique()
         n_shared = int((shared > 1).sum())
         if n_shared:
             warnings.append(f"IMSLP pages listed under more than one composer: {n_shared}")
@@ -153,7 +155,41 @@ def check_data_quality(
     return errors, warnings
 
 
-def check(dump_id: str, viewer_data: Path | None) -> tuple[list[str], list[str]]:
+def check_regressions(
+    composers: pd.DataFrame, works: pd.DataFrame,
+    previous_composers: pd.DataFrame, previous_works: pd.DataFrame,
+) -> tuple[list[str], list[str]]:
+    errors: list[str] = []
+    prev_n = len(previous_composers)
+    if abs(len(composers) - prev_n) > prev_n * 0.03:
+        errors.append(f"composers changed by more than 3%: {prev_n} → {len(composers)}")
+    if len(previous_works) - len(works) > len(previous_works) * 0.05:
+        errors.append(f"works dropped by more than 5%: {len(previous_works)} → {len(works)}")
+    for stem, previous, following in (("composers", previous_composers, composers),
+                                      ("works", previous_works, works)):
+        missing = [col for col in previous if col not in following]
+        if missing:
+            errors.append(f"schema drift in {stem}: missing columns {', '.join(missing)}")
+    if "composer_id" not in composers or "composer_id" not in previous_composers:
+        return errors, ["EU PD status flips and composer additions/removals unavailable: missing composer_id"]
+    old = previous_composers.set_index("composer_id")
+    new = composers.set_index("composer_id")
+    added = set(new.index) - set(old.index)
+    removed = set(old.index) - set(new.index)
+    flips = 0
+    if "eu_pd_status" in old and "eu_pd_status" in new and old.index.is_unique and new.index.is_unique:
+        shared = sorted(set(old.index) & set(new.index))
+        flips = int((old.loc[shared, "eu_pd_status"] != new.loc[shared, "eu_pd_status"]).sum())
+    warnings = [f"EU PD status flips: {flips}",
+                f"composers added: {len(added)}; removed: {len(removed)}"]
+    if added:
+        warnings.append("composer IDs added: " + ", ".join(sorted(added)))
+    if removed:
+        warnings.append("composer IDs removed: " + ", ".join(sorted(removed)))
+    return errors, warnings
+
+
+def check(dump_id: str, viewer_data: Path | None, against: str | None = None) -> tuple[list[str], list[str]]:
     errors: list[str] = []
     warnings: list[str] = []
     c_path = dump_tsv_path("composers", dump_id)
@@ -161,11 +197,30 @@ def check(dump_id: str, viewer_data: Path | None) -> tuple[list[str], list[str]]
     m_path = dump_meta_path(dump_id)
     if not c_path.exists() or not w_path.exists():
         return [f"missing dump files for {dump_id}"], warnings
-    composers = pd.read_csv(c_path, sep="\t", low_memory=False)
-    works = pd.read_csv(w_path, sep="\t", low_memory=False)
+    composers = pd.read_csv(c_path, sep="\t", dtype=str, keep_default_na=False)
+    works = pd.read_csv(w_path, sep="\t", dtype=str, keep_default_na=False)
     meta = json.loads(m_path.read_text(encoding="utf-8")) if m_path.exists() else {}
-    dq_errors, warnings = check_data_quality(composers, works, meta)
+    if against:
+        prev_c_path = dump_tsv_path("composers", against)
+        prev_w_path = dump_tsv_path("works", against)
+        if not prev_c_path.exists() or not prev_w_path.exists():
+            errors.append(f"missing baseline dump files for {against}")
+        else:
+            prev_c = pd.read_csv(prev_c_path, sep="\t", dtype=str, keep_default_na=False)
+            prev_w = pd.read_csv(prev_w_path, sep="\t", dtype=str, keep_default_na=False)
+            regression_errors, regression_warnings = check_regressions(composers, works, prev_c, prev_w)
+            errors.extend(regression_errors)
+            warnings.extend(regression_warnings)
+    for stem, frame in (("composers", composers), ("works", works)):
+        if "composer_id" not in frame:
+            errors.append(f"missing required {stem} column: composer_id")
+    if "imslp_pageid" not in works and "work_id" not in works:
+        errors.append("missing required work key: imslp_pageid or work_id")
+    if "composer_id" not in composers or "composer_id" not in works or not {"imslp_pageid", "work_id"} & set(works):
+        return errors, warnings
+    dq_errors, dq_warnings = check_data_quality(composers, works, meta)
     errors.extend(dq_errors)
+    warnings.extend(dq_warnings)
 
     # --- IDs ---
     dup_c = composers["composer_id"].duplicated().sum()
@@ -199,7 +254,7 @@ def check(dump_id: str, viewer_data: Path | None) -> tuple[list[str], list[str]]
         errors.append("STYLE_QID_TO_TAG is empty")
 
     # Offline label sanity via cached entities when present
-    cache = DATA_DIR / "cache" / "wikidata_entity"
+    cache = common.CACHE_DIR / "wikidata_entity"
     formish = ("symphony", "chamber music", "string quartet", "concerto", "opera")
     if cache.is_dir():
         for qid, tag in STYLE_QID_TO_TAG.items():
@@ -220,7 +275,7 @@ def check(dump_id: str, viewer_data: Path | None) -> tuple[list[str], list[str]]
 
     # --- Force spot rules ---
     g = "imslp_genre_categories"
-    if g in works.columns:
+    if g in works.columns and "force_family" in works.columns:
         ops = works[
             works[g].fillna("").astype(str).str.contains("Operas", regex=False)
             & (works["force_family"].astype(str) == "concerto")
@@ -287,13 +342,14 @@ def check(dump_id: str, viewer_data: Path | None) -> tuple[list[str], list[str]]
 def main() -> None:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--dump", required=True)
+    p.add_argument("--against", help="Previous approved revision for regression gates")
     p.add_argument(
         "--viewer-data",
         type=Path,
         help="Optional viewer/data dir to cross-check JSON export",
     )
     args = p.parse_args()
-    errors, warnings = check(args.dump, args.viewer_data)
+    errors, warnings = check(args.dump, args.viewer_data, args.against)
     for w in warnings:
         print(f"  warn: {w}")
     if errors:

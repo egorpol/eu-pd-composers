@@ -57,6 +57,8 @@ def print_report(
         f"(PD reference year {pd_year}; {overrides_path})"
     )
     print(f"Overrides applied: {report['overrides_applied']}")
+    for rk in report["already_applied"]:
+        print(f"  already_applied: {rk['old_composer_id']} → {rk['new_composer_id']}")
     if report["rekeys"]:
         print("Re-keys:")
         for rk in report["rekeys"]:

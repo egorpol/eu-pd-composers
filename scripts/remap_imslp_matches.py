@@ -45,7 +45,8 @@ def remap_matches(
     for decision in decisions:
         decision["works_dropped"] = int(dropped_counts.get(decision["qid"], 0))
     out = rollup_composers(out, kept_works)
-    out["dump_date"] = out_id
+    if "dump_date" in out.columns:
+        out["dump_date"] = out_id
     if "dump_date" in kept_works.columns:
         kept_works["dump_date"] = out_id
 

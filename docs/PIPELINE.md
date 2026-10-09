@@ -123,6 +123,15 @@ LLM history: the bulk title-only pass (r001, `force_family_src=llm`) ran gpt-6-l
 
 Identity rule (`scripts/imslp_identity.py`): compare dump birth/death years with IMSLP's `Born Year`/`Died Year`. All known pairs within ±1 → agree. A **strong** conflict (no pair agrees and a gap > 10 years) means a different person and rejects even a P839 link; a **weak** conflict keeps the match with `imslp_dates_conflict`, and promotes a name guess only if IMSLP's Wikipedia link agrees. One category belongs to at most one composer: a P839 holder wins, else the single agreeing claimant (`check_release.py` fails otherwise).
 
+## One command: `scripts/pipeline.py`
+
+- `pipeline.py refresh --base rPREV`: cold crawl (`build_dump.py`) plus every stage below in a staging dir; promotes **one** new revision whose meta lists the stages; re-exports the viewer; runs `check_release.py --against rPREV`. Used by the monthly workflow ([AUTOMATION.md](AUTOMATION.md)).
+- `pipeline.py derive --from-dump rX --to rY`: the offline stages only (rules or overrides changed). `--preserve-schema` fails on any column change; `derive` on an already-derived dump reproduces it exactly.
+- Stage order: `remap_force` → `carry_forward` (earlier LLM / GenInfo decisions, joined on composer + IMSLP page id; never over a category-derived label) → `remap_composers` → `apply_overrides` → (`refetch_composer_pages`) `remap_imslp_matches` → `remap_work_evidence`.
+- `diff_dumps.py rPREV rNEXT --out diff.md --summary-json summary.json` writes the review report (PD flips, identity changes, works added or removed, label transitions, schema changes).
+- `check_release.py --against rPREV` fails if composers change by more than 3%, works drop by more than 5%, or a column disappears.
+- `EU_PD_DATA_DIR` / `EU_PD_CACHE_DIR` move the data and cache dirs (staging uses them).
+
 ## Typical commands
 
 ```bash
@@ -163,8 +172,8 @@ Caches: `data/cache/` (gitignored). Complete work categories under `imslp_page_c
 ## Filter viewer
 
 ```bash
-python scripts/export_viewer_json.py --dump r012
-python scripts/check_release.py --dump r012 --viewer-data viewer/data
+python scripts/export_viewer_json.py --dump r013
+python scripts/check_release.py --dump r013 --viewer-data viewer/data
 python -m http.server 8080 --directory viewer
 ```
 
