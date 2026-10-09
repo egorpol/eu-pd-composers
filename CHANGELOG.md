@@ -20,6 +20,11 @@ Dump snapshots: revision `dump_id` (`rNNN`) — see [VERSIONING.md](VERSIONING.m
 - LLM style fill-ins
 - `--work-files` for `has_files`
 
+## [3.4.2] - 2026-10-09
+
+### Fixed
+- The first GitHub-runner refresh failed after its 2-hour crawl. `apply_overrides.py` (offline) needs the Wikidata entities of the people that overrides re-key to, and a cold crawl only fetches the entities the Wikipedia list links to. The new `scripts/refetch_override_entities.py` fetches the re-key targets and their citizenship countries, and `pipeline.py refresh` runs it **first**, as a preflight, so a bad overrides file fails in seconds rather than after the crawl
+
 ## [3.4.1] - 2026-10-09
 
 ### Fixed

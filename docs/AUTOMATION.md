@@ -14,6 +14,7 @@ python scripts/pipeline.py refresh --base rPREV
 
 That command copies the base revision into a staging directory (`.pipeline-*`, kept only if a stage fails) and runs, in order:
 
+0. `refetch_override_entities.py`: preflight, fetches the Wikidata entities that `data/overrides/composers.tsv` re-keys to (a cold crawl never sees them), so a bad overrides file fails in seconds;
 1. `build_dump.py`: **cold network crawl** (Wikipedia list → Wikidata → pageviews for the last 12 complete months → IMSLP works and complete work categories);
 2. `remap_force.py`: force labels, rollups, PD fields;
 3. `carry_forward.py`: earlier LLM / GenInfo decisions from the base revision (see below);

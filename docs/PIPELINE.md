@@ -127,6 +127,7 @@ Identity rule (`scripts/imslp_identity.py`): compare dump birth/death years with
 
 - `pipeline.py refresh --base rPREV`: cold crawl (`build_dump.py`) plus every stage below in a staging dir; promotes **one** new revision whose meta lists the stages; re-exports the viewer; runs `check_release.py --against rPREV`. Used by the monthly workflow ([AUTOMATION.md](AUTOMATION.md)).
 - `pipeline.py derive --from-dump rX --to rY`: the offline stages only (rules or overrides changed). `--preserve-schema` fails on any column change; `derive` on an already-derived dump reproduces it exactly.
+- `refresh` first runs `refetch_override_entities.py` (preflight: override re-key targets into the cache), then `build_dump.py`.
 - Stage order: `remap_force` → `carry_forward` (earlier LLM / GenInfo decisions, joined on composer + IMSLP page id; never over a category-derived label) → `remap_composers` → `apply_overrides` → (`refetch_composer_pages`) `remap_imslp_matches` → `remap_work_evidence`.
 - `diff_dumps.py rPREV rNEXT --out diff.md --summary-json summary.json` writes the review report (PD flips, identity changes, works added or removed, label transitions, schema changes).
 - `check_release.py --against rPREV` fails if composers change by more than 3%, works drop by more than 5%, or a column disappears.

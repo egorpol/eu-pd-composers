@@ -26,6 +26,10 @@ STEMS = ("composers", "works")
 VIEWER_FILES = ("manifest.json", "composers.json", "works_by_composer.json")
 
 
+def overrides_path() -> Path:
+    return common.REPO_ROOT / "data" / "overrides" / "composers.tsv"
+
+
 def pageviews_window(crawl_date: date) -> tuple[str, str]:
     first = crawl_date.replace(day=1)
     return first.replace(year=first.year - 1).strftime("%Y%m%d"), (first - timedelta(days=1)).strftime("%Y%m%d")
@@ -75,7 +79,7 @@ def offline_stages(
         ("remap_force.py", []),
         ("carry_forward.py", ["--base", base]),
         ("remap_composers.py", []),
-        ("apply_overrides.py", ["--overrides", str(common.REPO_ROOT / "data" / "overrides" / "composers.tsv")]),
+        ("apply_overrides.py", ["--overrides", str(overrides_path())]),
         ("remap_imslp_matches.py", []),
         ("remap_work_evidence.py", ["--preserve-schema"] if preserve_schema else []),
     ]
@@ -189,6 +193,9 @@ def run(args: argparse.Namespace) -> Path:
         stages = []
         if refresh:
             source = crawl_date.isoformat()
+            # Preflight: overrides re-key to entities a cold crawl never fetches.
+            # Fetch them first so a bad overrides file fails in seconds, not after the crawl.
+            run_script("refetch_override_entities.py", ["--overrides", str(overrides_path())], staging, cache)
             run_script("build_dump.py", ["--date", source, "--pageviews-start", window[0],
                                          "--pageviews-end", window[1]], staging, cache)
             stages.append(_record_stage(staging, source, "build_dump.py"))
