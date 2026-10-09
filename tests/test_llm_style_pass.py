@@ -320,6 +320,9 @@ def test_codex_and_cursor_commands_use_scrubbed_env(monkeypatch, tmp_path):
         seen["cmd"] = cmd
         seen["env"] = kwargs.get("env")
         seen["input"] = kwargs.get("input")
+        seen["cwd"] = kwargs.get("cwd")
+        # The model must not see the repo (dumps hold the labels under study).
+        assert seen["cwd"] and not any(Path(seen["cwd"]).iterdir())
         # Write empty output file for codex -o
         if "-o" in cmd:
             out = Path(cmd[cmd.index("-o") + 1])
@@ -385,7 +388,18 @@ def test_codex_and_cursor_commands_use_scrubbed_env(monkeypatch, tmp_path):
     assert seen["cmd"][:2] == ["cursor-agent", "-p"]
     assert "--mode" in seen["cmd"] and "ask" in seen["cmd"]
     assert "--force" not in seen["cmd"]
+    assert "--trust" in seen["cmd"]
     assert seen["input"] == "prompt2"
+
+
+def test_parse_cli_usage():
+    assert lsp.parse_codex_usage("codex\n{}\ntokens used\n4,798\n") == {"total_tokens": 4798}
+    assert lsp.parse_codex_usage("no usage here") == {}
+    out = json.dumps(
+        {"type": "result", "result": "{}", "usage": {"inputTokens": 14697, "outputTokens": 269, "cacheReadTokens": 0}}
+    )
+    assert lsp.parse_cursor_usage(out) == {"input_tokens": 14697, "output_tokens": 269, "cache_read_tokens": 0}
+    assert lsp.parse_cursor_usage("not json") == {}
 
 
 def test_prepare_records_skips_missing_grounded_leads(monkeypatch, tmp_path):

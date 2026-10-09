@@ -186,9 +186,13 @@ def load_ledger_keys(path: Path) -> set[tuple[str, str, str, str, str, str]]:
 
 def append_jsonl(path: Path, rows: list[dict[str, Any]]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("a", encoding="utf-8") as fh:
-        for row in rows:
-            fh.write(json.dumps(row, ensure_ascii=False) + "\n")
+    # One O_APPEND write per batch so parallel runs (one per backend) never interleave lines.
+    data = "".join(json.dumps(row, ensure_ascii=False) + "\n" for row in rows).encode("utf-8")
+    fd = os.open(path, os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o644)
+    try:
+        os.write(fd, data)
+    finally:
+        os.close(fd)
 
 
 def vocab_block() -> str:
@@ -257,6 +261,27 @@ def extract_json_object(text: str) -> dict[str, Any]:
         if start >= 0 and end > start:
             return json.loads(raw[start : end + 1])
         raise
+
+
+def parse_codex_usage(stderr: str) -> dict[str, int]:
+    """Token total from `codex exec` stderr ("tokens used\\n4,798")."""
+    m = re.search(r"tokens used\s*:?\s*([\d,]+)", stderr, re.I)
+    return {"total_tokens": int(m.group(1).replace(",", ""))} if m else {}
+
+
+def parse_cursor_usage(stdout: str) -> dict[str, int]:
+    """Token counts from cursor-agent --output-format json (`usage` object)."""
+    try:
+        usage = json.loads(stdout).get("usage") or {}
+    except (json.JSONDecodeError, AttributeError):
+        return {}
+    keys = {
+        "inputTokens": "input_tokens",
+        "outputTokens": "output_tokens",
+        "cacheReadTokens": "cache_read_tokens",
+        "cacheWriteTokens": "cache_write_tokens",
+    }
+    return {dst: int(usage[src]) for src, dst in keys.items() if isinstance(usage.get(src), int)}
 
 
 def extract_cursor_text(payload: Any) -> str:
@@ -424,26 +449,21 @@ def run_codex(
     ):
         env.pop(k, None)
     try:
-        proc = subprocess.run(
-            cmd,
-            input=prompt,
-            capture_output=True,
-            text=True,
-            env=env,
-            cwd=str(DATA_DIR.parent),
-        )
+        with tempfile.TemporaryDirectory(prefix="llm_style_cwd_") as cwd:
+            proc = subprocess.run(
+                cmd,
+                input=prompt,
+                capture_output=True,
+                text=True,
+                env=env,
+                cwd=cwd,
+            )
         if proc.returncode != 0:
             raise RuntimeError(
                 f"codex failed rc={proc.returncode}: {(proc.stderr or '')[-800:]}"
             )
         raw = out_path.read_text(encoding="utf-8") if out_path.exists() else (proc.stdout or "")
-        usage: dict[str, Any] = {}
-        # Best-effort: some CLI builds print token usage on stderr.
-        err = proc.stderr or ""
-        m = re.search(r"(\d+)\s*input.*?(\d+)\s*output", err, re.I | re.S)
-        if m:
-            usage = {"input_tokens": int(m.group(1)), "output_tokens": int(m.group(2))}
-        return raw, usage
+        return raw, parse_codex_usage(proc.stderr or "")
     finally:
         try:
             out_path.unlink(missing_ok=True)
@@ -466,23 +486,25 @@ def run_cursor(
         "ask",
         "--output-format",
         "json",
+        "--trust",
     ]
-    # Never pass --force / --yolo.
+    # Never pass --force / --yolo. --trust only covers the empty cwd below.
     env = scrub_child_env()
-    proc = subprocess.run(
-        cmd,
-        input=prompt,
-        capture_output=True,
-        text=True,
-        env=env,
-        cwd=str(DATA_DIR.parent),
-    )
+    with tempfile.TemporaryDirectory(prefix="llm_style_cwd_") as cwd:
+        proc = subprocess.run(
+            cmd,
+            input=prompt,
+            capture_output=True,
+            text=True,
+            env=env,
+            cwd=cwd,
+        )
     if proc.returncode != 0:
         raise RuntimeError(
             f"cursor-agent failed rc={proc.returncode}: {(proc.stderr or '')[-800:]}"
         )
-    text = extract_cursor_text(proc.stdout or "")
-    return text, {}
+    out = proc.stdout or ""
+    return extract_cursor_text(out), parse_cursor_usage(out)
 
 
 def call_backend(

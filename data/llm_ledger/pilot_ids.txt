@@ -1,5 +1,5 @@
 # pilot sample for LLM style pass
-# dump=r013 seed=20261009 n=100
+# dump=r014 seed=20261009 n=100
 # strata: 40 wikidata styles, 40 pd+imslp works no style_tags, 20 others with wikipedia_url
 # excluded qa_flags: not_human, no_composer_occupation
 Q1176914
@@ -89,16 +89,16 @@ Q1418864
 Q14473458
 Q15439078
 Q15462762
-Q241503
-Q289058
-Q376418
-Q4073542
-Q4295599
-Q49801478
-Q508351
-Q5321805
-Q5353084
-Q6131466
-Q7660901
-Q788469
+Q2414935
+Q2883654
+Q430203
+Q467738
+Q511215
+Q525177
+Q5322160
+Q5353164
+Q6707756
+Q7345781
+Q7961419
+Q919267
 Q948879
