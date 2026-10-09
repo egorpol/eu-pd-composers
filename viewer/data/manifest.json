@@ -1,13 +1,13 @@
 {
-  "dump_id": "r010",
-  "dump_label": "dump r010 \u00b7 built 2026-10-09",
-  "created_at_utc": "2026-10-09T10:32:09.367361+00:00",
+  "dump_id": "r012",
+  "dump_label": "dump r012 \u00b7 built 2026-10-09",
+  "created_at_utc": "2026-10-09T12:50:11.170857+00:00",
   "schema_version": 3,
-  "generated_at_utc": "2026-10-09T10:32:10.729104+00:00",
+  "generated_at_utc": "2026-10-09T12:50:12.610134+00:00",
   "counts": {
     "composers": 3368,
-    "works": 28993,
-    "composers_with_works": 1063
+    "works": 28980,
+    "composers_with_works": 1057
   },
   "files": {
     "composers": "composers.json",
