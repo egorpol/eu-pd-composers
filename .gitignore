@@ -24,3 +24,6 @@ Thumbs.db
 data/logs/
 data/cache/
 .cache/
+
+# Local LLM reassessment writeups (not for publish)
+assessments/
