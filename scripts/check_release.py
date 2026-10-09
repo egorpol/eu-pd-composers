@@ -3,8 +3,8 @@
 
 Exit 0 on success; non-zero with printed failures otherwise.
 
-  python scripts/check_release.py --dump r010
-  python scripts/check_release.py --dump r010 --viewer-data viewer/data
+  python scripts/check_release.py --dump r012
+  python scripts/check_release.py --dump r012 --viewer-data viewer/data
 """
 
 from __future__ import annotations
@@ -100,6 +100,24 @@ def check_data_quality(
     orphans = ~works["composer_id"].astype(str).isin(composers["composer_id"].astype(str))
     if orphans.any():
         errors.append(f"works rows with unknown composer_id: {int(orphans.sum())}")
+
+    # --- IMSLP identity / category ownership ---
+    if "imslp_match_status" in composers.columns:
+        active = composers["imslp_match_status"].map(_as_str).isin({"matched", "unverified_heuristic"})
+        if "imslp_category" in composers.columns:
+            holders = composers.loc[active].copy()
+            holders["imslp_category"] = holders["imslp_category"].map(_as_str)
+            shared = holders[holders["imslp_category"].ne("")].groupby("imslp_category")["composer_id"].nunique()
+            shared = shared[shared > 1]
+            if len(shared):
+                examples = "; ".join(f"{category} ({count} composers)" for category, count in shared.items())
+                errors.append(f"IMSLP categories held by multiple active composers: {len(shared)} — {examples}")
+        inactive_ids = composers.loc[~active, "composer_id"].astype(str)
+        invalid_works = works["composer_id"].astype(str).isin(inactive_ids)
+        if invalid_works.any():
+            errors.append(
+                f"works rows belonging to composers without matched/unverified_heuristic status: {int(invalid_works.sum())}"
+            )
 
     # --- PD arithmetic (death_year + 71 vs. dump year) ---
     created = str(meta.get("created_at_utc") or "")
