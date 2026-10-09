@@ -20,6 +20,11 @@ Dump snapshots: revision `dump_id` (`rNNN`) — see [VERSIONING.md](VERSIONING.m
 - LLM style fill-ins
 - `--work-files` for `has_files`
 
+## [3.4.1] - 2026-10-09
+
+### Fixed
+- IMSLP politeness: `build_dump.py` paced IMSLP at 0.1–0.15 s between requests, faster than the announced ≤ 1 request/s. `common.request_json` now enforces a per-host minimum interval (IMSLP 1.0 s, `EU_PD_IMSLP_MIN_INTERVAL`) on every call path and honours `Retry-After` on 429/503. A cold refresh therefore takes about 2–2.5 hours
+
 ## [3.4.0] - 2026-10-09
 
 Viewer release; data unchanged (dump **r013**).
