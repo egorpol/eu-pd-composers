@@ -13,11 +13,22 @@ Dump snapshots: revision `dump_id` (`rNNN`) — see [VERSIONING.md](VERSIONING.m
 - Unresolved identities: John Mitchell (b. 1941, unlinked on the list), Robert Graham Manson (`no_composer_occupation`); 7 `unverified_heuristic` matches
 - Upstream fixes on Wikipedia (list links) and Wikidata (4 wrong P839 values)
 - Enable the monthly refresh schedule once IMSLP has been notified (`refresh.yml`, commented out)
+- All-composer LLM style pass: two conditions (closed-book, Wikipedia-grounded) × two models (Codex Sol, Cursor auto) with a committed decision ledger, to measure agreement between Wikidata, IMSLP and LLMs
 - Lyricist-aware PD flags: librettist life dates (names are now in `imslp_librettists`)
 - LLM decision ledger (today: carry-forward from the previous revision)
 - Dataset licence + `CITATION.cff`; gold set and error rates
 - LLM style fill-ins
 - `--work-files` for `has_files`
+
+## [3.4.0] - 2026-10-09
+
+Viewer release; data unchanged (dump **r013**).
+
+### Changed
+- **One live EU public-domain filter** replaces the stored "EU PD status" (frozen at build year) and the overlapping live presets: PD now / enters PD next 1 January / in 2–5 years / later / no death date, computed in the browser. The results column shows "PD" or the year a composer enters PD
+- **One Style filter with a Style source selector** (Wikidata · IMSLP works · LLM) replaces "Movement" and "Period": movements and IMSLP periods in one list in rough chronological order, with live counts per selected source. Choose sources to compare them
+- Filters are grouped into **Composer** and **Works on IMSLP**. The panel is collapsible (closed by default below 900 px, showing the active-filter count). Facet headers align, with hints behind ⓘ. All lists share one height, it is single-column on phones, and there are no overlapping controls at any width
+- IMSLP period aliases merged (`Romántico` → Romantic, `Traditional` → Traditional (folk)); old shared links map to the new filters
 
 ## [3.3.0] - 2026-10-09
 

@@ -22,6 +22,7 @@ Applies to code, schema contract, docs, and UI.
 | `v3.1.0` | 2026-10-09 | Complete IMSLP categories, parsed force rules, rank-aware Wikidata dates, `is_film_composer` + `qa_flags`; dump r010 |
 | `v3.2.0` | 2026-10-09 | IMSLP identity check by life dates, collision rule, reviewed overrides; dump r012 |
 | `v3.3.0` | 2026-10-09 | One-command pipeline, carry-forward, revision diff, refresh workflow, work-level IMSLP evidence, viewer filters; dump r013 |
+| `v3.4.0` | 2026-10-09 | Viewer: one live EU PD filter, unified Style filter with source selector, responsive filter panel; dump r013 |
 
 Do **not** reset to `0.2` — that would go backwards from published `v1.1`.
 
