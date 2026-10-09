@@ -3,8 +3,8 @@
 
 Exit 0 on success; non-zero with printed failures otherwise.
 
-  python scripts/check_release.py --dump r008
-  python scripts/check_release.py --dump r008 --viewer-data viewer/data
+  python scripts/check_release.py --dump r010
+  python scripts/check_release.py --dump r010 --viewer-data viewer/data
 """
 
 from __future__ import annotations

@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Recompute force_family (rule fixes), merge duplicate QIDs, fix PD labels.
 
-Writes a new revision. Never overwrites. Used for Sol pre-main dump r008.
+Writes a new revision. Never overwrites. Built r008 (rule fixes) and r009
+(--refresh-categories: complete IMSLP categories).
 """
 
 from __future__ import annotations

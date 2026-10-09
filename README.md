@@ -4,7 +4,7 @@ Find notable 20th-century classical composers whose works are likely safer to st
 
 **Live viewer:** [egorpol.github.io/eu-pd-composers](https://egorpol.github.io/eu-pd-composers/)
 
-**Current direction:** versioned **composer + works** dumps (schema v3) + a static **filter viewer**. Tool line: **v3.0.0** (schema 3).
+**Current direction:** versioned **composer + works** dumps (schema v3) + a static **filter viewer**. Tool line: **v3.1.0** (schema 3). Current dump: **r010**.
 
 See [CHANGELOG.md](CHANGELOG.md) and [VERSIONING.md](VERSIONING.md).
 
@@ -13,15 +13,17 @@ See [CHANGELOG.md](CHANGELOG.md) and [VERSIONING.md](VERSIONING.md).
 ```
 data/                            # versioned TSV dumps + dump_meta_*.json
 viewer/                          # static filter UI (GitHub Pages)
-scripts/build_dump.py            # Wikipedia → Wikidata → IMSLP scrape
-scripts/enrich_dump.py           # offline force_family / rollups
-scripts/export_viewer_json.py    # dump → viewer/data JSON
+scripts/build_dump.py               # Wikipedia → Wikidata → IMSLP scrape
+scripts/refetch_work_categories.py  # complete IMSLP work categories for a dump (resumable)
+scripts/remap_force.py              # offline: refresh categories, re-derive force_family
+scripts/remap_composers.py          # offline: Wikidata dates, scope, qa_flags, PD fields
+scripts/export_viewer_json.py       # dump → viewer/data JSON
+scripts/check_release.py            # release gates (also run in CI)
 scripts/force_family.py
-scripts/llm_force_family.py
 scripts/wikidata_enrich.py
 scripts/imslp.py
 scripts/common.py
-scripts/heartbeat.py
+tests/                              # offline regression tests (pytest)
 docs/PIPELINE.md
 ```
 
@@ -43,19 +45,19 @@ Public-domain status is a **heuristic**, not legal clearance.
 ## Setup
 
 ```bash
-pip install -r requirements.txt
+pip install -r requirements.txt        # or requirements-dev.txt to run tests
+python -m pytest tests -q
 ```
 
 ## Usage
 
 ```bash
-# Scrape / enrich dumps (see data/README.md)
+# Scrape / enrich dumps (see data/README.md and docs/PIPELINE.md)
 python scripts/build_dump.py --date YYYY-MM-DD
-python scripts/enrich_dump.py --from-dump YYYY-MM-DD --date YYYY-MM-DD
 
-# Refresh viewer JSON + local preview
-python scripts/export_viewer_json.py --dump r008
-python scripts/check_release.py --dump r008 --viewer-data viewer/data
+# Refresh viewer JSON + release gates + local preview
+python scripts/export_viewer_json.py --dump r010
+python scripts/check_release.py --dump r010 --viewer-data viewer/data
 python -m http.server 8080 --directory viewer
 ```
 
@@ -63,7 +65,7 @@ python -m http.server 8080 --directory viewer
 
 The filter UI is published at **https://egorpol.github.io/eu-pd-composers/**.
 
-Workflow [`.github/workflows/pages.yml`](.github/workflows/pages.yml) deploys the `viewer/` folder on every push to **`main`** (Pages source: GitHub Actions). Local preview uses the same files via `python -m http.server` as above.
+Workflow [`.github/workflows/pages.yml`](.github/workflows/pages.yml) deploys the `viewer/` folder on pushes to **`main`** that change `viewer/**` (or by manual dispatch; Pages source: GitHub Actions). [`.github/workflows/checks.yml`](.github/workflows/checks.yml) runs the tests and release gates on every PR. Local preview uses the same files via `python -m http.server` as above.
 
 ## License
 
