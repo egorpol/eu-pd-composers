@@ -1,9 +1,9 @@
 {
-  "dump_id": "r012",
-  "dump_label": "dump r012 \u00b7 built 2026-10-09",
-  "created_at_utc": "2026-10-09T12:50:11.170857+00:00",
+  "dump_id": "r013",
+  "dump_label": "dump r013 \u00b7 built 2026-10-09",
+  "created_at_utc": "2026-10-09T15:29:07.119781+00:00",
   "schema_version": 3,
-  "generated_at_utc": "2026-10-09T12:50:12.610134+00:00",
+  "generated_at_utc": "2026-10-09T15:29:09.817213+00:00",
   "counts": {
     "composers": 3368,
     "works": 28980,
@@ -158,6 +158,31 @@
       "XK",
       "YU",
       "ZA"
+    ],
+    "imslp_style": {
+      "Romantic": 16015,
+      "Early 20th century": 9815,
+      "Modern": 2772,
+      "Classical": 73,
+      "Jazz": 72,
+      "Baroque": 44,
+      "Traditional (folk)": 43,
+      "Non-western classical": 37,
+      "Renaissance": 24,
+      "Medieval": 5,
+      "Ancient": 1,
+      "Rom\u00e1ntico": 1,
+      "Traditional": 1
+    },
+    "force_family_src": [
+      "arr_only",
+      "categories_unmapped",
+      "imslp_geninfo",
+      "imslp_tags",
+      "llm",
+      "llm_grok",
+      "llm_luna_xhigh",
+      "title"
     ]
   },
   "disclaimer": "EU public-domain status is a death-year + 71 calendar heuristic against the dump snapshot year, not legal advice; missing death years are unknown_death (not living). Linked IMSLP entries are work pages, not a verified score-file inventory. Force and style tags are research aids and often wrong (incomplete IMSLP/Wikidata data, heuristics, or LLM guesses)\u2014verify before relying on them.",

@@ -1,0 +1,337 @@
+{
+  "dump_id": "r013",
+  "tool_version": "3.3.0",
+  "schema_version": 3,
+  "created_at_utc": "2026-10-09T15:29:07.119781+00:00",
+  "derived_from_dump_id": "r012",
+  "enrichment": "pipeline_derive",
+  "output_files": {
+    "composers": "composers_r013.tsv",
+    "works": "works_r013.tsv"
+  },
+  "row_counts": {
+    "composers": 3368,
+    "works": 28980
+  },
+  "coverage": {
+    "imslp_style": {
+      "count": 28903,
+      "pct": 99.73
+    },
+    "imslp_first_published": {
+      "count": 21390,
+      "pct": 73.81
+    },
+    "imslp_copyright_flags": {
+      "count": 6445,
+      "pct": 22.24
+    },
+    "imslp_librettists": {
+      "count": 7891,
+      "pct": 27.23
+    }
+  },
+  "style_counts": {
+    "Romantic": 16015,
+    "Early 20th century": 9815,
+    "Modern": 2772,
+    "Classical": 73,
+    "Jazz": 72,
+    "Baroque": 44,
+    "Traditional (folk)": 43,
+    "Non-western classical": 37,
+    "Renaissance": 24,
+    "Medieval": 5,
+    "Ancient": 1,
+    "Rom\u00e1ntico": 1,
+    "Traditional": 1
+  },
+  "copyright_token_counts": {
+    "nonpd_ca_text": 35,
+    "nonpd_eu": 4575,
+    "nonpd_us": 3503,
+    "pd_ca_rost": 32,
+    "pd_eu_rost": 342,
+    "permission_granted": 1
+  },
+  "unmapped_copyright_categories": {},
+  "distinct_librettists": 3805,
+  "eu_pd_status_x_nonpd_eu": {
+    "not_pd \u00d7 no_nonpd_eu": 3315,
+    "not_pd \u00d7 nonpd_eu": 4510,
+    "pd \u00d7 no_nonpd_eu": 20286,
+    "pd \u00d7 nonpd_eu": 65,
+    "unknown_death \u00d7 no_nonpd_eu": 804
+  },
+  "pd_composer_nonpd_eu_examples": [
+    {
+      "title": "Impromptu, Op.135",
+      "composer": "Josef Bohuslav Foerster",
+      "composer_id": "Q450803",
+      "imslp_first_published": "1951",
+      "imslp_librettists": ""
+    },
+    {
+      "title": "String Quartet in D minor",
+      "composer": "Emil von Reznicek",
+      "composer_id": "Q550639",
+      "imslp_first_published": "1923",
+      "imslp_librettists": ""
+    },
+    {
+      "title": "Serenata Veneziana",
+      "composer": "Emil von Sauer",
+      "composer_id": "Q447133",
+      "imslp_first_published": "",
+      "imslp_librettists": ""
+    },
+    {
+      "title": "Waltz-Impromptu",
+      "composer": "Emil von Sauer",
+      "composer_id": "Q447133",
+      "imslp_first_published": "",
+      "imslp_librettists": ""
+    },
+    {
+      "title": "Petites pi\u00e8ces pour piano \u00e0 4 mains",
+      "composer": "Guy Ropartz",
+      "composer_id": "Q1379409",
+      "imslp_first_published": "1903",
+      "imslp_librettists": ""
+    },
+    {
+      "title": "Piano Trio",
+      "composer": "Guy Ropartz",
+      "composer_id": "Q1379409",
+      "imslp_first_published": "1919",
+      "imslp_librettists": ""
+    },
+    {
+      "title": "Francesca da Rimini",
+      "composer": "Paul Gilson",
+      "composer_id": "Q958774",
+      "imslp_first_published": "",
+      "imslp_librettists": "Dante Alighieri|Guilliaume, Jules"
+    },
+    {
+      "title": "Ludions",
+      "composer": "Erik Satie",
+      "composer_id": "Q187192",
+      "imslp_first_published": "1926",
+      "imslp_librettists": "Fargue, L\u00e9on-Paul"
+    },
+    {
+      "title": "Suite for Two Pianos Founded upon Old Irish Melodies, Op.104",
+      "composer": "Amy Beach",
+      "composer_id": "Q235699",
+      "imslp_first_published": "1924",
+      "imslp_librettists": ""
+    },
+    {
+      "title": "L'ancienne maison de campagne, Op.124",
+      "composer": "Charles Koechlin",
+      "composer_id": "Q72543",
+      "imslp_first_published": "1937",
+      "imslp_librettists": ""
+    },
+    {
+      "title": "3 Organ Sonatinas, Op.107",
+      "composer": "Charles Koechlin",
+      "composer_id": "Q72543",
+      "imslp_first_published": "1930",
+      "imslp_librettists": ""
+    },
+    {
+      "title": "2 M\u00e9lodies, Op.50",
+      "composer": "Albert Roussel",
+      "composer_id": "Q313376",
+      "imslp_first_published": "1934",
+      "imslp_librettists": "Chalupt, Ren\u00e9"
+    },
+    {
+      "title": "Der Zarewitsch",
+      "composer": "Franz Leh\u00e1r",
+      "composer_id": "Q191917",
+      "imslp_first_published": "",
+      "imslp_librettists": "Jenbach, B\u00e9la|Reichert, Heinz"
+    },
+    {
+      "title": "Prelude on a Moravian Folksong",
+      "composer": "V\u00edt\u011bzslav Nov\u00e1k",
+      "composer_id": "Q347611",
+      "imslp_first_published": "1954",
+      "imslp_librettists": ""
+    },
+    {
+      "title": "6 M\u00e9lodies, Op.25",
+      "composer": "Joseph Jongen",
+      "composer_id": "Q561259",
+      "imslp_first_published": "1926",
+      "imslp_librettists": "Bussine, Romain|Gilbart, Olympe|Hardy, Adolphe|V\u0103c\u0103rescu, Elena"
+    }
+  ],
+  "missing_cache": 0,
+  "redirect_or_missing_page": 17,
+  "notes": [
+    "Offline parse of cached IMSLP work-page categories (imslp_page_cats)",
+    "Added imslp_style, imslp_first_published, imslp_copyright_flags, imslp_librettists after composition_year",
+    "Style names strip the trailing ' style' suffix; first published uses YYYY-only categories",
+    "Copyright categories map to normalised tokens; unmapped NonPD/RoST/copyright cats are reported",
+    "Redirect and missing pages yield empty evidence cells",
+    "Composers copied unchanged except dump_date; works dump_date stamped only when present"
+  ],
+  "pd_reference_year": 2026,
+  "source_dump_id": "r012",
+  "stages": [
+    {
+      "script": "remap_force.py",
+      "dump_id": "pipeline_stage_01",
+      "enrichment": "remap_force_ids_pd",
+      "row_counts": {
+        "composers": 3368,
+        "works": 28980,
+        "force_rows_changed": 0,
+        "pd_rows_changed": 0,
+        "duplicate_composer_rows_removed": 0,
+        "work_rows_deduped": 0
+      }
+    },
+    {
+      "script": "carry_forward.py",
+      "dump_id": "pipeline_stage_02",
+      "enrichment": "carry_forward",
+      "row_counts": {
+        "composers": 3368,
+        "works": 28980
+      }
+    },
+    {
+      "script": "remap_composers.py",
+      "dump_id": "pipeline_stage_03",
+      "enrichment": "remap_composers_wikidata",
+      "row_counts": {
+        "composers": 3368,
+        "works": 28980
+      }
+    },
+    {
+      "script": "apply_overrides.py",
+      "dump_id": "pipeline_stage_04",
+      "enrichment": "apply_composer_overrides",
+      "row_counts": {
+        "composers": 3368,
+        "works": 28980
+      }
+    },
+    {
+      "script": "remap_imslp_matches.py",
+      "dump_id": "pipeline_stage_05",
+      "enrichment": "remap_imslp_identity",
+      "row_counts": {
+        "composers": 3368,
+        "works": 28980
+      }
+    },
+    {
+      "script": "remap_work_evidence.py",
+      "dump_id": "pipeline_stage_06",
+      "enrichment": "remap_work_evidence",
+      "row_counts": {
+        "composers": 3368,
+        "works": 28980
+      }
+    }
+  ],
+  "crawl_date": null,
+  "pageviews_range": null,
+  "composer_columns": [
+    "composer_id",
+    "name_display",
+    "name_sort",
+    "name_aliases",
+    "birth_year",
+    "death_year",
+    "date_precision",
+    "wikipedia_url",
+    "wikidata_url",
+    "wikidata_qid",
+    "nationality_label_wiki",
+    "citizenship_qids",
+    "citizenship_iso",
+    "occupations",
+    "scope_class",
+    "scope_class_src",
+    "is_film_composer",
+    "qa_flags",
+    "eu_pd_year",
+    "eu_pd_status",
+    "years_until_eu_pd",
+    "style_tags",
+    "style_tags_src",
+    "notable_works",
+    "notable_works_qids",
+    "imslp_category",
+    "imslp_url",
+    "imslp_match_status",
+    "imslp_match_method",
+    "imslp_match_evidence",
+    "imslp_works_count",
+    "work_categories_present",
+    "works_count_by_category",
+    "works_count_total",
+    "pageviews_enwiki",
+    "pageviews_window",
+    "schema_version",
+    "dump_date",
+    "legacy_notable_works_raw",
+    "legacy_remarks_raw"
+  ],
+  "work_columns": [
+    "work_id",
+    "composer_id",
+    "imslp_pageid",
+    "imslp_work_url",
+    "title",
+    "imslp_genre_categories",
+    "force_family",
+    "force_family_src",
+    "genre_form",
+    "has_files",
+    "fetched_at",
+    "instrumentation_raw",
+    "piece_style_raw",
+    "composition_year",
+    "imslp_style",
+    "imslp_first_published",
+    "imslp_copyright_flags",
+    "imslp_librettists"
+  ],
+  "carry_forward": {
+    "base_dump_id": "r012",
+    "carried_forward": {
+      "force_family": 0,
+      "instrumentation_raw": 0,
+      "piece_style_raw": 0,
+      "composition_year": 0,
+      "style_tags": 0
+    },
+    "lost_rows": {
+      "works": [],
+      "composers": []
+    },
+    "lost_decisions": {
+      "force_family": [],
+      "instrumentation_raw": [],
+      "piece_style_raw": [],
+      "composition_year": [],
+      "style_tags": []
+    },
+    "lost_decision_counts": {
+      "force_family": 0,
+      "instrumentation_raw": 0,
+      "piece_style_raw": 0,
+      "composition_year": 0,
+      "style_tags": 0
+    }
+  }
+}
