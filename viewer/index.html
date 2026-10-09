@@ -45,9 +45,15 @@
         </label>
 
         <fieldset class="facet" data-facet="eu">
-          <legend>EU PD status</legend>
+          <legend>EU PD status <span class="as-of" id="euAsOf"></span></legend>
           <button type="button" class="facet-clear">Any</button>
           <div class="facet-options" id="eu"></div>
+        </fieldset>
+
+        <fieldset class="facet" data-facet="pd">
+          <legend>PD preset (live)</legend>
+          <button type="button" class="facet-clear">Any</button>
+          <div class="facet-options" id="pd"></div>
         </fieldset>
 
         <fieldset class="facet" data-facet="scope">
@@ -60,6 +66,12 @@
           <legend>Has works for</legend>
           <button type="button" class="facet-clear">Any</button>
           <div class="facet-options scroll" id="force"></div>
+        </fieldset>
+
+        <fieldset class="facet" data-facet="imslpStyle">
+          <legend>IMSLP style</legend>
+          <button type="button" class="facet-clear">Any</button>
+          <div class="facet-options scroll" id="imslpStyle"></div>
         </fieldset>
 
         <fieldset class="facet" data-facet="cit">
@@ -75,13 +87,23 @@
         </fieldset>
 
         <div class="controls-row">
+          <label class="field label-src">
+            <span>Label source</span>
+            <select id="labelSrc">
+              <option value="all">All labels</option>
+              <option value="no_llm">Exclude LLM labels</option>
+              <option value="category">Category-based only</option>
+            </select>
+          </label>
+
           <label class="field sort">
             <span>Sort</span>
             <select id="sort">
-              <option value="views">Pageviews (2025)</option>
+              <option value="views">Pageviews</option>
               <option value="name">Name</option>
               <option value="eu_year">EU PD year</option>
               <option value="works">Works count</option>
+              <option value="matching">Matching works</option>
             </select>
           </label>
 
@@ -115,7 +137,7 @@
                 <th scope="col">Composer</th>
                 <th scope="col">EU</th>
                 <th scope="col" class="num">Works</th>
-                <th scope="col" class="num">Views (2025)</th>
+                <th scope="col" class="num" id="viewsHeader">Views</th>
               </tr>
             </thead>
             <tbody id="rows"></tbody>
