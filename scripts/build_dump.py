@@ -45,6 +45,7 @@ from heartbeat import Heartbeat  # noqa: E402
 from force_family import map_work_row  # noqa: E402
 from imslp import match_imslp, works_rows_for_composer  # noqa: E402
 from wikidata_enrich import (  # noqa: E402
+    apply_year_fallbacks,
     enrich_from_entity,
     fetch_entities,
     iso_codes_for_countries,
@@ -76,6 +77,8 @@ COMPOSER_COLUMNS = [
     "occupations",
     "scope_class",
     "scope_class_src",
+    "is_film_composer",
+    "qa_flags",
     "eu_pd_year",
     "eu_pd_status",
     "years_until_eu_pd",
@@ -330,12 +333,15 @@ def build(args: argparse.Namespace) -> None:
             list_birth_i = None if pd.isna(list_birth) else int(list_birth)
             list_death_i = None if pd.isna(list_death) else int(list_death)
 
-            birth_year = wd.get("birth_year")
-            death_year = wd.get("death_year")
-            if birth_year is None:
-                birth_year = list_birth_i
-            if death_year is None:
-                death_year = list_death_i
+            years = apply_year_fallbacks(
+                wd,
+                (ent or {}).get("claims", {}),
+                fallback_birth=list_birth_i,
+                fallback_death=list_death_i,
+            )
+            wd.update(years)
+            birth_year = years["birth_year"]
+            death_year = years["death_year"]
 
             skip_reason = cohort_exclusion_reason(
                 birth_year=birth_year,
@@ -486,6 +492,8 @@ def build(args: argparse.Namespace) -> None:
                     "occupations": wd.get("occupations") or "",
                     "scope_class": wd.get("scope_class") or "classical_core",
                     "scope_class_src": wd.get("scope_class_src") or "default",
+                    "is_film_composer": wd.get("is_film_composer") or "false",
+                    "qa_flags": wd.get("qa_flags") or "",
                     "eu_pd_year": pd_fields["eu_pd_year"],
                     "eu_pd_status": pd_fields["eu_pd_status"],
                     "years_until_eu_pd": pd_fields["years_until_eu_pd"],
