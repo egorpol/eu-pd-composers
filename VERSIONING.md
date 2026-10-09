@@ -24,6 +24,7 @@ Applies to code, schema contract, docs, and UI.
 | `v3.3.0` | 2026-10-09 | One-command pipeline, carry-forward, revision diff, refresh workflow, work-level IMSLP evidence, viewer filters; dump r013 |
 | `v3.4.0` | 2026-10-09 | Viewer: one live EU PD filter, unified Style filter with source selector, responsive filter panel; dump r013 |
 | `v3.4.1` | 2026-10-09 | IMSLP requests capped at ≤ 1/s on every code path; `Retry-After` honoured |
+| `v3.4.2` | 2026-10-09 | Refresh preflight fetches override re-key targets (cold-crawl fix) |
 
 Do **not** reset to `0.2` — that would go backwards from published `v1.1`.
 

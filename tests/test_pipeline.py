@@ -75,7 +75,7 @@ def commands(repository, monkeypatch):
                 df.to_csv(data_dir / f"{stem}_{dump_id}.tsv", sep="\t", index=False)
             (data_dir / f"dump_meta_{dump_id}.json").write_text(json.dumps({
                 "created_at_utc": dump_id + "T00:00:00+00:00", "row_counts": {"composers": 1, "works": 1}}))
-        elif script == "refetch_composer_pages.py":
+        elif script in {"refetch_composer_pages.py", "refetch_override_entities.py"}:
             pass
         elif script == "export_viewer_json.py":
             dump_id = arguments[arguments.index("--dump") + 1]
@@ -106,7 +106,8 @@ def test_offline_derive_no_promote(repository, commands, tmp_path, capsys):
     assert staging.is_dir()
     assert before == {p.name: p.read_bytes() for p in data.glob("*") if p.is_file()}
     calls, _ = commands
-    assert not any(call[0] in {"build_dump.py", "refetch_composer_pages.py", "export_viewer_json.py"} for call in calls)
+    assert not any(call[0] in {"build_dump.py", "refetch_composer_pages.py", "refetch_override_entities.py",
+                               "export_viewer_json.py"} for call in calls)
     assert all(call[2] == staging and call[3] == cache for call in calls)
     assert "STAGING=" in capsys.readouterr().out
     prev, nxt = diff_dumps.read_dump("r001"), diff_dumps.read_dump("r999", staging)
@@ -135,8 +136,11 @@ def test_refresh_promotes_only_final_and_restores_decisions(repository, commands
     assert not staging.exists()
     assert sorted(p.name for p in data.glob("*.tsv")) == ["composers_r001.tsv", "composers_r002.tsv", "works_r001.tsv", "works_r002.tsv"]
     assert capsys.readouterr().out.splitlines()[-1] == "REVISION=r002"
-    assert calls[0][1] == ["--date", "2026-10-09", "--pageviews-start", "20251001", "--pageviews-end", "20260930"]
-    assert [call[0] for call in calls] == ["build_dump.py", "remap_force.py", "carry_forward.py", "remap_composers.py",
+    # Override targets are fetched first, as a preflight before the long crawl.
+    assert calls[0][0] == "refetch_override_entities.py"
+    assert calls[0][1] == ["--overrides", str(repo / "data/overrides/composers.tsv")]
+    assert calls[1][1] == ["--date", "2026-10-09", "--pageviews-start", "20251001", "--pageviews-end", "20260930"]
+    assert [call[0] for call in calls] == ["refetch_override_entities.py", "build_dump.py", "remap_force.py", "carry_forward.py", "remap_composers.py",
                                           "apply_overrides.py", "refetch_composer_pages.py", "remap_imslp_matches.py",
                                           "remap_work_evidence.py", "check_release.py", "export_viewer_json.py", "check_release.py"]
     override_call = next(call for call in calls if call[0] == "apply_overrides.py")

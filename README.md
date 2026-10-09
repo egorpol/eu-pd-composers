@@ -4,7 +4,7 @@ Find notable 20th-century classical composers whose works are likely safer to st
 
 **Live viewer:** [egorpol.github.io/eu-pd-composers](https://egorpol.github.io/eu-pd-composers/)
 
-**Current direction:** versioned **composer + works** dumps (schema v3) + a static **filter viewer**. Tool line: **v3.4.1** (schema 3). Current dump: **r013**.
+**Current direction:** versioned **composer + works** dumps (schema v3) + a static **filter viewer**. Tool line: **v3.4.2** (schema 3). Current dump: **r013**.
 
 See [CHANGELOG.md](CHANGELOG.md) and [VERSIONING.md](VERSIONING.md).
 
