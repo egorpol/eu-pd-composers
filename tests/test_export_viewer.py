@@ -202,6 +202,90 @@ def test_pageviews_window_label_helper():
     assert exporter._pageviews_window_label(["2024-07..2025-06"]) == "2024-07..2025-06"
 
 
+def test_imslp_style_alias_merge_and_style_tags_coverage(patched_paths):
+    data, out = patched_paths
+    composers = pd.DataFrame(
+        [
+            _base_composer(
+                composer_id="Q1",
+                style_tags="impressionism",
+                style_tags_src="wikidata",
+                works_count_total="2",
+            ),
+            _base_composer(
+                composer_id="Q2",
+                name_display="Bob",
+                name_sort="Bob",
+                style_tags="minimalism",
+                style_tags_src="llm_luna_xhigh",
+                works_count_total="1",
+            ),
+            _base_composer(
+                composer_id="Q3",
+                name_display="Carol",
+                name_sort="Carol",
+                style_tags="",
+                style_tags_src="",
+                works_count_total="0",
+            ),
+        ]
+    )
+    works = pd.DataFrame(
+        [
+            _base_work(
+                work_id="W1",
+                composer_id="Q1",
+                imslp_style="Romántico",
+            ),
+            _base_work(
+                work_id="W2",
+                composer_id="Q1",
+                title="Folk",
+                imslp_style="Traditional|Traditional (folk)",
+            ),
+            _base_work(
+                work_id="W3",
+                composer_id="Q2",
+                title="Other",
+                imslp_style="Romantic",
+            ),
+        ]
+    )
+    _write_dump(data, "r901", composers, works)
+
+    exporter.export("r901", out)
+
+    w_map = json.loads((out / "works_by_composer.json").read_text(encoding="utf-8"))
+    manifest = json.loads((out / "manifest.json").read_text(encoding="utf-8"))
+
+    romantico = next(w for w in w_map["Q1"] if w["t"] == "Sonata")
+    assert romantico["st"] == ["Romantic"]
+
+    folk = next(w for w in w_map["Q1"] if w["t"] == "Folk")
+    assert folk["st"] == ["Traditional (folk)"]
+
+    assert manifest["facets"]["imslp_style"] == {
+        "Romantic": 2,
+        "Traditional (folk)": 1,
+    }
+    assert "Romántico" not in manifest["facets"]["imslp_style"]
+    assert "Traditional" not in manifest["facets"]["imslp_style"]
+
+    assert manifest["style_tags_coverage"] == {
+        "tagged": 2,
+        "total": 3,
+        "wikidata": 1,
+        "llm": 1,
+    }
+
+
+def test_normalize_imslp_style_helper():
+    assert exporter._normalize_imslp_style("Romántico") == "Romantic"
+    assert exporter._normalize_imslp_style("Traditional") == "Traditional (folk)"
+    assert exporter._normalize_imslp_style("Romantic") == "Romantic"
+    assert exporter._normalize_imslp_style("Baroque") == "Baroque"
+
+
 def test_exporter_follows_data_dir_env(tmp_path):
     # The pipeline exports from a relocated data dir; a hard-coded repo path broke that.
     import os

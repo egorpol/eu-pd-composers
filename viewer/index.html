@@ -26,10 +26,11 @@
           Wikidata enrichment, IMSLP work-page links (not a verified score-file inventory). Heuristic only.
         </p>
         <p class="disclaimer" id="disclaimer" role="note">
-          EU public-domain status is a death-year + 71 calendar heuristic against the dump
-          snapshot year, not legal advice — missing death years are labeled unknown_death,
-          not living. Force and style tags are research aids and often wrong — from incomplete
-          IMSLP/Wikidata data, heuristics, or LLM guesses. Verify before relying on them.
+          EU public-domain status is a live death-year + 70 years heuristic
+          (counted from 1 January), not legal advice — composers without a death
+          date are shown as having no death date. Force, period, and movement tags
+          are research aids and often wrong — from incomplete IMSLP/Wikidata data,
+          heuristics, or LLM guesses. Verify before relying on them.
         </p>
       </header>
 
@@ -44,58 +45,72 @@
           />
         </label>
 
-        <fieldset class="facet" data-facet="eu">
-          <legend>EU PD status <span class="as-of" id="euAsOf"></span></legend>
-          <button type="button" class="facet-clear">Any</button>
-          <div class="facet-options" id="eu"></div>
-        </fieldset>
+        <div class="filter-group" data-group="composer">
+          <h2 class="group-title">Composer</h2>
+          <p class="group-desc">About the composer (from Wikidata and the Wikipedia list).</p>
+          <div class="group-facets">
+            <fieldset class="facet" data-facet="pd">
+              <legend>EU public domain <span class="as-of" id="euAsOf"></span></legend>
+              <button type="button" class="facet-clear">Any</button>
+              <p class="facet-hint">Heuristic: death year + 70 years, counted from 1 January. Not legal advice.</p>
+              <div class="facet-options" id="pd"></div>
+            </fieldset>
 
-        <fieldset class="facet" data-facet="pd">
-          <legend>PD preset (live)</legend>
-          <button type="button" class="facet-clear">Any</button>
-          <div class="facet-options" id="pd"></div>
-        </fieldset>
+            <fieldset class="facet" data-facet="scope">
+              <legend>Scope</legend>
+              <button type="button" class="facet-clear">Any</button>
+              <div class="facet-options" id="scope"></div>
+            </fieldset>
 
-        <fieldset class="facet" data-facet="scope">
-          <legend>Scope</legend>
-          <button type="button" class="facet-clear">Any</button>
-          <div class="facet-options" id="scope"></div>
-        </fieldset>
+            <fieldset class="facet" data-facet="cit">
+              <legend>Citizenship</legend>
+              <button type="button" class="facet-clear">Any</button>
+              <div class="facet-options scroll codes" id="cit"></div>
+            </fieldset>
 
-        <fieldset class="facet" data-facet="force">
-          <legend>Has works for</legend>
-          <button type="button" class="facet-clear">Any</button>
-          <div class="facet-options scroll" id="force"></div>
-        </fieldset>
+            <fieldset class="facet" data-facet="style">
+              <legend>Movement (per composer)</legend>
+              <button type="button" class="facet-clear">Any</button>
+              <p class="facet-hint" id="styleHint"></p>
+              <div class="facet-options" id="style"></div>
+            </fieldset>
+          </div>
+        </div>
 
-        <fieldset class="facet" data-facet="imslpStyle">
-          <legend>IMSLP style</legend>
-          <button type="button" class="facet-clear">Any</button>
-          <div class="facet-options scroll" id="imslpStyle"></div>
-        </fieldset>
+        <div class="filter-group" data-group="works">
+          <h2 class="group-title">Works on IMSLP</h2>
+          <p class="group-desc">A composer matches when at least one work satisfies all work filters.</p>
+          <div class="group-facets">
+            <fieldset class="facet" data-facet="force">
+              <legend>Has works for</legend>
+              <button type="button" class="facet-clear">Any</button>
+              <div class="facet-options scroll" id="force"></div>
+            </fieldset>
 
-        <fieldset class="facet" data-facet="cit">
-          <legend>Citizenship</legend>
-          <button type="button" class="facet-clear">Any</button>
-          <div class="facet-options scroll codes" id="cit"></div>
-        </fieldset>
+            <fieldset class="facet" data-facet="imslpStyle">
+              <legend>Period (per work)</legend>
+              <button type="button" class="facet-clear">Any</button>
+              <p class="facet-hint">IMSLP's period label on each work page.</p>
+              <div class="facet-options scroll" id="imslpStyle"></div>
+            </fieldset>
 
-        <fieldset class="facet" data-facet="style">
-          <legend>Style</legend>
-          <button type="button" class="facet-clear">Any</button>
-          <div class="facet-options" id="style"></div>
-        </fieldset>
+            <label class="field label-src">
+              <span>Label source</span>
+              <select id="labelSrc">
+                <option value="all">All labels</option>
+                <option value="no_llm">Exclude LLM labels</option>
+                <option value="category">Category-based only</option>
+              </select>
+            </label>
+
+            <label class="check has-works-check">
+              <input type="checkbox" id="hasWorks" checked />
+              <span>Only with IMSLP works</span>
+            </label>
+          </div>
+        </div>
 
         <div class="controls-row">
-          <label class="field label-src">
-            <span>Label source</span>
-            <select id="labelSrc">
-              <option value="all">All labels</option>
-              <option value="no_llm">Exclude LLM labels</option>
-              <option value="category">Category-based only</option>
-            </select>
-          </label>
-
           <label class="field sort">
             <span>Sort</span>
             <select id="sort">
@@ -113,11 +128,6 @@
               <option value="desc">Descending</option>
               <option value="asc">Ascending</option>
             </select>
-          </label>
-
-          <label class="check">
-            <input type="checkbox" id="hasWorks" checked />
-            <span>Only with IMSLP works</span>
           </label>
 
           <span class="actions">

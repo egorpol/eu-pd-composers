@@ -87,14 +87,49 @@ body {
 }
 
 .controls {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: 0.75rem 0.9rem;
-  align-items: end;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
   margin: 1.25rem 0 0.75rem;
   padding: 1rem;
   background: color-mix(in srgb, var(--panel) 88%, transparent);
   border: 1px solid var(--line);
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding-top: 0.35rem;
+  border-top: 1px solid var(--line);
+}
+
+.filter-group:first-of-type {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.group-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--ink);
+}
+
+.group-desc {
+  margin: 0 0 0.35rem;
+  font-size: 0.82rem;
+  line-height: 1.35;
+  color: var(--ink-soft);
+}
+
+.group-facets {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.75rem 0.9rem;
+  align-items: start;
 }
 
 .field {
@@ -152,6 +187,17 @@ body {
   opacity: 0.85;
 }
 
+.facet-hint {
+  clear: both;
+  margin: 0.15rem 0 0;
+  font-size: 0.72rem;
+  font-weight: 400;
+  line-height: 1.35;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--ink-soft);
+}
+
 .facet-clear {
   float: right;
   font: 600 0.72rem/1.6 var(--font-body);
@@ -207,11 +253,12 @@ body {
 }
 
 .controls-row {
-  grid-column: 1 / -1;
   display: flex;
   flex-wrap: wrap;
   align-items: end;
   gap: 0.75rem 1.25rem;
+  padding-top: 0.35rem;
+  border-top: 1px solid var(--line);
 }
 
 .field.sort {
@@ -220,6 +267,12 @@ body {
 
 .field.label-src {
   width: 13.5rem;
+  align-self: end;
+}
+
+.has-works-check {
+  align-self: end;
+  padding-bottom: 0.45rem;
 }
 
 .match-n {
@@ -382,15 +435,33 @@ tbody tr.empty td {
   border: 1px solid currentColor;
 }
 
-.badge.pd {
+.badge.pd,
+.badge.now {
   color: var(--pd);
 }
-.badge.not_pd {
+.badge.not_pd,
+.badge.next,
+.badge.soon,
+.badge.later {
   color: var(--not);
 }
 .badge.living,
-.badge.unknown_death {
+.badge.unknown_death,
+.badge.unknown {
   color: var(--living);
+}
+
+.period-chip {
+  display: inline-block;
+  margin-left: 0.35rem;
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  padding: 0.08rem 0.32rem;
+  color: var(--ink-soft);
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--panel) 70%, #fff);
+  vertical-align: middle;
 }
 
 .detail {

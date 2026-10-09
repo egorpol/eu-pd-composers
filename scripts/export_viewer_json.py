@@ -26,6 +26,16 @@ from common import DATA_DIR, dump_meta_path, format_viewer_dump_label  # noqa: E
 # Follows EU_PD_DATA_DIR, so staged pipeline runs export the dump they just built.
 DATA = DATA_DIR
 
+# IMSLP period label aliases → canonical display names (merge counts in facets).
+IMSLP_STYLE_ALIASES = {
+    "Romántico": "Romantic",
+    "Traditional": "Traditional (folk)",
+}
+
+
+def _normalize_imslp_style(name: str) -> str:
+    return IMSLP_STYLE_ALIASES.get(name, name)
+
 
 def _clean(v):
     if v is None:
@@ -145,7 +155,9 @@ def export(dump_id: str, out_dir: Path) -> None:
             "s": src,
         }
         if has_imslp_style:
-            styles = _pipe_list(row.get("imslp_style"))
+            styles = [_normalize_imslp_style(s) for s in _pipe_list(row.get("imslp_style"))]
+            # Deduplicate after alias merge (e.g. Traditional|Traditional (folk)).
+            styles = list(dict.fromkeys(styles))
             if styles:
                 work_entry["st"] = styles
                 imslp_style_counts.update(styles)
@@ -182,6 +194,18 @@ def export(dump_id: str, out_dir: Path) -> None:
         sorted(imslp_style_counts.items(), key=lambda kv: (-kv[1], kv[0]))
     )
 
+    tagged_composers = [c for c in composer_rows if c["styles"]]
+    wikidata_tagged = sum(1 for c in tagged_composers if c["style_src"] == "wikidata")
+    llm_tagged = sum(
+        1 for c in tagged_composers if str(c["style_src"]).startswith("llm")
+    )
+    style_tags_coverage = {
+        "tagged": len(tagged_composers),
+        "total": len(composer_rows),
+        "wikidata": wikidata_tagged,
+        "llm": llm_tagged,
+    }
+
     label = format_viewer_dump_label(dump_id, created_at)
     manifest = {
         "dump_id": dump_id,
@@ -207,13 +231,14 @@ def export(dump_id: str, out_dir: Path) -> None:
             "imslp_style": imslp_styles,
             "force_family_src": sorted(force_src_tiers),
         },
+        "style_tags_coverage": style_tags_coverage,
         "disclaimer": (
-            "EU public-domain status is a death-year + 71 calendar heuristic against "
-            "the dump snapshot year, not legal advice; missing death years are "
-            "unknown_death (not living). Linked IMSLP entries are work pages, not a "
-            "verified score-file inventory. Force and style tags are research aids and "
-            "often wrong (incomplete IMSLP/Wikidata data, heuristics, or LLM guesses)—"
-            "verify before relying on them."
+            "EU public-domain status is a live death-year + 70 years heuristic "
+            "(counted from 1 January), not legal advice; composers without a death "
+            "date are shown as having no death date. Linked IMSLP entries are work "
+            "pages, not a verified score-file inventory. Force, period, and movement "
+            "tags are research aids and often wrong (incomplete IMSLP/Wikidata data, "
+            "heuristics, or LLM guesses)—verify before relying on them."
         ),
         "pageviews_window_label": _pageviews_window_label(
             [c["views_window"] for c in composer_rows]
