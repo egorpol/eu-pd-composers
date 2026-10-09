@@ -11,30 +11,83 @@ const IMSLP_STATUS_LABELS = {
 const CF_TOOLTIP =
   "IMSLP's own copyright flag on the work page — not a legal determination from this dump.";
 
+const STYLE_LABEL_OVERRIDES = {
+  late_romantic: "Late Romantic",
+  national_folk: "National / folk",
+  avant_garde: "Avant-garde",
+  atonal_modernism: "Atonal modernism",
+  postminimalism: "Post-minimalism",
+};
+
+/** Era-first union order for Style facet raw values (IMSLP display names + composer slugs). */
+export const STYLE_CANONICAL_ORDER = [
+  "Ancient",
+  "Medieval",
+  "Renaissance",
+  "Baroque",
+  "Classical",
+  "Romantic",
+  "late_romantic",
+  "Early 20th century",
+  "impressionism",
+  "expressionism",
+  "national_folk",
+  "neoclassicism",
+  "atonal_modernism",
+  "serialism",
+  "Modern",
+  "avant_garde",
+  "electroacoustic",
+  "minimalism",
+  "postminimalism",
+  "spectralism",
+  "polystylism",
+  "Jazz",
+  "Traditional (folk)",
+  "Non-western classical",
+];
+
+const STYLE_SRC_ORDER = ["wikidata", "imslp", "llm"];
+const STYLE_SRC_LABELS = {
+  wikidata: "Wikidata",
+  imslp: "IMSLP works",
+  llm: "LLM",
+};
+const DEFAULT_STYLE_SRC = ["wikidata", "imslp", "llm"];
+const STYLE_SRC_VALUES = new Set(STYLE_SRC_ORDER);
+
 // Empty selection on a facet means "no filter" on that axis.
 const FACETS = [
-  { key: "eu", manifest: "eu_pd_status", field: "eu", label: "EU PD status" },
   { key: "scope", manifest: "scope_class", field: "scope", label: "Scope" },
   { key: "force", manifest: "force_family", field: "forces", label: "Has works for", list: true, work: true },
-  { key: "imslpStyle", manifest: "imslp_style", field: "st", label: "IMSLP style", list: true, work: true },
   { key: "cit", manifest: "citizenship_iso", field: "cit", label: "Citizenship", list: true },
-  { key: "style", manifest: "style_tags", field: "styles", label: "Style", list: true },
+  { key: "style", manifest: null, field: "styles", label: "Style", list: true, humanize: true },
 ];
 
-const PD_PRESET_DEFS = [
+const PD_BUCKET_DEFS = [
   { value: "now", label: "PD now" },
   { value: "next", labelPrefix: "Enters PD on 1 January " },
-  { value: "within5", label: "Within 5 years" },
+  { value: "soon", labelRange: true },
+  { value: "later", label: "Later" },
+  { value: "unknown", label: "No death date" },
 ];
 
+const PD_VALUES = new Set(PD_BUCKET_DEFS.map((p) => p.value));
+const LEGACY_PD_VALUES = new Set(["within5"]);
+
+const EU_TO_PD = {
+  pd: ["now"],
+  not_pd: ["next", "soon", "later"],
+  unknown_death: ["unknown"],
+};
+
 const DEFAULTS = {
-  eu: ["pd"],
   scope: ["classical_core"],
   force: [],
-  imslpStyle: [],
   cit: [],
   style: [],
-  pd: [],
+  styleSrc: [...DEFAULT_STYLE_SRC],
+  pd: ["now"],
   labelSrc: "all",
   sort: "views",
   sortDir: "desc",
@@ -45,23 +98,26 @@ const DEFAULTS = {
 const LABEL_SRC_VALUES = new Set(["all", "no_llm", "category"]);
 const SORT_VALUES = new Set(["views", "name", "eu_year", "works", "matching"]);
 const SORT_DIR_VALUES = new Set(["asc", "desc"]);
-const PD_VALUES = new Set(PD_PRESET_DEFS.map((p) => p.value));
 
 const state = {
   manifest: null,
   composers: [],
   worksByComposer: {},
+  styleVocab: [],
+  styleSrcCoverage: { wikidata: 0, imslp: 0, llm: 0 },
   selectedId: null,
   detailForce: "",
   currentYear: new Date().getFullYear(),
   urlReady: false,
+  filtersMq: null,
 };
 
 const el = {};
 
 function bindElements() {
   Object.assign(el, {
-    controls: document.querySelector(".controls"),
+    filtersPanel: document.getElementById("filtersPanel"),
+    activeFilterCount: document.getElementById("activeFilterCount"),
     disclaimer: document.getElementById("disclaimer"),
     meta: document.getElementById("meta"),
     announce: document.getElementById("announce"),
@@ -76,24 +132,127 @@ function bindElements() {
     clearAll: document.getElementById("clearAll"),
     resetDefaults: document.getElementById("resetDefaults"),
     euAsOf: document.getElementById("euAsOf"),
+    styleSrc: document.getElementById("styleSrc"),
     viewsHeader: document.getElementById("viewsHeader"),
     pd: document.getElementById("pd"),
   });
   for (const f of FACETS) el[f.key] = document.getElementById(f.key);
 }
 
-/** @param {number} year */
-export function pdPresetKeys(euYear, euStatus, year) {
-  if (euStatus === "unknown_death" || euYear === "" || euYear == null) return [];
+/**
+ * Mutually exclusive live EU PD bucket from eu_year and calendar year Y.
+ * Boundaries: ≤Y → now; Y+1 → next; Y+2…Y+5 → soon; >Y+5 → later; missing → unknown.
+ * @param {string|number|null|undefined} euYear
+ * @param {number} year
+ */
+export function pdBucket(euYear, year) {
+  if (euYear === "" || euYear == null) return "unknown";
   const y = Number(euYear);
-  if (!Number.isFinite(y)) return [];
-  const keys = [];
-  if (y <= year) keys.push("now");
-  else {
-    if (y === year + 1) keys.push("next");
-    if (y <= year + 5) keys.push("within5");
+  if (!Number.isFinite(y)) return "unknown";
+  if (y <= year) return "now";
+  if (y === year + 1) return "next";
+  if (y <= year + 5) return "soon";
+  return "later";
+}
+
+/** @deprecated Prefer pdBucket; kept for callers that still pass euStatus. */
+export function pdPresetKeys(euYear, _euStatus, year) {
+  return [pdBucket(euYear, year)];
+}
+
+/** Human label for a Style facet raw value (composer slug or IMSLP period name). */
+export function humanizeStyleTag(raw) {
+  if (!raw) return "";
+  if (STYLE_LABEL_OVERRIDES[raw]) return STYLE_LABEL_OVERRIDES[raw];
+  return String(raw)
+    .split("_")
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+}
+
+/** Map legacy URL facet values into current pd buckets (unknown values dropped). */
+export function mapLegacyPdUrl(pdValues, euValues) {
+  const out = new Set();
+  for (const v of pdValues || []) {
+    if (v === "within5") {
+      out.add("next");
+      out.add("soon");
+    } else if (PD_VALUES.has(v)) {
+      out.add(v);
+    }
   }
-  return keys;
+  for (const v of euValues || []) {
+    const mapped = EU_TO_PD[v];
+    if (mapped) for (const m of mapped) out.add(m);
+  }
+  return [...out];
+}
+
+/**
+ * Ordered union of style vocabularies: canonical era-first order, then unknown values A–Z.
+ * @param {Iterable<string>} values
+ */
+export function buildStyleVocab(values) {
+  const present = new Set([...values].filter(Boolean));
+  const known = new Set(STYLE_CANONICAL_ORDER);
+  const ordered = STYLE_CANONICAL_ORDER.filter((v) => present.has(v));
+  const extras = [...present].filter((v) => !known.has(v)).sort((a, b) => a.localeCompare(b));
+  return [...ordered, ...extras];
+}
+
+/**
+ * Per-composer styles keyed by source.
+ * Wikidata / LLM use composer.styles when style_src matches; IMSLP is the union of work.st.
+ * @param {{ styles?: string[], style_src?: string }} composer
+ * @param {Array<{ st?: string[] }>|undefined} works
+ */
+export function composerStylesBySource(composer, works) {
+  const by = { wikidata: [], llm: [], imslp: [] };
+  const tags = Array.isArray(composer.styles) ? composer.styles : [];
+  const src = composer.style_src || "";
+  if (tags.length && src === "wikidata") by.wikidata = tags.slice();
+  if (tags.length && String(src).startsWith("llm")) by.llm = tags.slice();
+  const imslp = new Set();
+  for (const w of works || []) {
+    for (const s of w.st || []) if (s) imslp.add(s);
+  }
+  by.imslp = [...imslp];
+  return by;
+}
+
+/**
+ * Composer matches when any selected style appears under any selected source.
+ * Empty styleSet → no style filter (always true). Empty srcSet with styles → no match.
+ * @param {{ wikidata: string[], llm: string[], imslp: string[] }} bySource
+ * @param {Set<string>} styleSet
+ * @param {Set<string>} srcSet
+ */
+export function composerMatchesStyle(bySource, styleSet, srcSet) {
+  if (!styleSet.size) return true;
+  if (!srcSet.size) return false;
+  for (const src of STYLE_SRC_ORDER) {
+    if (!srcSet.has(src)) continue;
+    const vals = bySource[src] || [];
+    if (vals.some((v) => styleSet.has(v))) return true;
+  }
+  return false;
+}
+
+/** Live EU column / badge text for a composer. */
+export function liveEuLabel(euYear, year) {
+  const bucket = pdBucket(euYear, year);
+  if (bucket === "now") return "PD";
+  if (bucket === "unknown") return "—";
+  return String(euYear);
+}
+
+/** Detail-pane sentence for live EU status. */
+export function liveEuDetail(euYear, year) {
+  const bucket = pdBucket(euYear, year);
+  if (bucket === "now") return "In EU public domain now";
+  if (bucket === "unknown") return "No death date — EU PD year unknown";
+  return `Enters EU PD on 1 January ${euYear}`;
 }
 
 /** Missing/unknown sort last in both directions. */
@@ -115,30 +274,28 @@ export function workMatchesSource(work, srcMode) {
   return true;
 }
 
-export function workMatchesFilters(work, forceSet, styleSet, srcMode) {
+export function workMatchesFilters(work, forceSet, srcMode) {
   if (!workMatchesSource(work, srcMode)) return false;
   if (forceSet.size && !forceSet.has(work.f)) return false;
-  if (styleSet.size) {
-    const st = work.st || [];
-    if (!st.some((x) => styleSet.has(x))) return false;
-  }
   return true;
 }
 
 export function encodeUrlState(params) {
   const sp = new URLSearchParams();
-  // Marker so a shared URL with no eu/scope means "cleared", not "use defaults".
+  // Marker so a shared URL with no filters means "cleared", not "use defaults".
   sp.set("v", "1");
   const setList = (key, values) => {
     if (values && values.length) sp.set(key, values.join(","));
   };
   if (params.q) sp.set("q", params.q);
-  setList("eu", params.eu);
   setList("scope", params.scope);
   setList("force", params.force);
-  setList("ist", params.imslpStyle);
   setList("cit", params.cit);
   setList("style", params.style);
+  const srcs = params.styleSrc || [];
+  const allSrc =
+    srcs.length === DEFAULT_STYLE_SRC.length && DEFAULT_STYLE_SRC.every((s) => srcs.includes(s));
+  if (srcs.length && !allSrc) setList("styleSrc", srcs);
   setList("pd", params.pd);
   if (params.labelSrc && params.labelSrc !== "all") sp.set("src", params.labelSrc);
   if (params.sort && params.sort !== "views") sp.set("sort", params.sort);
@@ -148,6 +305,10 @@ export function encodeUrlState(params) {
   return `?${sp.toString()}`;
 }
 
+/**
+ * Decode shareable URL state. Legacy: `ist` / `imslpStyle` → style + styleSrc=imslp
+ * when no modern `style` / `styleSrc` are present; bare `style=Y` keeps working.
+ */
 export function decodeUrlState(search, allowed) {
   const sp = new URLSearchParams(search.startsWith("?") ? search.slice(1) : search);
   const list = (key, allow) => {
@@ -163,13 +324,33 @@ export function decodeUrlState(search, allowed) {
 
   const out = { useDefaults: false };
   out.q = sp.has("q") ? sp.get("q") || "" : "";
-  out.eu = list("eu", allowed.eu);
   out.scope = list("scope", allowed.scope);
   out.force = list("force", allowed.force);
-  out.imslpStyle = list("ist", allowed.imslpStyle);
   out.cit = list("cit", allowed.cit);
-  out.style = list("style", allowed.style);
-  out.pd = list("pd", PD_VALUES);
+
+  const styleAllow = allowed.style || null;
+  const modernStyle = list("style", styleAllow);
+  const legacyIst = [
+    ...list("ist", styleAllow),
+    ...list("imslpStyle", styleAllow),
+  ];
+  out.style = [...new Set([...modernStyle, ...legacyIst])];
+
+  if (sp.has("styleSrc")) {
+    const srcs = list("styleSrc", STYLE_SRC_VALUES);
+    out.styleSrc = srcs.length ? srcs : [...DEFAULT_STYLE_SRC];
+  } else if (legacyIst.length && !modernStyle.length) {
+    out.styleSrc = ["imslp"];
+  } else {
+    out.styleSrc = [...DEFAULT_STYLE_SRC];
+  }
+
+  // Accept current pd buckets plus legacy within5; map eu=… separately.
+  const pdAllow = new Set([...PD_VALUES, ...LEGACY_PD_VALUES]);
+  const rawPd = list("pd", pdAllow);
+  const rawEu = list("eu", new Set(Object.keys(EU_TO_PD)));
+  out.pd = mapLegacyPdUrl(rawPd, rawEu);
+
   out.labelSrc = "all";
   if (sp.has("src")) {
     const src = sp.get("src");
@@ -199,6 +380,7 @@ export function decodeUrlState(search, allowed) {
 }
 
 function selectedValues(container) {
+  if (!container) return [];
   return [...container.querySelectorAll("input:checked")].map((i) => i.value);
 }
 
@@ -206,27 +388,85 @@ function facetValuesFromManifest(facet, facets) {
   const raw = facets[facet.manifest];
   if (!raw) return [];
   if (Array.isArray(raw)) return raw;
-  // imslp_style vocabulary is { name: count }
   return Object.keys(raw);
+}
+
+function optionLabel(facet, value) {
+  if (facet.humanize) return humanizeStyleTag(value);
+  return value;
 }
 
 function fillFacet(facet, values, selected) {
   const box = el[facet.key];
+  if (facet.key === "style") {
+    fillStyleFacet(selected);
+    return;
+  }
   box.innerHTML = values
     .map(
       (v) => `<label class="opt"><input type="checkbox" name="${facet.key}" value="${escapeHtml(v)}"${
         selected.includes(v) ? " checked" : ""
-      } /><span>${escapeHtml(v)}</span></label>`
+      } /><span>${escapeHtml(optionLabel(facet, v))}</span></label>`
     )
     .join("");
   updateFacetButton(facet);
 }
 
+function styleCountsForSources(srcSet) {
+  const counts = Object.create(null);
+  for (const v of state.styleVocab) counts[v] = 0;
+  for (const c of state.composers) {
+    const by = c._stylesBySrc;
+    const seen = new Set();
+    for (const src of STYLE_SRC_ORDER) {
+      if (!srcSet.has(src)) continue;
+      for (const v of by[src] || []) {
+        if (seen.has(v)) continue;
+        seen.add(v);
+        if (v in counts) counts[v] += 1;
+      }
+    }
+  }
+  return counts;
+}
+
+function fillStyleFacet(selected) {
+  const srcSet = new Set(selectedValues(el.styleSrc));
+  const counts = styleCountsForSources(srcSet);
+  const sel = selected || selectedValues(el.style);
+  el.style.innerHTML = state.styleVocab
+    .map((v) => {
+      const n = counts[v] || 0;
+      return `<label class="opt"><input type="checkbox" name="style" value="${escapeHtml(v)}"${
+        sel.includes(v) ? " checked" : ""
+      } /><span>${escapeHtml(humanizeStyleTag(v))}</span><span class="count">${n.toLocaleString()}</span></label>`;
+    })
+    .join("");
+  updateFacetButton(FACETS.find((f) => f.key === "style"));
+}
+
+function fillStyleSrc(selected) {
+  const cov = state.styleSrcCoverage;
+  const sel = selected.length ? selected : [...DEFAULT_STYLE_SRC];
+  el.styleSrc.innerHTML = STYLE_SRC_ORDER.map((src) => {
+    const n = cov[src] || 0;
+    const label = STYLE_SRC_LABELS[src];
+    return `<label class="opt"><input type="checkbox" name="styleSrc" value="${src}"${
+      sel.includes(src) ? " checked" : ""
+    } /><span>${escapeHtml(label)} ${n.toLocaleString()}</span></label>`;
+  }).join("");
+}
+
+function pdOptionLabel(def, year) {
+  if (def.value === "next") return `${def.labelPrefix}${year + 1}`;
+  if (def.value === "soon") return `Enters PD ${year + 2}–${year + 5}`;
+  return def.label;
+}
+
 function fillPdFacet(selected) {
   const year = state.currentYear;
-  const options = PD_PRESET_DEFS.map((p) => {
-    const label =
-      p.value === "next" ? `${p.labelPrefix}${year + 1}` : p.label;
+  const options = PD_BUCKET_DEFS.map((p) => {
+    const label = pdOptionLabel(p, year);
     return `<label class="opt"><input type="checkbox" name="pd" value="${p.value}"${
       selected.includes(p.value) ? " checked" : ""
     } /><span>${escapeHtml(label)}</span></label>`;
@@ -245,6 +485,11 @@ function setPdFacet(values) {
   updatePdButton();
 }
 
+function setStyleSrc(values) {
+  const want = values.length ? values : [...DEFAULT_STYLE_SRC];
+  for (const i of el.styleSrc.querySelectorAll("input")) i.checked = want.includes(i.value);
+}
+
 function updateFacetButton(facet) {
   const btn = el[facet.key].closest(".facet").querySelector(".facet-clear");
   const n = selectedValues(el[facet.key]).length;
@@ -258,7 +503,10 @@ function updatePdButton() {
   const n = selectedValues(el.pd).length;
   btn.disabled = n === 0;
   btn.textContent = n ? `Clear (${n})` : "Any";
-  btn.setAttribute("aria-label", n ? `Clear PD preset filter, ${n} selected` : "PD preset: any");
+  btn.setAttribute(
+    "aria-label",
+    n ? `Clear EU public domain filter, ${n} selected` : "EU public domain: any"
+  );
 }
 
 function matchesQuery(c, q) {
@@ -276,13 +524,13 @@ function lifeSpan(c, sep) {
   return "";
 }
 
-function workFilterActive(forceSet, styleSet, srcMode) {
-  return forceSet.size > 0 || styleSet.size > 0 || srcMode !== "all";
+function workFilterActive(forceSet, srcMode) {
+  return forceSet.size > 0 || srcMode !== "all";
 }
 
-function matchingWorksFor(c, forceSet, styleSet, srcMode) {
+function matchingWorksFor(c, forceSet, srcMode) {
   const works = state.worksByComposer[c.id] || [];
-  return works.filter((w) => workMatchesFilters(w, forceSet, styleSet, srcMode));
+  return works.filter((w) => workMatchesFilters(w, forceSet, srcMode));
 }
 
 function readUiState() {
@@ -290,12 +538,11 @@ function readUiState() {
   for (const f of FACETS) sel[f.key] = selectedValues(el[f.key]);
   return {
     q: el.q.value.trim(),
-    eu: sel.eu,
     scope: sel.scope,
     force: sel.force,
-    imslpStyle: sel.imslpStyle,
     cit: sel.cit,
     style: sel.style,
+    styleSrc: selectedValues(el.styleSrc),
     pd: selectedValues(el.pd),
     labelSrc: el.labelSrc.value,
     sort: el.sort.value,
@@ -303,6 +550,28 @@ function readUiState() {
     hasWorks: el.hasWorks.checked,
     id: state.selectedId,
   };
+}
+
+function countActiveFilters(ui) {
+  let n = 0;
+  if (ui.q) n += 1;
+  if (ui.scope.length) n += 1;
+  if (ui.force.length) n += 1;
+  if (ui.cit.length) n += 1;
+  if (ui.style.length) n += 1;
+  if (ui.pd.length) n += 1;
+  const allSrc =
+    ui.styleSrc.length === DEFAULT_STYLE_SRC.length &&
+    DEFAULT_STYLE_SRC.every((s) => ui.styleSrc.includes(s));
+  if (ui.styleSrc.length && !allSrc) n += 1;
+  if (ui.labelSrc && ui.labelSrc !== "all") n += 1;
+  if (ui.hasWorks) n += 1;
+  return n;
+}
+
+function updateActiveFilterCount() {
+  const n = countActiveFilters(readUiState());
+  el.activeFilterCount.textContent = String(n);
 }
 
 function pushUrlState() {
@@ -317,30 +586,32 @@ function filteredComposers() {
   const sel = {};
   for (const f of FACETS) sel[f.key] = new Set(selectedValues(el[f.key]));
   const pdSel = new Set(selectedValues(el.pd));
+  const styleSrcSet = new Set(selectedValues(el.styleSrc));
   const onlyWorks = el.hasWorks.checked;
   const srcMode = el.labelSrc.value;
   const forceSet = sel.force;
-  const imslpStyleSet = sel.imslpStyle;
-  const workActive = workFilterActive(forceSet, imslpStyleSet, srcMode);
+  const workActive = workFilterActive(forceSet, srcMode);
 
   const rows = state.composers.filter((c) => {
     if (!matchesQuery(c, q)) return false;
     if (onlyWorks && !(c.works_n > 0)) return false;
 
     for (const f of FACETS) {
-      if (f.work) continue;
+      if (f.work || f.key === "style") continue;
       const s = sel[f.key];
       if (!s.size) continue;
       const v = c[f.field];
       if (f.list ? !v.some((x) => s.has(x)) : !s.has(v)) return false;
     }
 
+    if (!composerMatchesStyle(c._stylesBySrc, sel.style, styleSrcSet)) return false;
+
     if (pdSel.size) {
-      const keys = pdPresetKeys(c.eu_year, c.eu, state.currentYear);
-      if (![...pdSel].some((k) => keys.includes(k))) return false;
+      const bucket = pdBucket(c.eu_year, state.currentYear);
+      if (!pdSel.has(bucket)) return false;
     }
 
-    const matched = matchingWorksFor(c, forceSet, imslpStyleSet, srcMode);
+    const matched = matchingWorksFor(c, forceSet, srcMode);
     c._match_n = matched.length;
     if (workActive && matched.length === 0) return false;
     return true;
@@ -373,11 +644,11 @@ function formatWorksCell(c, workActive) {
 
 function renderRows() {
   const forceSet = new Set(selectedValues(el.force));
-  const imslpStyleSet = new Set(selectedValues(el.imslpStyle));
   const srcMode = el.labelSrc.value;
-  const workActive = workFilterActive(forceSet, imslpStyleSet, srcMode);
+  const workActive = workFilterActive(forceSet, srcMode);
   const rows = filteredComposers();
   el.meta.textContent = `${rows.length.toLocaleString()} of ${state.composers.length.toLocaleString()} composers shown · ${state.manifest.dump_label || "dump " + state.manifest.dump_id}`;
+  updateActiveFilterCount();
 
   if (state.selectedId != null) {
     const stillVisible = rows.some((c) => c.id === state.selectedId);
@@ -398,16 +669,19 @@ function renderRows() {
     el.rows.innerHTML = `<tr class="empty"><td colspan="4">No composers match these filters. Try “Any” on a facet, or clear the search.</td></tr>`;
     return;
   }
+  const year = state.currentYear;
   el.rows.innerHTML = rows
     .map((c) => {
       const active = c.id === state.selectedId;
       const sub = lifeSpan(c, "–") + (c.scope && c.scope !== "classical_core" ? " · " + c.scope : "");
+      const bucket = pdBucket(c.eu_year, year);
+      const euText = liveEuLabel(c.eu_year, year);
       return `<tr data-id="${escapeHtml(c.id)}"${active ? ' class="active"' : ""}>
       <td>
         <button type="button" class="row-btn" aria-pressed="${active}">${escapeHtml(c.name)}</button>
         <span class="sub">${escapeHtml(sub)}</span>
       </td>
-      <td><span class="badge ${escapeHtml(c.eu || "")}">${escapeHtml(c.eu || "—")}</span></td>
+      <td><span class="badge ${escapeHtml(bucket)}">${escapeHtml(euText)}</span></td>
       <td class="num">${formatWorksCell(c, workActive)}</td>
       <td class="num">${formatViews(c.views)}</td></tr>`;
     })
@@ -471,6 +745,27 @@ function workEvidenceHtml(w) {
   return bits.length ? ` ${bits.join(" ")}` : "";
 }
 
+function periodChipsHtml(w) {
+  const st = w.st || [];
+  if (!st.length) return "";
+  return st
+    .map((p) => `<span class="period-chip" title="IMSLP period">${escapeHtml(p)}</span>`)
+    .join("");
+}
+
+function styleDetailLine(c) {
+  const by = c._stylesBySrc;
+  const parts = [];
+  for (const src of STYLE_SRC_ORDER) {
+    const vals = by[src] || [];
+    if (!vals.length) continue;
+    const labels = vals.map(humanizeStyleTag).join(", ");
+    parts.push(`${STYLE_SRC_LABELS[src]}: ${labels}`);
+  }
+  if (!parts.length) return "";
+  return `Style — ${parts.join(" · ")}`;
+}
+
 function selectComposer(id) {
   const prev = el.rows.querySelector("tr.active");
   if (prev) {
@@ -491,7 +786,7 @@ function selectComposer(id) {
   renderDetail();
   pushUrlState();
   el.announce.textContent = `${c.name}: ${works.length} IMSLP works`;
-  if (window.matchMedia("(max-width: 860px)").matches) {
+  if (window.matchMedia("(max-width: 900px)").matches) {
     el.detail.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 }
@@ -505,18 +800,13 @@ function renderDetail() {
   const works = state.worksByComposer[c.id] || [];
   const srcMode = el.labelSrc.value;
   const facetForces = selectedValues(el.force);
-  const imslpStyleSet = new Set(selectedValues(el.imslpStyle));
 
   let forceFilter = new Set();
   if (state.detailForce) forceFilter = new Set([state.detailForce]);
   else if (facetForces.length) forceFilter = new Set(facetForces);
 
-  const shown = works.filter((w) =>
-    workMatchesFilters(w, forceFilter, imslpStyleSet, srcMode)
-  );
-  const forForceOptions = works.filter((w) =>
-    workMatchesFilters(w, new Set(), imslpStyleSet, srcMode)
-  );
+  const shown = works.filter((w) => workMatchesFilters(w, forceFilter, srcMode));
+  const forForceOptions = works.filter((w) => workMatchesFilters(w, new Set(), srcMode));
   const forces = [...new Set(forForceOptions.map((w) => w.f).filter(Boolean))].sort();
   const forceSelect =
     state.detailForce && forces.includes(state.detailForce) ? state.detailForce : "";
@@ -527,19 +817,16 @@ function renderDetail() {
   if (c.imslp) links.push(`<a href="${escapeHtml(c.imslp)}" target="_blank" rel="noopener">IMSLP</a>`);
 
   const years = lifeSpan(c, " – ");
-  const euBit =
-    c.eu_year !== "" && c.eu_year != null
-      ? ` · heuristic EU PD year ${escapeHtml(c.eu_year)}`
-      : "";
+  const euDetail = liveEuDetail(c.eu_year, state.currentYear);
+  const bucket = pdBucket(c.eu_year, state.currentYear);
+  const euBit = ` · ${escapeHtml(euDetail)}`;
 
   const metaBits = [];
   if (c.imslp_status) {
     metaBits.push(`IMSLP match: ${escapeHtml(imslpStatusText(c.imslp_status))}`);
   }
-  if (c.styles && c.styles.length) {
-    const src = c.style_src ? ` (${escapeHtml(c.style_src)})` : "";
-    metaBits.push(`styles: ${escapeHtml(c.styles.join(", "))}${src}`);
-  }
+  const styleLine = styleDetailLine(c);
+  if (styleLine) metaBits.push(escapeHtml(styleLine));
   if (c.film) metaBits.push("also film composer");
   const metaLine = metaBits.length
     ? `<p class="detail-meta">${metaBits.join(" · ")}</p>`
@@ -551,7 +838,7 @@ function renderDetail() {
       c.imslp ? " — the IMSLP category page may still list scores" : ""
     }.</p>`;
   } else if (!shown.length) {
-    worksBlock = `<p class="detail-empty">No works match the current force / style / label-source filters for this composer.</p>`;
+    worksBlock = `<p class="detail-empty">No works match the current force / label-source filters for this composer.</p>`;
   } else {
     worksBlock = `
     <p class="force-filter">
@@ -566,7 +853,7 @@ function renderDetail() {
         .map(
           (w) => `<li>
             <a href="${escapeHtml(w.u)}" target="_blank" rel="noopener">${escapeHtml(w.t || "Work")}</a>
-            <span class="src">${escapeHtml(w.f)}${w.s ? " · " + escapeHtml(w.s) : ""}</span>${workEvidenceHtml(w)}
+            <span class="src">${escapeHtml(w.f)}${w.s ? " · " + escapeHtml(w.s) : ""}</span>${periodChipsHtml(w)}${workEvidenceHtml(w)}
           </li>`
         )
         .join("")}
@@ -575,7 +862,7 @@ function renderDetail() {
 
   el.detail.innerHTML = `
     <h2>${escapeHtml(c.name)}</h2>
-    <p class="years">${years ? escapeHtml(years) + " · " : ""}<span class="badge ${escapeHtml(c.eu)}">${escapeHtml(c.eu)}</span>${euBit}</p>
+    <p class="years">${years ? escapeHtml(years) + " · " : ""}<span class="badge ${escapeHtml(bucket)}">${escapeHtml(liveEuLabel(c.eu_year, state.currentYear))}</span>${euBit}</p>
     ${metaLine}
     <div class="detail-links">${links.join("") || "<span>No external links</span>"}</div>
     ${worksBlock}`;
@@ -584,26 +871,65 @@ function renderDetail() {
 
 let qTimer = 0;
 
+function syncFiltersPanelOpen(force) {
+  if (!el.filtersPanel || !state.filtersMq) return;
+  if (force || !el.filtersPanel.dataset.userToggled) {
+    el.filtersPanel.open = state.filtersMq.matches;
+  }
+}
+
 function bindEvents() {
   el.q.addEventListener("input", () => {
     clearTimeout(qTimer);
     qTimer = setTimeout(renderRows, 120);
   });
 
-  el.controls.addEventListener("change", (e) => {
+  el.filtersPanel.addEventListener("toggle", () => {
+    el.filtersPanel.dataset.userToggled = "1";
+  });
+
+  state.filtersMq = window.matchMedia("(min-width: 901px)");
+  syncFiltersPanelOpen(true);
+  const onMq = () => {
+    delete el.filtersPanel.dataset.userToggled;
+    syncFiltersPanelOpen(true);
+  };
+  if (state.filtersMq.addEventListener) state.filtersMq.addEventListener("change", onMq);
+  else state.filtersMq.addListener(onMq);
+
+  document.addEventListener("click", (e) => {
+    const toggle = e.target.closest(".hint-toggle");
+    if (!toggle) return;
+    const id = toggle.getAttribute("aria-controls");
+    const hint = id ? document.getElementById(id) : null;
+    if (!hint) return;
+    const open = toggle.getAttribute("aria-expanded") === "true";
+    toggle.setAttribute("aria-expanded", open ? "false" : "true");
+    hint.hidden = open;
+  });
+
+  const onFilterChange = (e) => {
     if (e.target === el.q) return;
+    if (e.target.name === "styleSrc") {
+      const checked = selectedValues(el.style);
+      fillStyleFacet(checked);
+    }
     const fs = e.target.closest(".facet");
     if (fs) {
       if (fs.dataset.facet === "pd") updatePdButton();
-      else {
+      else if (fs.dataset.facet === "style" && e.target.name === "style") {
+        updateFacetButton(FACETS.find((f) => f.key === "style"));
+      } else {
         const facet = FACETS.find((f) => f.key === fs.dataset.facet);
-        if (facet) updateFacetButton(facet);
+        if (facet && e.target.name !== "styleSrc") updateFacetButton(facet);
       }
     }
     renderRows();
-  });
+  };
 
-  el.controls.addEventListener("click", (e) => {
+  el.filtersPanel.addEventListener("change", onFilterChange);
+
+  el.filtersPanel.addEventListener("click", (e) => {
     const btn = e.target.closest(".facet-clear");
     if (!btn) return;
     const facetEl = btn.closest(".facet");
@@ -621,6 +947,8 @@ function bindEvents() {
   el.clearAll.addEventListener("click", () => {
     for (const f of FACETS) setFacet(f, []);
     setPdFacet([]);
+    setStyleSrc([...DEFAULT_STYLE_SRC]);
+    fillStyleFacet([]);
     el.q.value = "";
     el.hasWorks.checked = false;
     el.labelSrc.value = "all";
@@ -631,8 +959,13 @@ function bindEvents() {
   });
 
   el.resetDefaults.addEventListener("click", () => {
-    for (const f of FACETS) setFacet(f, DEFAULTS[f.key] || []);
+    for (const f of FACETS) {
+      if (f.key === "style") continue;
+      setFacet(f, DEFAULTS[f.key] || []);
+    }
     setPdFacet(DEFAULTS.pd);
+    setStyleSrc([...DEFAULT_STYLE_SRC]);
+    fillStyleFacet([]);
     el.q.value = "";
     el.hasWorks.checked = true;
     el.labelSrc.value = "all";
@@ -670,6 +1003,17 @@ function applyPageviewsLabel(label) {
   if (opt) opt.textContent = label ? `Pageviews (${label})` : "Pageviews";
 }
 
+function computeStyleSrcCoverage(composers) {
+  const cov = { wikidata: 0, imslp: 0, llm: 0 };
+  for (const c of composers) {
+    const by = c._stylesBySrc;
+    if (by.wikidata.length) cov.wikidata += 1;
+    if (by.imslp.length) cov.imslp += 1;
+    if (by.llm.length) cov.llm += 1;
+  }
+  return cov;
+}
+
 async function load() {
   bindElements();
   el.meta.textContent = "Loading dump…";
@@ -680,36 +1024,49 @@ async function load() {
     fetchJson(files.works_by_composer || "works_by_composer.json"),
   ]);
   state.manifest = manifest;
+  const allStyleValues = new Set();
   composers.forEach((c) => {
     c._hay = [c.name, c.sort, ...(c.aliases || [])].join(" ").toLowerCase();
     for (const f of FACETS) {
-      if (f.work) continue;
+      if (f.work || f.key === "style") continue;
       if (f.list && !Array.isArray(c[f.field])) c[f.field] = [];
+    }
+    if (!Array.isArray(c.styles)) c.styles = [];
+    c._stylesBySrc = composerStylesBySource(c, worksByComposer[c.id] || []);
+    for (const src of STYLE_SRC_ORDER) {
+      for (const v of c._stylesBySrc[src]) allStyleValues.add(v);
     }
   });
   state.composers = composers;
   state.worksByComposer = worksByComposer;
+  state.styleVocab = buildStyleVocab(allStyleValues);
+  state.styleSrcCoverage = computeStyleSrcCoverage(composers);
 
   if (manifest.disclaimer) el.disclaimer.textContent = manifest.disclaimer;
   el.dumpLabel.textContent = manifest.dump_label || `dump ${manifest.dump_id}`;
-  el.euAsOf.textContent = `(as of ${state.currentYear})`;
+  if (el.euAsOf) el.euAsOf.textContent = `as of ${state.currentYear}`;
   applyPageviewsLabel(manifest.pageviews_window_label || "");
 
   const facets = manifest.facets || {};
   const allowed = {
-    eu: new Set(facets.eu_pd_status || []),
     scope: new Set(facets.scope_class || []),
     force: new Set(facets.force_family || []),
-    imslpStyle: new Set(facetValuesFromManifest({ manifest: "imslp_style" }, facets)),
     cit: new Set(facets.citizenship_iso || []),
-    style: new Set(facets.style_tags || []),
+    style: new Set(state.styleVocab),
     ids: new Set(composers.map((c) => c.id)),
   };
 
   const fromUrl = decodeUrlState(location.search, allowed);
-  const init = fromUrl.useDefaults ? { ...DEFAULTS } : fromUrl;
+  const init = fromUrl.useDefaults ? { ...DEFAULTS, styleSrc: [...DEFAULT_STYLE_SRC] } : fromUrl;
+
+  fillStyleSrc(init.styleSrc || [...DEFAULT_STYLE_SRC]);
 
   for (const f of FACETS) {
+    if (f.key === "style") {
+      const preferred = init.style || [];
+      fillStyleFacet(preferred.filter((v) => state.styleVocab.includes(v)));
+      continue;
+    }
     const values = facetValuesFromManifest(f, facets);
     const preferred = init[f.key] || [];
     fillFacet(
@@ -718,7 +1075,7 @@ async function load() {
       preferred.filter((v) => values.includes(v))
     );
   }
-  fillPdFacet(init.pd || []);
+  fillPdFacet((init.pd || []).filter((v) => PD_VALUES.has(v)));
 
   el.q.value = init.q || "";
   el.labelSrc.value = init.labelSrc || "all";
