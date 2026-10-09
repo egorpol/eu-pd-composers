@@ -1,9 +1,9 @@
 {
-  "dump_id": "r008",
-  "dump_label": "dump r008 \u00b7 built 2026-09-25",
-  "created_at_utc": "2026-09-25T07:13:06.944282+00:00",
+  "dump_id": "r010",
+  "dump_label": "dump r010 \u00b7 built 2026-10-09",
+  "created_at_utc": "2026-10-09T10:32:09.367361+00:00",
   "schema_version": 3,
-  "generated_at_utc": "2026-09-25T07:13:08.438360+00:00",
+  "generated_at_utc": "2026-10-09T10:32:10.729104+00:00",
   "counts": {
     "composers": 3368,
     "works": 28993,
@@ -22,7 +22,6 @@
     "scope_class": [
       "classical_core",
       "crossover",
-      "film_media",
       "popular"
     ],
     "force_family": [

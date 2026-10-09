@@ -22,7 +22,7 @@ flowchart TB
     P839[P839 category]
     HEUR[Heuristic Last, First]
     WORKS[categorymembers → work pages]
-    CATS[Optional: work categories]
+    CATS[Work categories by page id<br/>complete, follows continuation]
     FF1[force_family rules on scrape]
   end
 
@@ -30,7 +30,9 @@ flowchart TB
     ENR[scripts/enrich_dump.py<br/>IMSLP tags + title → force_family]
     GI[scripts/enrich_geninfo.py<br/>IMSLP General Information → imslp_geninfo]
     STY[STYLE_QID remap + prepare_llm_residual]
-    LLM[scripts/llm_force_family.py<br/>gpt-6-luna xhigh via Codex<br/>residual only — run when approved]
+    REFRESH["scripts/refetch_work_categories.py<br/>+ remap_force.py --refresh-categories"]
+    WDREMAP[scripts/remap_composers.py<br/>rank-aware dates, scope, qa_flags]
+    LLM[scripts/llm_force_family.py / llm_residual.py<br/>Codex CLI — residual only, run when approved]
     ROLL[Composer rollups]
   end
 
@@ -57,7 +59,7 @@ flowchart TB
   FF1 --> WK
   C --> ENR
   WK --> ENR
-  ENR --> GI --> STY
+  ENR --> REFRESH --> WDREMAP --> GI --> STY
   STY -.->|approved| LLM
   LLM --> ROLL --> C
   LLM --> WK
@@ -77,7 +79,7 @@ flowchart LR
   GI -->|miss| D{Title heuristics?}
   D -->|hit| E[force_family_src = title]
   D -->|miss| F[unclassified / other]
-  F --> G[LLM gpt-6-luna xhigh<br/>force_family_src = llm]
+  F --> G[Earlier LLM fill kept<br/>force_family_src = llm*]
   C --> H[Composer rollups]
   GIsrc --> H
   E --> H
@@ -85,6 +87,26 @@ flowchart LR
 ```
 
 Arrangement `(arr)` category tokens never set force; opera/voice beat concerto; original orchestra beats piano reductions.
+
+`For …` categories are parsed into parts (`For 2 violins, viola, cello` → 2 violins · viola · cello) and matched by whole words, never substrings. Conventions:
+
+| Parts | force_family |
+|---|---|
+| any chorus | `choral` |
+| voice(s) with any accompaniment; 1–2 unaccompanied voices | `solo_voice` |
+| 3+ unaccompanied voices | `choral` |
+| orchestra or `strings` (string orchestra) + soloist/instrument | `concerto` |
+| orchestra / `strings` alone | `orchestral` |
+| band / wind or brass ensemble | `wind_band` |
+| one instrument, optionally + one keyboard (violin + piano) | `solo_instrument` |
+| any guitar-family part (guitar, lute, theorbo, vihuela) | `guitar` |
+| piano only (1 player / 4 hands or 2+ pianos) | `piano_solo` / `piano_ensemble` |
+| organ / harpsichord, harmonium, … only | `organ` / `keyboard_other` |
+| 2+ instrumentalists otherwise | `chamber` |
+
+`For N players` and `Quartets`-style labels only decide when no explicit instrumentation category exists.
+
+LLM history: the bulk title-only pass (r001, `force_family_src=llm`) ran gpt-6-luna at **low** reasoning; residual passes used gpt-6-luna xhigh (`llm_luna_xhigh`) and grok-4.7-high (`llm_grok`, run outside this repo). Since r009 these survive only where categories, GenInfo and title rules all fail (~1.3% of works).
 
 ## Match statuses (IMSLP)
 
@@ -104,8 +126,14 @@ python scripts/build_dump.py --date YYYY-MM-DD
 # Promote into revision series
 python scripts/promote_revision.py --from-dump YYYY-MM-DD --to rNNN
 
-# Recompute force + merge duplicate QIDs + PD labels → next revision
-python scripts/remap_force.py --from-dump r007 --to r008
+# Complete IMSLP work categories for a dump (network, resumable, ~1 req/s)
+python scripts/refetch_work_categories.py --dump r008
+
+# Refresh categories from that cache, recompute force + PD labels → next revision
+python scripts/remap_force.py --from-dump r008 --to r009 --refresh-categories
+
+# Rank-aware Wikidata dates, scope, qa_flags from cached entities → next revision
+python scripts/remap_composers.py --from-dump r009 --to r010
 
 # GenInfo pilot + Wikidata style remap → next revision
 python scripts/enrich_geninfo.py --from-dump rNNN --to rNNN+1 --limit 200 --remap-styles
@@ -117,13 +145,13 @@ python scripts/prepare_llm_residual.py --dump rNNN
 python scripts/llm_residual.py --from-dump rNNN --to rNNN+1 --reasoning xhigh
 ```
 
-Caches: `data/cache/` (gitignored). GenInfo under `imslp_geninfo/`; LLM batches under hashed cache keys. Older dumps: git history only.
+Caches: `data/cache/` (gitignored). Complete work categories under `imslp_page_cats/` (by page id; the old title-keyed `imslp_work_cats/` is truncated — do not use). GenInfo under `imslp_geninfo/`; LLM batches under hashed cache keys. Older dumps: git history only.
 
 ## Filter viewer
 
 ```bash
-python scripts/export_viewer_json.py --dump r008
-python scripts/check_release.py --dump r008 --viewer-data viewer/data
+python scripts/export_viewer_json.py --dump r010
+python scripts/check_release.py --dump r010 --viewer-data viewer/data
 python -m http.server 8080 --directory viewer
 ```
 

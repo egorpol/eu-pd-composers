@@ -21,11 +21,21 @@ log = logging.getLogger("eu_pd.wikidata")
 
 # Wikidata precision: 11=day, 10=month, 9=year, 8=decade, 7=century…
 _PRECISION_MAP = {
+    14: "second",
+    13: "minute",
+    12: "hour",
     11: "day",
     10: "month",
     9: "year",
     8: "decade",
     7: "century",
+    6: "millennium",
+    5: "ten_thousand_years",
+    4: "hundred_thousand_years",
+    3: "million_years",
+    2: "ten_million_years",
+    1: "hundred_million_years",
+    0: "billion_years",
 }
 
 # P135 / P136 → controlled style_tags (verified Wikidata labels 2026-09-25).
@@ -76,6 +86,20 @@ OCCUPATION_QID_TO_SLUG: dict[str, str] = {
 
 FILM_MEDIA_OCC = {"film_composer"}
 POPULAR_OCC = {"songwriter", "jazz_musician"}
+QA_FLAGS = (
+    "birth_rank_conflict",
+    "death_rank_conflict",
+    "birth_imprecise",
+    "death_imprecise",
+    "implausible_lifespan",
+    "death_before_birth",
+    "not_human",
+    "no_composer_occupation",
+    "birth_from_list",
+    "death_from_list",
+)
+# Any of these makes a Wikidata item plausibly "a composer" for identity checks.
+COMPOSING_OCC = {"composer", "classical_composer", "film_composer", "songwriter"}
 
 
 def resolve_qids_for_titles(
@@ -155,31 +179,129 @@ def _claim_entity_ids(claims: dict, pid: str) -> list[str]:
     return ids
 
 
-def _parse_time_claim(claims: dict, pid: str) -> tuple[Optional[str], Optional[int], str]:
-    """Return (iso_date_or_year, year, precision_label)."""
+def _parse_time_value(value: Any) -> Optional[tuple[Optional[str], Optional[int], str, bool]]:
+    if not isinstance(value, dict) or not isinstance(value.get("time"), str):
+        return None
+    try:
+        precision = int(value.get("precision", 9))
+    except (TypeError, ValueError):
+        return None
+    if precision not in _PRECISION_MAP:
+        return None
+    m = re.match(r"^([+-])(\d+)-(\d{2})-(\d{2})", value["time"])
+    if not m:
+        return None
+    sign, year_s, month, day = m.groups()
+    year = int(year_s) * (1 if sign == "+" else -1)
+    if precision == 8:
+        year = year // 10 * 10 + 9
+    elif precision < 8:
+        span = 10 ** (9 - precision)
+        year = (year - 1) // span * span + span
+    if precision >= 11:
+        iso = f"{year:04d}-{month}-{day}" if year >= 0 else None
+    elif precision == 10:
+        iso = f"{year:04d}-{month}" if year >= 0 else None
+    else:
+        iso = f"{year:04d}" if year >= 0 else None
+    return iso, year if year > 0 else None, _PRECISION_MAP[precision], precision < 9
+
+
+def _parse_time_claim(
+    claims: dict, pid: str,
+) -> tuple[Optional[str], Optional[int], str, bool, bool]:
+    """Return (iso_date_or_year, year, precision_label, conflict, imprecise).
+
+    Ignore deprecated claims; use the first usable preferred value, otherwise
+    the first usable normal value. Conflicts compare years within that rank.
+    For conservative PD math, coarse dates use the interval's final year.
+    Wikidata decades span years ending 0–9 (1855 → 1859); centuries and larger
+    units start at year 1 (1801–1900 → 1900, 1901–2000 → 2000). The encoded
+    year can lie anywhere in the interval, including its final year.
+    """
+    by_rank: dict[str, list[tuple[Optional[str], Optional[int], str, bool]]] = {
+        "preferred": [], "normal": [],
+    }
     for claim in claims.get(pid, []):
+        rank = claim.get("rank", "normal")
+        if rank not in by_rank:
+            continue
         snak = claim.get("mainsnak", {})
         if snak.get("snaktype") != "value":
             continue
         value = snak.get("datavalue", {}).get("value")
-        if not isinstance(value, dict) or "time" not in value:
+        parsed = _parse_time_value(value)
+        if parsed is not None:
+            by_rank[rank].append(parsed)
+    candidates = by_rank["preferred"] or by_rank["normal"]
+    if not candidates:
+        return None, None, "unknown", False, False
+    iso, year, prec_label, imprecise = candidates[0]
+    conflict = len({c[1] for c in candidates}) > 1
+    return iso, year, prec_label, conflict, imprecise
+
+
+def lifespan_flags(birth_year: Optional[int], death_year: Optional[int]) -> list[str]:
+    if birth_year is None or death_year is None:
+        return []
+    lifespan = death_year - birth_year
+    flags = []
+    if lifespan < 15 or lifespan > 110:
+        flags.append("implausible_lifespan")
+    if lifespan < 0:
+        flags.append("death_before_birth")
+    return flags
+
+
+def deprecated_years(claims: dict, pid: str) -> set[int]:
+    """Years asserted only by deprecated claims — never valid fallbacks."""
+    years: set[int] = set()
+    for claim in claims.get(pid, []):
+        if claim.get("rank") != "deprecated":
             continue
-        raw = value["time"]  # e.g. +1895-11-16T00:00:00Z
-        precision = int(value.get("precision") or 9)
-        prec_label = _PRECISION_MAP.get(precision, "unknown")
-        m = re.match(r"^([+-])(\d+)-(\d{2})-(\d{2})", raw)
-        if not m:
+        snak = claim.get("mainsnak", {})
+        if snak.get("snaktype") != "value":
             continue
-        sign, year_s, month, day = m.groups()
-        year = int(year_s) * (1 if sign == "+" else -1)
-        if precision >= 11:
-            iso = f"{year:04d}-{month}-{day}" if year >= 0 else None
-        elif precision == 10:
-            iso = f"{year:04d}-{month}" if year >= 0 else None
-        else:
-            iso = f"{year:04d}" if year >= 0 else None
-        return iso, year if year > 0 else None, prec_label
-    return None, None, "unknown"
+        parsed = _parse_time_value(snak.get("datavalue", {}).get("value"))
+        if parsed and parsed[1] is not None:
+            years.add(parsed[1])
+    return years
+
+
+def apply_year_fallbacks(
+    wd: dict[str, Any],
+    claims: dict,
+    *,
+    fallback_birth: Optional[int],
+    fallback_death: Optional[int],
+) -> dict[str, Any]:
+    """Fill years Wikidata lacks from the Wikipedia list (or a prior dump).
+
+    A fallback equal to a deprecated Wikidata year is rejected: that value was
+    explicitly marked wrong. Returns birth_year, death_year, date_precision and
+    qa_flags with `*_from_list` and lifespan flags recomputed on final years.
+    """
+    birth, death = wd.get("birth_year"), wd.get("death_year")
+    flags = [f for f in str(wd.get("qa_flags") or "").split("|") if f]
+    flags = [f for f in flags if f not in {"implausible_lifespan", "death_before_birth"}]
+    precision = wd.get("date_precision") or "unknown"
+    if birth is None and fallback_birth is not None and fallback_birth not in deprecated_years(claims, "P569"):
+        birth = fallback_birth
+        flags.append("birth_from_list")
+        if death is None and precision == "unknown":
+            precision = "year"
+    if death is None and fallback_death is not None and fallback_death not in deprecated_years(claims, "P570"):
+        death = fallback_death
+        flags.append("death_from_list")
+        precision = "year"
+    flags.extend(lifespan_flags(birth, death))
+    ordered = [f for f in QA_FLAGS if f in flags]
+    return {
+        "birth_year": birth,
+        "death_year": death,
+        "date_precision": precision,
+        "qa_flags": pipe_join(ordered),
+    }
 
 
 def fetch_entities(
@@ -261,8 +383,24 @@ def enrich_from_entity(ent: dict) -> dict[str, Any]:
         if a.get("value")
     ]
 
-    birth_iso, birth_year, birth_prec = _parse_time_claim(claims, "P569")
-    death_iso, death_year, death_prec = _parse_time_claim(claims, "P570")
+    birth_iso, birth_year, birth_prec, birth_conflict, birth_imprecise = _parse_time_claim(
+        claims, "P569"
+    )
+    death_iso, death_year, death_prec, death_conflict, death_imprecise = _parse_time_claim(
+        claims, "P570"
+    )
+    qa_flags: list[str] = []
+    for flag, present in (
+        ("birth_rank_conflict", birth_conflict),
+        ("death_rank_conflict", death_conflict),
+        ("birth_imprecise", birth_imprecise),
+        ("death_imprecise", death_imprecise),
+    ):
+        if present:
+            qa_flags.append(flag)
+    qa_flags.extend(lifespan_flags(birth_year, death_year))
+    if "Q5" not in _claim_entity_ids(claims, "P31"):
+        qa_flags.append("not_human")
     # Prefer death precision for PD; if living, birth precision is secondary.
     if death_year is not None:
         date_precision = death_prec
@@ -293,6 +431,8 @@ def enrich_from_entity(ent: dict) -> dict[str, Any]:
             pass
 
     scope_class, scope_src = infer_scope_class(occupations, style_tags)
+    if not set(occupations) & COMPOSING_OCC:
+        qa_flags.append("no_composer_occupation")
 
     imslp_category = None
     if imslp_ids:
@@ -317,6 +457,8 @@ def enrich_from_entity(ent: dict) -> dict[str, Any]:
         "occupations": pipe_join(occupations),
         "scope_class": scope_class,
         "scope_class_src": scope_src,
+        "is_film_composer": "true" if "film_composer" in occupations else "false",
+        "qa_flags": pipe_join(qa_flags),
         "notable_works_qids": pipe_join(notable_qids),
         "imslp_category_p839": imslp_category,
     }
@@ -327,13 +469,16 @@ def infer_scope_class(
     style_tags: list[str],
 ) -> tuple[str, str]:
     occ = set(occupations)
-    if occ & FILM_MEDIA_OCC:
+    is_composer = "composer" in occ or "classical_composer" in occ
+    # Film work is a flag (is_film_composer), not a scope, for anyone who is
+    # also a composer — otherwise Prokofiev/Gershwin vanish from classical_core.
+    if occ & FILM_MEDIA_OCC and not is_composer:
         return "film_media", "occupations"
-    if occ & POPULAR_OCC and "composer" not in occ and "classical_composer" not in occ:
+    if occ & POPULAR_OCC and not is_composer:
         return "popular", "occupations"
     if "crossover_popular" in style_tags:
         return "crossover", "style_tags"
-    if "composer" in occ or "classical_composer" in occ or not occ:
+    if is_composer or not occ:
         return "classical_core", "occupations" if occ else "default"
     return "crossover", "occupations"
 
