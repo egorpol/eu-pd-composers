@@ -4,7 +4,7 @@ Find notable 20th-century classical composers whose works are likely safer to st
 
 **Live viewer:** [egorpol.github.io/eu-pd-composers](https://egorpol.github.io/eu-pd-composers/)
 
-**Current direction:** versioned **composer + works** dumps (schema v3) + a static **filter viewer**. Tool line: **v3.1.0** (schema 3). Current dump: **r010**.
+**Current direction:** versioned **composer + works** dumps (schema v3) + a static **filter viewer**. Tool line: **v3.2.0** (schema 3). Current dump: **r012**.
 
 See [CHANGELOG.md](CHANGELOG.md) and [VERSIONING.md](VERSIONING.md).
 
@@ -17,6 +17,9 @@ scripts/build_dump.py               # Wikipedia → Wikidata → IMSLP scrape
 scripts/refetch_work_categories.py  # complete IMSLP work categories for a dump (resumable)
 scripts/remap_force.py              # offline: refresh categories, re-derive force_family
 scripts/remap_composers.py          # offline: Wikidata dates, scope, qa_flags, PD fields
+scripts/apply_overrides.py          # offline: hand-reviewed fixes from data/overrides/ (applied last)
+scripts/refetch_composer_pages.py   # IMSLP composer pages (life dates, biography link) into cache
+scripts/remap_imslp_matches.py      # offline: verify IMSLP matches by life dates, resolve collisions
 scripts/export_viewer_json.py       # dump → viewer/data JSON
 scripts/check_release.py            # release gates (also run in CI)
 scripts/force_family.py
@@ -56,8 +59,8 @@ python -m pytest tests -q
 python scripts/build_dump.py --date YYYY-MM-DD
 
 # Refresh viewer JSON + release gates + local preview
-python scripts/export_viewer_json.py --dump r010
-python scripts/check_release.py --dump r010 --viewer-data viewer/data
+python scripts/export_viewer_json.py --dump r012
+python scripts/check_release.py --dump r012 --viewer-data viewer/data
 python -m http.server 8080 --directory viewer
 ```
 

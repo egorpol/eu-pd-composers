@@ -32,6 +32,8 @@ flowchart TB
     STY[STYLE_QID remap + prepare_llm_residual]
     REFRESH["scripts/refetch_work_categories.py<br/>+ remap_force.py --refresh-categories"]
     WDREMAP[scripts/remap_composers.py<br/>rank-aware dates, scope, qa_flags]
+    OVR[scripts/apply_overrides.py<br/>data/overrides/composers.tsv]
+    IDENT[scripts/remap_imslp_matches.py<br/>IMSLP life dates + Wikipedia link vs. match]
     LLM[scripts/llm_force_family.py / llm_residual.py<br/>Codex CLI — residual only, run when approved]
     ROLL[Composer rollups]
   end
@@ -59,7 +61,7 @@ flowchart TB
   FF1 --> WK
   C --> ENR
   WK --> ENR
-  ENR --> REFRESH --> WDREMAP --> GI --> STY
+  ENR --> REFRESH --> WDREMAP --> OVR --> IDENT --> GI --> STY
   STY -.->|approved| LLM
   LLM --> ROLL --> C
   LLM --> WK
@@ -112,10 +114,14 @@ LLM history: the bulk title-only pass (r001, `force_family_src=llm`) ran gpt-6-l
 
 | `imslp_match_status` | Meaning |
 |---|---|
-| `matched` | Wikidata P839 category verified on IMSLP |
-| `unverified_heuristic` | `Last,_First` category exists (collision risk) |
+| `matched` | P839 category, or a name guess confirmed by IMSLP's life dates / Wikipedia link (`imslp_match_method` says which) |
+| `unverified_heuristic` | `Last,_First` category exists; IMSLP's page has no comparable years |
+| `rejected_heuristic` | Name guess whose IMSLP page is a different person (works removed) |
+| `rejected_p839` | Wikidata P839 points at a different person's page (works removed) |
 | `not_found` | No category resolved |
 | `not_checked` | `--no-imslp` |
+
+Identity rule (`scripts/imslp_identity.py`): compare dump birth/death years with IMSLP's `Born Year`/`Died Year`. All known pairs within ±1 → agree. A **strong** conflict (no pair agrees and a gap > 10 years) means a different person and rejects even a P839 link; a **weak** conflict keeps the match with `imslp_dates_conflict`, and promotes a name guess only if IMSLP's Wikipedia link agrees. One category belongs to at most one composer: a P839 holder wins, else the single agreeing claimant (`check_release.py` fails otherwise).
 
 ## Typical commands
 
@@ -135,6 +141,13 @@ python scripts/remap_force.py --from-dump r008 --to r009 --refresh-categories
 # Rank-aware Wikidata dates, scope, qa_flags from cached entities → next revision
 python scripts/remap_composers.py --from-dump r009 --to r010
 
+# Hand-reviewed overrides (data/overrides/composers.tsv) → next revision
+python scripts/apply_overrides.py --from-dump r010 --to r011
+
+# IMSLP composer pages into cache (network), then verify matches → next revision
+python scripts/refetch_composer_pages.py --dump r011
+python scripts/remap_imslp_matches.py --from-dump r011 --to r012
+
 # GenInfo pilot + Wikidata style remap → next revision
 python scripts/enrich_geninfo.py --from-dump rNNN --to rNNN+1 --limit 200 --remap-styles
 
@@ -145,13 +158,13 @@ python scripts/prepare_llm_residual.py --dump rNNN
 python scripts/llm_residual.py --from-dump rNNN --to rNNN+1 --reasoning xhigh
 ```
 
-Caches: `data/cache/` (gitignored). Complete work categories under `imslp_page_cats/` (by page id; the old title-keyed `imslp_work_cats/` is truncated — do not use). GenInfo under `imslp_geninfo/`; LLM batches under hashed cache keys. Older dumps: git history only.
+Caches: `data/cache/` (gitignored). Complete work categories under `imslp_page_cats/`; composer pages under `imslp_cat_page/` (by page id; the old title-keyed `imslp_work_cats/` is truncated — do not use). GenInfo under `imslp_geninfo/`; LLM batches under hashed cache keys. Older dumps: git history only.
 
 ## Filter viewer
 
 ```bash
-python scripts/export_viewer_json.py --dump r010
-python scripts/check_release.py --dump r010 --viewer-data viewer/data
+python scripts/export_viewer_json.py --dump r012
+python scripts/check_release.py --dump r012 --viewer-data viewer/data
 python -m http.server 8080 --directory viewer
 ```
 
