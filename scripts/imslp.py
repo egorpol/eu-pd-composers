@@ -157,52 +157,87 @@ def list_category_works(
     return works
 
 
-def fetch_work_categories_batch(
-    titles: list[str],
+# Raw, complete category lists keyed by page id. Replaces the old title-keyed
+# `imslp_work_cats` cache, which was filled by a truncated query (cllimit
+# applied to the whole batch, continuation ignored → ~60% falsely empty).
+PAGE_CATS_NAMESPACE = "imslp_page_cats"
+
+
+def _categories_continuation(data: dict) -> Optional[dict[str, str]]:
+    """Continuation params for prop=categories (MW 1.18 `query-continue` or modern `continue`)."""
+    legacy = (data.get("query-continue") or {}).get("categories")
+    if legacy:
+        return legacy
+    modern = data.get("continue")
+    if modern and "clcontinue" in modern:
+        return modern
+    return None
+
+
+def fetch_page_categories(
+    pageids: list[int],
     session: requests.Session,
     *,
     use_cache: bool = True,
-) -> dict[str, list[str]]:
-    """Map work titles → IMSLP category titles (without Category: prefix)."""
-    out: dict[str, list[str]] = {}
-    pending: list[str] = []
-    for title in titles:
-        if use_cache:
-            cached = cache_get("imslp_work_cats", title)
-            if cached is not None:
-                out[title] = cached.get("categories", [])
-                continue
-        pending.append(title)
+    batch_size: int = 50,
+    sleep_s: float = 0.15,
+) -> dict[int, dict[str, Any]]:
+    """Map IMSLP page ids → {title, categories, missing, fetched_at}.
 
-    for i in range(0, len(pending), 20):
-        batch = pending[i : i + 20]
-        data = request_json(
-            session,
-            IMSLP_API,
-            params={
-                "action": "query",
-                "titles": "|".join(batch),
-                "prop": "categories",
-                "cllimit": 100,
-                "format": "json",
-            },
-            timeout=60,
-            sleep_s=0.15,
-        )
-        pages = data.get("query", {}).get("pages", {})
-        for page in pages.values():
-            title = page.get("title")
-            if not title:
+    Follows category continuation until every page in a batch is complete, and
+    only then caches. API-level errors raise instead of becoming empty lists.
+    Categories are returned without the `Category:` prefix, unfiltered.
+    """
+    out: dict[int, dict[str, Any]] = {}
+    pending: list[int] = []
+    for pid in dict.fromkeys(int(p) for p in pageids):
+        if use_cache:
+            cached = cache_get(PAGE_CATS_NAMESPACE, str(pid))
+            if cached is not None:
+                out[pid] = cached
                 continue
-            cats = []
-            for c in page.get("categories", []):
-                ctitle = c.get("title", "")
-                if ctitle.startswith("Category:"):
-                    ctitle = ctitle[len("Category:") :]
-                cats.append(ctitle)
-            out[title] = cats
+        pending.append(pid)
+
+    for i in range(0, len(pending), batch_size):
+        batch = pending[i : i + batch_size]
+        params: dict[str, Any] = {
+            "action": "query",
+            "pageids": "|".join(str(p) for p in batch),
+            "prop": "categories",
+            "cllimit": "max",
+            "format": "json",
+        }
+        pages: dict[int, dict[str, Any]] = {}
+        while True:
+            data = request_json(session, IMSLP_API, params=params, timeout=60, sleep_s=sleep_s)
+            if data.get("error"):
+                raise RuntimeError(f"IMSLP API error for pageids batch: {data['error']}")
+            for key, page in (data.get("query", {}).get("pages") or {}).items():
+                pid = int(page.get("pageid") or key)
+                entry = pages.setdefault(
+                    pid,
+                    {"title": page.get("title", ""), "categories": [], "missing": False},
+                )
+                if "missing" in page or "invalid" in page:
+                    entry["missing"] = True
+                for c in page.get("categories", []):
+                    ctitle = c.get("title", "")
+                    if ctitle.startswith("Category:"):
+                        ctitle = ctitle[len("Category:") :]
+                    if ctitle not in entry["categories"]:
+                        entry["categories"].append(ctitle)
+            cont = _categories_continuation(data)
+            if not cont:
+                break
+            params.update(cont)
+
+        now = datetime.now(timezone.utc).isoformat()
+        for pid in batch:
+            entry = pages.get(pid, {"title": "", "categories": [], "missing": True})
+            entry = {"pageid": pid, **entry, "fetched_at": now}
+            out[pid] = entry
             if use_cache:
-                cache_set("imslp_work_cats", title, {"categories": cats})
+                cache_set(PAGE_CATS_NAMESPACE, str(pid), entry)
     return out
 
 
@@ -397,17 +432,18 @@ def works_rows_for_composer(
     fetch_has_files: bool = False,
 ) -> list[dict[str, Any]]:
     members = list_category_works(category, session)
-    titles = [m["title"] for m in members]
-    cats_map: dict[str, list[str]] = {}
-    if fetch_categories and titles:
-        cats_map = fetch_work_categories_batch(titles, session)
+    pageids = [int(m["pageid"]) for m in members if m.get("pageid") is not None]
+    cats_map: dict[int, dict[str, Any]] = {}
+    if fetch_categories and pageids:
+        cats_map = fetch_page_categories(pageids, session)
 
     now = datetime.now(timezone.utc).isoformat()
     rows: list[dict[str, Any]] = []
     for member in members:
         title = member["title"]
         pageid = member.get("pageid")
-        genres = filter_imslp_genre_categories(cats_map.get(title, []), category)
+        page = cats_map.get(int(pageid)) if pageid is not None else None
+        genres = filter_imslp_genre_categories((page or {}).get("categories", []), category)
         has_files = ""
         if fetch_has_files:
             hf = work_has_files(title, session)
@@ -422,7 +458,7 @@ def works_rows_for_composer(
                 "title": strip_imslp_composer_suffix(title),
                 "imslp_genre_categories": pipe_join(genres),
                 "has_files": has_files,
-                "fetched_at": now,
+                "fetched_at": (page or {}).get("fetched_at") or now,
             }
         )
     return rows
