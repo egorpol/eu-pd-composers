@@ -1,0 +1,83 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "labels"
+  ],
+  "properties": {
+    "labels": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "styles",
+          "primary_period",
+          "confidence"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "styles": {
+            "type": "array",
+            "maxItems": 3,
+            "items": {
+              "type": "string",
+              "enum": [
+                "ancient",
+                "medieval",
+                "renaissance",
+                "baroque",
+                "classical",
+                "romantic",
+                "late_romantic",
+                "early_20th_century",
+                "impressionism",
+                "expressionism",
+                "national_folk",
+                "neoclassicism",
+                "atonal_modernism",
+                "serialism",
+                "modern",
+                "avant_garde",
+                "electroacoustic",
+                "minimalism",
+                "postminimalism",
+                "spectralism",
+                "polystylism",
+                "jazz",
+                "traditional_folk",
+                "non_western_classical"
+              ]
+            }
+          },
+          "primary_period": {
+            "type": "string",
+            "enum": [
+              "ancient",
+              "medieval",
+              "renaissance",
+              "baroque",
+              "classical",
+              "romantic",
+              "late_romantic",
+              "early_20th_century",
+              "modern",
+              "unknown"
+            ]
+          },
+          "confidence": {
+            "type": "string",
+            "enum": [
+              "low",
+              "medium",
+              "high"
+            ]
+          }
+        }
+      }
+    }
+  }
+}
