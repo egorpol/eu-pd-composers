@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
 """Web-search sweep for composer score pages (experimental; network via Codex web search).
 
-For each non-public-domain composer, runs one web search for `"<name>" score` and
-records the raw result URLs. Codex CLI (`codex exec` with live web search) acts only
+For each non-public-domain composer, runs one web search (default `"<name>" score`;
+`--query` takes another template) and records the raw result URLs. Codex CLI (`codex exec` with live web search) acts only
 as the search backend: it is told to copy result URLs in order, not to judge them.
 `homepage_licences.py --targets` then checks every result page and its site's
 homepage for Creative Commons licences and score links (search proposes, rules
 verify). Batches are cached by content, so an interrupted run resumes.
 
   python scripts/search_sweep.py --dump r019 --sample 50 --include Q1795042
+  python scripts/search_sweep.py --dump r019 --sample 50 --include Q1795042 \
+      --query '"{name}" "creative commons"' --tag _pilot_cc
   python scripts/search_sweep.py --dump r019 --parallel 3
 """
 
@@ -49,8 +51,11 @@ _LINE_RE = re.compile(r"^(Q\d+)\t(\d+)\t(\S*)\t?(.*)$")
 _TOKENS_RE = re.compile(r"tokens used\s*\n\s*([\d,]+)")
 
 
-def query_for(name: str) -> str:
-    return f'"{name}" score'
+DEFAULT_QUERY = '"{name}" score'
+
+
+def query_for(name: str, template: str = DEFAULT_QUERY) -> str:
+    return template.format(name=name)
 
 
 def select_composers(composers: pd.DataFrame, args: argparse.Namespace) -> pd.DataFrame:
@@ -80,7 +85,7 @@ def parse_output(text: str, batch_ids: set[str]) -> list[dict[str, str]]:
 
 
 def run_batch(batch: pd.DataFrame, out_dir: Path, args: argparse.Namespace) -> Path:
-    lines = "\n".join(f"{r.composer_id}\t{query_for(r.name_display)}" for r in batch.itertuples())
+    lines = "\n".join(f"{r.composer_id}\t{query_for(r.name_display, args.query)}" for r in batch.itertuples())
     prompt = PROMPT.format(top=args.top, lines=lines)
     key = hashlib.sha1(f"{args.model}|{prompt}".encode()).hexdigest()[:12]
     out = out_dir / f"batch_{key}.txt"
@@ -127,7 +132,7 @@ def run(args: argparse.Namespace) -> None:
     res = pd.DataFrame(rows, columns=["composer_id", "rank", "url", "title", "batch"])
     names = chosen.set_index("composer_id")["name_display"]
     res.insert(1, "name_display", res["composer_id"].map(names))
-    res.insert(2, "query", res["name_display"].map(query_for))
+    res.insert(2, "query", res["name_display"].map(lambda n: query_for(n, args.query)))
     out = Path(args.out_dir) / f"search_results_{args.dump}{args.tag}.tsv"
     res.to_csv(out, sep="\t", index=False)
     answered = res["composer_id"].nunique()
@@ -146,6 +151,7 @@ def main() -> None:
     p.add_argument("--limit", type=int, default=0)
     p.add_argument("--batch-size", type=int, default=25)
     p.add_argument("--top", type=int, default=10)
+    p.add_argument("--query", default=DEFAULT_QUERY, help="Query template with {name} (default: %(default)s)")
     p.add_argument("--parallel", type=int, default=1, help="Concurrent codex batches")
     p.add_argument("--model", default="gpt-6.1-sol")
     p.add_argument("--effort", default="low")
