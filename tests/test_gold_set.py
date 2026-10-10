@@ -1,6 +1,8 @@
 """Gold set sampler and scorer (offline, synthetic dumps)."""
 
 import argparse
+import json
+import re
 
 import pandas as pd
 import pytest
@@ -199,3 +201,41 @@ def test_sample_refuses_to_overwrite(tmp_path, monkeypatch):
     with pytest.raises(FileExistsError, match="Refusing to overwrite"):
         gs.run_sample(args)
     assert sheet.read_bytes() == before
+
+
+def test_form_page_carries_shown_columns_only(tmp_path):
+    result = gs.build_sample(_composers(), _works(), seed=7, n_composers=30, n_works=40, minimum=3,
+                             recheck_share=0.1)
+    for kind in gs.SETS:
+        for part in ("sheet", "recheck"):
+            frame = result[kind][part].copy()
+            if part == "sheet":
+                frame.loc[0, "notes"] = "an answer that must not leak"
+                if kind == "works":
+                    frame.loc[1, "title"] = "Lied </script><b>"
+            frame.to_csv(tmp_path / f"{kind}_{part}.tsv", sep="\t", index=False)
+    page, local = gs.run_form(argparse.Namespace(dump="r900", gold_dir=str(tmp_path), out_dir=str(tmp_path / "out")))
+    html = page.read_text(encoding="utf-8")
+    start = html.index('<script id="gold-data" type="application/json">')
+    block = html[start:html.index("</script>", start)]
+    data = json.loads(block[block.index(">") + 1:])
+    assert data["dump"] == "r900"
+    assert [len(data[k]) for k in ("composers", "works", "composers_recheck", "works_recheck")] == [30, 40, 3, 4]
+    assert set(data["composers"][0]) == {"item", *gs.SHOWN["composers"]}
+    assert data["works"][1]["title"] == "Lied </script><b>"
+    assert "must not leak" not in html and gs.FORM_PLACEHOLDER not in html
+    assert [i["item"] for i in data["practice"]["works"]] == ["P-W1", "P-W2"]
+    assert local.read_text(encoding="utf-8").startswith("<!doctype html>")
+
+
+def test_form_template_matches_scorer_vocabulary():
+    template = gs.FORM_TEMPLATE.read_text(encoding="utf-8")
+    keys = lambda a, b: re.findall(r'^\s*\["([a-z_]+)", "', template[template.index(a):template.index(b)], re.M)
+    assert keys("const FAMILIES", "const BASES") == [f for f in gs.FORCE_FAMILIES if f != "unclassified"]
+    assert keys("const BASES", "const TABS") == list(gs.BASIS_LABELS)
+    columns = lambda a, b: {k: re.findall(r'"([a-z_]+)"', v) for k, v in re.findall(
+        r'^\s+([cw]): \[(.*)\],$', template[template.index(a):template.index(b)], re.M)}
+    assert columns("const FIELDS", "const SHEET_COLS") == {"c": list(gs.GOLD_FIELDS["composers"]),
+                                                          "w": list(gs.GOLD_FIELDS["works"])}
+    assert columns("const SHEET_COLS", "const FAMILIES") == {"c": ["item", *gs.SHOWN["composers"]],
+                                                            "w": ["item", *gs.SHOWN["works"]]}

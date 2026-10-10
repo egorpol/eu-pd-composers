@@ -2,6 +2,7 @@
 """Gold set: stratified sample, blind annotation sheets, and error-rate scoring.
 
   python scripts/gold_set.py sample --dump r016        # writes data/gold/r016/
+  python scripts/gold_set.py form --dump r016          # annotation form → build/gold_form/r016/
   python scripts/gold_set.py score --dump r016 --out data/gold/r016/report.md
 
 Offline. `sample` is deterministic for a dump and seed, and refuses to overwrite
@@ -27,7 +28,7 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from common import DATA_DIR, TOOL_VERSION, dump_meta_path, dump_tsv_path  # noqa: E402
+from common import DATA_DIR, REPO_ROOT, TOOL_VERSION, dump_meta_path, dump_tsv_path  # noqa: E402
 from force_family import FORCE_FAMILIES  # noqa: E402
 from rights_basis import BASIS_LABELS, rights_basis  # noqa: E402
 from style_agreement import cohens_kappa  # noqa: E402
@@ -220,6 +221,49 @@ def run_sample(args: argparse.Namespace) -> None:
               f"{paths[(kind, 'sheet')]}")
         for stratum, row in meta["strata"][kind].items():
             print(f"  {stratum}: {row['stratum_sample']} of {row['stratum_size']}")
+
+
+# --- Annotation form ------------------------------------------------------
+
+FORM_TEMPLATE = Path(__file__).resolve().parent / "gold_form.html"
+FORM_PLACEHOLDER = "__GOLD_FORM_DATA__"
+# The claude.ai artifact skeleton wraps the page; the local copy brings its own.
+LOCAL_PAGE = ('<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n'
+              '<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">\n'
+              '</head>\n<body>\n{page}</body>\n</html>\n')
+
+
+def form_data(directory: Path, dump_id: str) -> dict[str, Any]:
+    """Shown columns of the sheets and re-check sheets, plus the practice items. Never answers or design."""
+    read = dict(sep="\t", dtype=str, keep_default_na=False)
+    data: dict[str, Any] = {"dump": dump_id}
+    for kind in SETS:
+        for part, key in (("sheet", kind), ("recheck", f"{kind}_recheck")):
+            frame = pd.read_csv(directory / f"{kind}_{part}.tsv", **read)
+            data[key] = frame[["item", *SHOWN[kind]]].to_dict(orient="records")
+    practice = json.loads((DATA_DIR / "gold" / "practice.json").read_text(encoding="utf-8"))
+    data["practice"] = {kind: practice[kind] for kind in SETS}
+    return data
+
+
+def render_form(data: dict[str, Any], template: str) -> str:
+    if template.count(FORM_PLACEHOLDER) != 1:
+        raise ValueError(f"Form template must hold {FORM_PLACEHOLDER} exactly once")
+    # "<\/" keeps a title containing "</script>" from closing the data block early.
+    payload = json.dumps(data, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
+    return template.replace(FORM_PLACEHOLDER, payload)
+
+
+def run_form(args: argparse.Namespace) -> list[Path]:
+    directory = Path(args.gold_dir) if args.gold_dir else gold_dir(args.dump)
+    out = Path(args.out_dir) if args.out_dir else REPO_ROOT / "build" / "gold_form" / args.dump
+    page = render_form(form_data(directory, args.dump), FORM_TEMPLATE.read_text(encoding="utf-8"))
+    out.mkdir(parents=True, exist_ok=True)
+    paths = [out / "gold_form.html", out / "gold_form_local.html"]
+    paths[0].write_text(page, encoding="utf-8")
+    paths[1].write_text(LOCAL_PAGE.format(page=page), encoding="utf-8")
+    print(f"artifact page → {paths[0]}\nlocal copy (open in a browser) → {paths[1]}")
+    return paths
 
 
 # --- Scoring --------------------------------------------------------------
@@ -471,6 +515,10 @@ def main() -> None:
     sample.add_argument("--min-per-stratum", type=int, default=8)
     sample.add_argument("--recheck-share", type=float, default=0.10)
     sample.add_argument("--out-dir", help="Default: data/gold/<dump>/")
+    form = commands.add_parser("form", help="Build the annotation form page from the sheets")
+    form.add_argument("--dump", required=True)
+    form.add_argument("--gold-dir", help="Default: data/gold/<dump>/")
+    form.add_argument("--out-dir", help="Default: build/gold_form/<dump>/")
     score = commands.add_parser("score", help="Score filled sheets against the dump")
     score.add_argument("--dump", required=True)
     score.add_argument("--gold-dir", help="Default: data/gold/<dump>/")
@@ -479,6 +527,8 @@ def main() -> None:
     args = parser.parse_args()
     if args.command == "sample":
         run_sample(args)
+    elif args.command == "form":
+        run_form(args)
     else:
         run_score(args)
 
