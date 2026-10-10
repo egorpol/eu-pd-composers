@@ -26,6 +26,7 @@ Applies to code, schema contract, docs, and UI.
 | `v3.4.1` | 2026-10-09 | IMSLP requests capped at ≤ 1/s on every code path; `Retry-After` honoured |
 | `v3.4.2` | 2026-10-09 | Refresh preflight fetches override re-key targets (cold-crawl fix) |
 | `v3.5.0` | 2026-10-10 | All-composer LLM style pass with committed ledger; grounded two-model consensus as `llm_style_*` columns and the viewer's LLM style source; `style_tags` Wikidata-only; dump r015 |
+| `v3.6.0` | 2026-10-10 | IMSLP rights evidence (`has_files`, file hosts, six rights tokens); GND / VIAF ids and the identity guard; `imslp_n_players`; LCMPT / LCGFT crosswalk; gold-set sampler, scorer and annotation form; dump r018 |
 
 Do **not** reset to `0.2` — that would go backwards from published `v1.1`.
 
