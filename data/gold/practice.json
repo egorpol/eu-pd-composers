@@ -1,0 +1,59 @@
+{
+  "note": "Practice items for the annotation form. None is in a gold sample; worked answers checked on 2026-10-10.",
+  "composers": [
+    {
+      "item": "P-C1",
+      "composer_id": "Q602486",
+      "name": "Enric Morera i Viura",
+      "wikipedia_url": "https://en.wikipedia.org/wiki/Enric_Morera_i_Viura",
+      "wikidata_url": "https://www.wikidata.org/wiki/Q602486",
+      "imslp_url": "https://imslp.org/wiki/Category:Morera,_Enric",
+      "worked": {
+        "wikidata_same_person": "yes",
+        "imslp_check": "same",
+        "death_status": "dead",
+        "death_year": "1942",
+        "death_source": "GND https://d-nb.info/gnd/124446809; LoC https://id.loc.gov/authorities/names/n92085993"
+      },
+      "why": "Wikidata: Catalan composer, born 22 May 1865, as in the article. IMSLP has the same dates, lists \"Enric (Enrique) Morera i Viura\" and the same VIAF cluster (44491201). GND, LoC and BnF all give 1942; the day differs (11 or 12 March), which does not matter. The GND search also returns a namesake born 1959: choose the record by dates and occupation. The Identifiers section of the Wikidata page links GND, LoC, BnF and VIAF; cite the record you opened, not Wikidata."
+    },
+    {
+      "item": "P-C2",
+      "composer_id": "Q10274029",
+      "name": "Ernestina Lecuona y Casado",
+      "wikipedia_url": "https://en.wikipedia.org/wiki/Ernestina_Lecuona_y_Casado",
+      "wikidata_url": "https://www.wikidata.org/wiki/Q10274029",
+      "imslp_url": "",
+      "worked": {
+        "wikidata_same_person": "yes",
+        "imslp_check": "found",
+        "imslp_found_url": "https://imslp.org/wiki/Category:Lecuona,_Ernestina",
+        "death_status": "dead",
+        "death_year": "1951",
+        "death_source": "Dictionnaire universel des créatrices https://dictionnaire-creatrices.com/fiche-ernestina-lecuona-casado",
+        "notes": "No dates in GND or LoC; Wikipedia, Wikidata and IMSLP agree on 3 Sep 1951."
+      },
+      "why": "IMSLP files her under the first surname only (Spanish double surname); the category lists \"Lecuona y Casado\" as an alternate name, the same dates and the same Wikidata item. Category:Lecuona,_Ernesto is her brother. GND has no record and LoC one without dates, so the date comes from level 2: the Dictionnaire universel des créatrices, which cites the New Grove Dictionary of Women Composers."
+    }
+  ],
+  "works": [
+    {
+      "item": "P-W1",
+      "work_id": "Suite for 2 Violins and Small Orchestra, Op.15 (Zilcher, Hermann)",
+      "composer": "Hermann Zilcher",
+      "title": "Suite for 2 Violins and Small Orchestra, Op.15",
+      "imslp_work_url": "https://imslp.org/wiki/Suite_for_2_Violins_and_Small_Orchestra%2C_Op.15_%28Zilcher%2C_Hermann%29",
+      "worked": {"force_family": "concerto", "has_files": "yes", "rights_basis": "none"},
+      "why": "The original is two soloists with orchestra. The only files are a version for 2 violins and piano under Arrangements and Transcriptions; judge the original, and even a composer's own chamber version (7) loses to concerto (9). Arrangement files still count for has_files. No category is a rights category (Sibley Mirroring Project is a scan source)."
+    },
+    {
+      "item": "P-W2",
+      "work_id": "Caprice No.2 (Bacewicz, Grażyna)",
+      "composer": "Grażyna Bacewicz",
+      "title": "Caprice No.2",
+      "imslp_work_url": "https://imslp.org/wiki/Caprice_No.2_%28Bacewicz%2C_Gra%C5%BCyna%29",
+      "worked": {"force_family": "solo_instrument", "has_files": "yes", "rights_basis": "eu_warning"},
+      "why": "Violin alone. A complete score (PWM, 1952) is on the page. The category list has WorkNonPD-USandEU; the file's \"Copyright: Public Domain\" line is IMSLP's Canadian status, and the basis comes from the categories."
+    }
+  ]
+}

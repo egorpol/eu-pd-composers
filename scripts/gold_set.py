@@ -2,6 +2,8 @@
 """Gold set: stratified sample, blind annotation sheets, and error-rate scoring.
 
   python scripts/gold_set.py sample --dump r016        # writes data/gold/r016/
+  python scripts/gold_set.py form --dump r016          # annotation form → build/gold_form/r016/
+  python scripts/gold_set.py import-form --dump r016 --store DIR   # form answers → sheets
   python scripts/gold_set.py score --dump r016 --out data/gold/r016/report.md
 
 Offline. `sample` is deterministic for a dump and seed, and refuses to overwrite
@@ -17,6 +19,7 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import re
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -27,7 +30,7 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from common import DATA_DIR, TOOL_VERSION, dump_meta_path, dump_tsv_path  # noqa: E402
+from common import DATA_DIR, REPO_ROOT, TOOL_VERSION, dump_meta_path, dump_tsv_path  # noqa: E402
 from force_family import FORCE_FAMILIES  # noqa: E402
 from rights_basis import BASIS_LABELS, rights_basis  # noqa: E402
 from style_agreement import cohens_kappa  # noqa: E402
@@ -220,6 +223,104 @@ def run_sample(args: argparse.Namespace) -> None:
               f"{paths[(kind, 'sheet')]}")
         for stratum, row in meta["strata"][kind].items():
             print(f"  {stratum}: {row['stratum_sample']} of {row['stratum_size']}")
+
+
+# --- Annotation form ------------------------------------------------------
+
+FORM_TEMPLATE = Path(__file__).resolve().parent / "gold_form.html"
+FORM_PLACEHOLDER = "__GOLD_FORM_DATA__"
+# The claude.ai artifact skeleton wraps the page; the local copy brings its own.
+LOCAL_PAGE = ('<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n'
+              '<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">\n'
+              '</head>\n<body>\n{page}</body>\n</html>\n')
+
+
+def form_data(directory: Path, dump_id: str) -> dict[str, Any]:
+    """Shown columns of the sheets and re-check sheets, plus the practice items. Never answers or design."""
+    read = dict(sep="\t", dtype=str, keep_default_na=False)
+    data: dict[str, Any] = {"dump": dump_id}
+    for kind in SETS:
+        for part, key in (("sheet", kind), ("recheck", f"{kind}_recheck")):
+            frame = pd.read_csv(directory / f"{kind}_{part}.tsv", **read)
+            data[key] = frame[["item", *SHOWN[kind]]].to_dict(orient="records")
+    practice = json.loads((DATA_DIR / "gold" / "practice.json").read_text(encoding="utf-8"))
+    data["practice"] = {kind: practice[kind] for kind in SETS}
+    return data
+
+
+def render_form(data: dict[str, Any], template: str) -> str:
+    if template.count(FORM_PLACEHOLDER) != 1:
+        raise ValueError(f"Form template must hold {FORM_PLACEHOLDER} exactly once")
+    # "<\/" keeps a title containing "</script>" from closing the data block early.
+    payload = json.dumps(data, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
+    return template.replace(FORM_PLACEHOLDER, payload)
+
+
+def run_form(args: argparse.Namespace) -> list[Path]:
+    directory = Path(args.gold_dir) if args.gold_dir else gold_dir(args.dump)
+    out = Path(args.out_dir) if args.out_dir else REPO_ROOT / "build" / "gold_form" / args.dump
+    page = render_form(form_data(directory, args.dump), FORM_TEMPLATE.read_text(encoding="utf-8"))
+    out.mkdir(parents=True, exist_ok=True)
+    paths = [out / "gold_form.html", out / "gold_form_local.html"]
+    paths[0].write_text(page, encoding="utf-8")
+    paths[1].write_text(LOCAL_PAGE.format(page=page), encoding="utf-8")
+    print(f"artifact page → {paths[0]}\nlocal copy (open in a browser) → {paths[1]}")
+    return paths
+
+
+# Form store collection → sheet part it fills.
+FORM_COLLECTIONS = {"answers": "sheet", "recheck": "recheck"}
+# A bare identifier in death_source is a GND number (Wikidata P227 format).
+GND_ID = re.compile(r"1[01]?\d{7}[0-9X]|[47]\d{6}-\d|[1-9]\d{0,7}-[0-9X]|3\d{7}[0-9X]")
+
+
+def _cell(field: str, value: Any) -> str:
+    text = " ".join(str(value or "").split())
+    return f"GND {text}" if field == "death_source" and GND_ID.fullmatch(text) else text
+
+
+def import_answers(directory: Path, store: Path) -> dict[str, Any]:
+    """Write form answers (<store>/<collection>/<item>.json, one document per item) into the sheets.
+
+    An item in the store replaces all its answer cells, so a cleared answer clears the cell; items not in
+    the store keep theirs. A bare GND number in death_source becomes "GND <number>". Returns per-sheet counts, invalid cells and store items no sheet has.
+    """
+    read = dict(sep="\t", dtype=str, keep_default_na=False)
+    summary: dict[str, Any] = {}
+    for collection, part in FORM_COLLECTIONS.items():
+        docs = {}
+        for path in sorted((store / collection).glob("*.json")):
+            doc = json.loads(path.read_text(encoding="utf-8"))
+            docs[str(doc.get("item", path.stem))] = doc
+        seen: set[str] = set()
+        for kind in SETS:
+            path = directory / f"{kind}_{part}.tsv"
+            sheet = pd.read_csv(path, **read)
+            hits = sheet.index[sheet["item"].isin(docs)]
+            for i in hits:
+                doc = docs[sheet.at[i, "item"]]
+                for field in GOLD_FIELDS[kind]:
+                    sheet.at[i, field] = _cell(field, doc.get(field))
+            if len(hits):
+                sheet.to_csv(path, sep="\t", index=False)
+            seen |= set(sheet["item"])
+            summary[path.name] = {"imported": len(hits), "problems": validate(kind, sheet)}
+        summary[f"{collection}_unknown"] = sorted(set(docs) - seen)
+    return summary
+
+
+def run_import(args: argparse.Namespace) -> dict[str, Any]:
+    directory = Path(args.gold_dir) if args.gold_dir else gold_dir(args.dump)
+    summary = import_answers(directory, Path(args.store))
+    for name, entry in summary.items():
+        if name.endswith("_unknown"):
+            if entry:
+                print(f"{name.removesuffix('_unknown')}: not in any sheet, skipped: {', '.join(entry)}")
+            continue
+        print(f"{name}: {entry['imported']} items imported")
+        for problem in entry["problems"]:
+            print(f"  invalid: {problem}")
+    return summary
 
 
 # --- Scoring --------------------------------------------------------------
@@ -471,6 +572,14 @@ def main() -> None:
     sample.add_argument("--min-per-stratum", type=int, default=8)
     sample.add_argument("--recheck-share", type=float, default=0.10)
     sample.add_argument("--out-dir", help="Default: data/gold/<dump>/")
+    form = commands.add_parser("form", help="Build the annotation form page from the sheets")
+    form.add_argument("--dump", required=True)
+    form.add_argument("--gold-dir", help="Default: data/gold/<dump>/")
+    form.add_argument("--out-dir", help="Default: build/gold_form/<dump>/")
+    imp = commands.add_parser("import-form", help="Write answers saved by the form into the sheets")
+    imp.add_argument("--dump", required=True)
+    imp.add_argument("--store", required=True, help="Directory with answers/ and recheck/, one <item>.json each")
+    imp.add_argument("--gold-dir", help="Default: data/gold/<dump>/")
     score = commands.add_parser("score", help="Score filled sheets against the dump")
     score.add_argument("--dump", required=True)
     score.add_argument("--gold-dir", help="Default: data/gold/<dump>/")
@@ -479,6 +588,10 @@ def main() -> None:
     args = parser.parse_args()
     if args.command == "sample":
         run_sample(args)
+    elif args.command == "form":
+        run_form(args)
+    elif args.command == "import-form":
+        run_import(args)
     else:
         run_score(args)
 

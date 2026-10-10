@@ -11,6 +11,8 @@ A hand-checked, stratified sample of the dump that turns agreement between sourc
 | `composers_design.tsv`, `works_design.tsv` | Scorer only | Stratum, stratum size, sample size and weight of each item |
 | `meta.json` | — | Dump, seed, allocation |
 
+`data/gold/practice.json` holds four practice items outside any sample, with worked answers, for trying the rules and the form.
+
 The sample for r016: 200 composers and 300 works, drawn with `python scripts/gold_set.py sample --dump r016` (seed 20261010). Small strata are oversampled (square-root allocation, at least 8 items each), and the scorer weights them back.
 
 **Composer strata.** Composers with `qa_flags`; rejected or unverified IMSLP matches; then EU PD status (`pd`, `not_pd`, `unknown_death`) × IMSLP link (Wikidata P839, confirmed name match, not found).
@@ -18,12 +20,19 @@ The sample for r016: 200 composers and 300 works, drawn with `python scripts/gol
 
 ## Workflow
 
-1. Fill `composers_sheet.tsv` and `works_sheet.tsv` in a spreadsheet (keep TSV, UTF-8; do not reorder or delete rows). Budget about 3 minutes per composer and 1 minute per work, so roughly 15 hours.
+1. Fill `composers_sheet.tsv` and `works_sheet.tsv` in a spreadsheet (keep TSV, UTF-8; do not reorder or delete rows), or in the annotation form (below). Budget about 3 minutes per composer and 1 minute per work, so roughly 15 hours.
 2. **Stay blind.** While annotating, do not open the dump, the viewer, the design files or this repo's labels for these items. The sheets deliberately omit death years, PD status, instrumentation and rights labels.
 3. At least **7 days** after finishing an item set, fill its `*_recheck.tsv` without looking at your first answers.
-4. Score: `python scripts/gold_set.py score --dump r016 --out data/gold/r016/report.md --json data/gold/r016/report.json`. Partly filled sheets score fine; blank rows are skipped, and invalid values are listed and ignored.
+4. Score: `python scripts/gold_set.py score --dump r016 --out data/gold/r016/report.md --json data/gold/r016/report.json`. Partly filled sheets score fine; blank rows are skipped, and invalid values are listed and ignored. Score only after finishing a pass: with few items filled, the rates show whether single answers matched the dump, which unblinds the rest.
 
 Use `unsure` sparingly; write the reason in `notes`. Leave a cell empty only if you have not checked it yet.
+
+### Annotation form
+
+`python scripts/gold_set.py form --dump r016` builds the form from the sheets into `build/gold_form/r016/`. The page holds only what the sheets show, plus the practice items. It shows one item at a time with its links and name searches (IMSLP, GND, LoC, BnF, Grove), offers only valid values, and keeps the re-check tabs locked until 7 days after a set's last answer.
+
+- `gold_form.html` is the claude.ai Artifact page (r016: [the published form](https://claude.ai/artifact/HKFhFwjLq3mVDvaTfMmbjR), private to its owner). Answers go to the artifact's store (collections `answers`, `recheck`, `practice`, one document per item). To export, Claude saves `answers` and `recheck` with `ArtifactData list` (`out_dir`), then `python scripts/gold_set.py import-form --dump r016 --store <out_dir>` writes them into the sheets; an item in the store replaces all its answer cells, and invalid values are listed.
+- `gold_form_local.html` opens in any browser. Answers stay in that browser's storage; copy each sheet into `data/gold/<dump>/` from Progress & export.
 
 ## Composers
 
@@ -35,7 +44,7 @@ Use `unsure` sparingly; write the reason in `notes`. Leave a cell empty only if 
 | `imslp_found_url` | URL | Only with `found` |
 | `death_status` | `dead` / `living` / `unknown` | `living` needs positive evidence of life after 2020 (recent activity, an institutional page, an interview). If you cannot tell, use `unknown` |
 | `death_year` | `YYYY` | With `dead`. Leave empty if the person died but no source gives the year |
-| `death_source` | short name + URL | The source you relied on (see the hierarchy) |
+| `death_source` | GND number, or short name + URL or id | The source you relied on (see the hierarchy). A bare number is a GND id (`118776312`, written to the sheet as `GND 118776312`); name any other source (`LoC n92085993`, `Wikidata Q10274029`, `Grove https://…`) |
 | `notes` | free text | Conflicts between sources, doubts, page changes |
 
 ### Source hierarchy for life dates
@@ -48,6 +57,10 @@ Use the highest level that has the information, and two independent sources wher
 4. Wikipedia or Wikidata, only when nothing above has the date. Wikidata is the dump's own source, so record it honestly in `death_source`.
 
 When sources disagree, take the year most independent authorities give, and write the conflict in `notes`.
+
+Decided cases:
+
+- **The list row links the wrong article** (a namesake's page, such as a physicist's): `wikidata_same_person` = `no`. Answer the IMSLP and death columns for the composer the list row means (its nationality and dates identify him), and write the mix-up in `notes`. The scorer then counts the identity error and the death-year or PD errors it causes.
 
 ## Works
 
@@ -83,6 +96,12 @@ Judge the original scoring, ignoring arrangements by others. If the composer mad
 | `pedagogical` | methods, exercises, studies written as teaching material |
 | `other` | none of the above (for example, unspecified instrumentation) |
 
+Decided cases:
+
+- **An instrument named next to an orchestra or string orchestra** (harp and string orchestra, 2 violins and small orchestra) is a soloist: `concerto`. It is `orchestral` only when the score treats it as an ordinary orchestral part, with no solo marking or separate solo staff.
+- **Files only for an arrangement** still give `has_files` = `yes`; the family still follows the original.
+- **IMSLP's "For …" categories and tags** are a starting point, not the answer. The dataset derives many labels from them, so check them against the work page's Instrumentation line and the score.
+
 ### Rights basis
 
 First match in this order, from the categories at the bottom of the work page:
@@ -90,13 +109,15 @@ First match in this order, from the categories at the bottom of the work page:
 | Basis | IMSLP categories |
 |---|---|
 | `eu_warning` | WorkNonPD-EU, WorkNonPD-USandEU |
-| `us_only` | WorkPD-USonly |
+| `us_only` | WorkPD-USonly (public domain in the US only; the opposite of a "Non-PD US" warning) |
 | `licensed` | Works not in public domain, FileNonPD-PermissionGranted, Works Licensed through BMI / ASCAP / GEMA |
 | `wima` | WIMA files |
 | `us_routes` | Work-PD-US-notrenewed, PD-US-no notice |
 | `none` | none of these |
 
 WorkNonPD-US alone is a US warning, not a basis: it gives `none`.
+
+The **Copyright** line in a file's box ("Public Domain - Non-PD US, Non-PD EU") is IMSLP's status for that file: Public Domain means in Canada, and the rest are warnings. It does not set the basis; only the categories do. When the file line and the categories disagree, answer from the categories and write the difference in `notes`.
 
 ## What the scores mean
 

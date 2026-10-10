@@ -1,0 +1,733 @@
+<title>eu-pd-composers Gold Set</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,500;8..60,600&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: sticky tab bar; item list on the left, one item card on the right; stacks at phone width. */
+:root {
+  --bg: #f2f4f7; --surface: #ffffff; --ink: #18202c; --muted: #5a6474; --line: #d8dde5;
+  --accent: #2d5ba3; --accent-soft: #e2eaf6; --on-accent: #ffffff; --chip: #eceff4;
+  --ok: #2e7a4d; --warn: #9a5c00; --warn-soft: #fbefdc; --err: #b3261e;
+  --f-display: "Source Serif 4", "Iowan Old Style", Georgia, serif;
+  --f-body: "Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --r: 6px;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #11151b; --surface: #181e26; --ink: #e3e8ef; --muted: #98a2b2; --line: #2b3440;
+  --accent: #88aae6; --accent-soft: #1f2c44; --on-accent: #0f1520; --chip: #212833;
+  --ok: #6cc290; --warn: #e3a94e; --warn-soft: #3a2d17; --err: #f08a80; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #11151b; --surface: #181e26; --ink: #e3e8ef; --muted: #98a2b2; --line: #2b3440;
+  --accent: #88aae6; --accent-soft: #1f2c44; --on-accent: #0f1520; --chip: #212833;
+  --ok: #6cc290; --warn: #e3a94e; --warn-soft: #3a2d17; --err: #f08a80; color-scheme: dark }
+
+html, body { height: 100%; }
+[hidden] { display: none !important; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 var(--f-body); }
+a { color: var(--accent); }
+button, input, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.mono { font-family: var(--f-mono); font-size: .86em; font-variant-numeric: tabular-nums; }
+
+.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); border-bottom: 1px solid var(--line); }
+.top-in { max-width: 1240px; margin: 0 auto; padding: 10px 16px 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 16px; }
+.brand { font-family: var(--f-display); font-weight: 600; font-size: 19px; margin: 0; }
+.brand .mono { color: var(--muted); font-weight: 400; }
+.conn { margin-left: auto; font-size: 13px; color: var(--muted); }
+.conn.bad { color: var(--err); }
+.tabs { flex-basis: 100%; display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; }
+.tab { border: 0; background: none; padding: 8px 12px 10px; border-bottom: 2px solid transparent; color: var(--muted); cursor: pointer; white-space: nowrap; }
+.tab:hover { color: var(--ink); }
+.tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); font-weight: 600; }
+.tab .count { font-family: var(--f-mono); font-size: 12px; margin-left: 6px; color: var(--muted); font-weight: 400; }
+
+.banner { max-width: 1240px; margin: 12px auto 0; padding: 0 16px; }
+.banner p { margin: 0; padding: 10px 12px; border-radius: var(--r); background: var(--warn-soft); color: var(--ink); border: 1px solid var(--warn); font-size: 14px; }
+
+main { max-width: 1240px; margin: 0 auto; padding: 16px 16px 48px; }
+.layout { display: grid; grid-template-columns: 290px minmax(0, 1fr); gap: 20px; align-items: start; }
+@media (max-width: 860px) { .layout { grid-template-columns: minmax(0, 1fr); } }
+
+.side { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 92px); display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+@media (max-width: 860px) { .side { position: static; } }
+.filters { display: flex; flex-wrap: wrap; gap: 4px; }
+.chip { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 2px 10px; font-size: 13px; cursor: pointer; color: var(--muted); }
+.chip[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--ink); }
+.search { width: 100%; box-sizing: border-box; padding: 6px 10px; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); }
+.list { position: relative; list-style: none; margin: 0; padding: 0; max-height: calc(100vh - 230px); overflow: auto; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); }
+@media (max-width: 860px) { .list { max-height: 210px; } }
+.list button { display: grid; grid-template-columns: 12px 46px minmax(0, 1fr); gap: 8px; align-items: center; width: 100%; text-align: left; border: 0; border-bottom: 1px solid var(--line); background: none; padding: 6px 10px; cursor: pointer; font-size: 14px; }
+.list li:last-child button { border-bottom: 0; }
+.list button:hover { background: var(--chip); }
+.list button[aria-current="true"] { background: var(--accent-soft); }
+.list .lbl { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.list .nomatch { padding: 12px; color: var(--muted); font-size: 14px; }
+.dot { width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid var(--muted); box-sizing: border-box; }
+.dot.partial { background: linear-gradient(90deg, var(--muted) 50%, transparent 50%); }
+.dot.done { background: var(--ok); border-color: var(--ok); }
+.dot.unsure { background: var(--warn); border-color: var(--warn); }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12px; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 5px; }
+
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); min-width: 0; }
+.card-head { padding: 18px 20px 14px; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 8px; }
+.eyebrow { font-size: 13px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 10px; }
+.name { font-family: var(--f-display); font-weight: 600; font-size: 28px; line-height: 1.15; margin: 0; text-wrap: balance; overflow-wrap: anywhere; }
+.sub { color: var(--muted); margin: -4px 0 0; }
+.links, .lookups { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.lookups { font-size: 13px; color: var(--muted); gap: 4px 12px; }
+.btn-link { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: var(--r); border: 1px solid var(--accent); color: var(--accent); text-decoration: none; font-weight: 500; font-size: 14px; }
+.btn-link:hover { background: var(--accent-soft); }
+.nolink { font-size: 14px; color: var(--muted); font-style: italic; }
+
+.q { padding: 16px 20px; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 8px; }
+.q h3 { margin: 0; font-size: 13px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.q h3 .field { font-family: var(--f-mono); text-transform: none; letter-spacing: 0; font-weight: 400; margin-left: 6px; }
+.help { margin: 0; font-size: 14px; color: var(--muted); max-width: 68ch; }
+.seg { display: flex; flex-wrap: wrap; gap: 6px; }
+.opt { border: 1px solid var(--line); background: var(--surface); border-radius: var(--r); padding: 6px 14px; cursor: pointer; font-weight: 500; }
+.opt:hover { border-color: var(--accent); }
+.opt[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.opt.u[aria-pressed="true"] { background: var(--warn); border-color: var(--warn); color: var(--on-accent); }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 6px; }
+.grid .opt { display: grid; grid-template-columns: 22px minmax(0, 1fr); align-content: start; column-gap: 6px; text-align: left; padding: 7px 10px; font-weight: 400; }
+.grid .opt b { font-family: var(--f-mono); font-weight: 500; font-size: 13px; grid-column: 2; overflow-wrap: anywhere; }
+.grid .opt .n { font-family: var(--f-mono); font-size: 12px; color: var(--muted); grid-row: 1 / span 2; padding-top: 1px; }
+.grid .opt small { grid-column: 2; font-size: 12px; line-height: 1.35; color: var(--muted); }
+.grid .opt[aria-pressed="true"] .n, .grid .opt[aria-pressed="true"] small { color: var(--on-accent); opacity: .85; }
+.row { display: flex; flex-wrap: wrap; gap: 10px; }
+.fld { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); min-width: 0; }
+.fld.grow { flex: 1 1 260px; }
+.fld input, .fld textarea { padding: 7px 10px; border: 1px solid var(--line); border-radius: var(--r); background: var(--bg); color: var(--ink); font-size: 15px; min-width: 0; }
+.fld input.year { width: 6.5em; font-family: var(--f-mono); }
+.fld input:disabled { opacity: .5; }
+.fld textarea { min-height: 64px; resize: vertical; }
+details.ref { font-size: 14px; color: var(--muted); }
+details.ref summary { cursor: pointer; }
+.worked { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 2px 12px; margin: 8px 0; }
+.worked dt { font-family: var(--f-mono); font-size: 13px; }
+.worked dd { margin: 0; color: var(--ink); overflow-wrap: anywhere; }
+details.ref ol { margin: 6px 0 0; padding-left: 20px; display: grid; gap: 2px; max-width: 70ch; }
+.warns { list-style: none; margin: 0; padding: 0 20px; display: grid; gap: 4px; }
+.warns:not(:empty) { padding: 12px 20px; border-bottom: 1px solid var(--line); }
+.warns li { font-size: 14px; color: var(--warn); }
+.card-foot { padding: 12px 20px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.nav { border: 1px solid var(--line); background: var(--surface); border-radius: var(--r); padding: 6px 14px; cursor: pointer; }
+.nav:hover:not(:disabled) { border-color: var(--accent); }
+.nav:disabled { opacity: .45; cursor: default; }
+.nav.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 600; }
+.save { margin-left: auto; font-size: 13px; color: var(--muted); }
+.save.err { color: var(--err); }
+.keys { font-size: 12px; color: var(--muted); padding: 0 20px 14px; }
+kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--line); border-radius: 3px; padding: 0 4px; }
+
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 20px; display: flex; flex-direction: column; gap: 12px; max-width: 760px; }
+.panel h2 { font-family: var(--f-display); font-weight: 600; font-size: 22px; margin: 0; text-wrap: balance; }
+.panel p { margin: 0; max-width: 68ch; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.stat { border: 1px solid var(--line); border-radius: var(--r); padding: 10px 12px; display: flex; flex-direction: column; gap: 2px; }
+.stat .k { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.stat .v { font-family: var(--f-mono); font-size: 20px; font-variant-numeric: tabular-nums; }
+.stat .v small { font-size: 13px; color: var(--muted); }
+.exports { display: grid; gap: 8px; }
+.exp { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; }
+.exp .mono { flex: 1 1 220px; }
+textarea.dump { width: 100%; box-sizing: border-box; min-height: 120px; font-family: var(--f-mono); font-size: 12px; background: var(--bg); color: var(--ink); border: 1px solid var(--line); border-radius: var(--r); }
+.lock { border-left: 3px solid var(--warn); }
+@media (prefers-reduced-motion: no-preference) { .opt, .chip, .nav, .btn-link { transition: background-color .12s, border-color .12s; } }
+</style>
+
+<header class="top">
+  <div class="top-in">
+    <h1 class="brand">Gold set <span class="mono" id="dumpid">r016</span></h1>
+    <span class="conn" id="conn">Connecting…</span>
+    <nav class="tabs" role="tablist" id="tabs"></nav>
+  </div>
+</header>
+<div class="banner" id="banner" hidden><p id="bannerText"></p></div>
+<main id="main"><div class="panel"><h2>Loading the sheets</h2><p>The composers and works of the gold sample appear here in a moment. Answers are saved as you click.</p></div></main>
+<script id="gold-data" type="application/json">__GOLD_FORM_DATA__</script>
+
+<script>
+(() => {
+"use strict";
+const FIELDS = {
+  c: ["wikidata_same_person", "imslp_check", "imslp_found_url", "death_status", "death_year", "death_source", "notes"],
+  w: ["force_family", "has_files", "rights_basis", "notes"],
+};
+const SHEET_COLS = {
+  c: ["item", "composer_id", "name", "wikipedia_url", "wikidata_url", "imslp_url"],
+  w: ["item", "work_id", "composer", "title", "imslp_work_url"],
+};
+const FAMILIES = [
+  ["piano_solo", "one pianist (left hand alone too)"],
+  ["piano_ensemble", "two or more pianists or pianos, or piano with other keyboards"],
+  ["organ", "organ alone"],
+  ["keyboard_other", "harpsichord, clavichord, celesta, harmonium… alone"],
+  ["solo_instrument", "one non-keyboard instrument, alone or with one keyboard"],
+  ["guitar", "guitar or lute family; no voices, orchestra, band, electronics"],
+  ["chamber", "two or more instrumentalists otherwise; no voices, no orchestra"],
+  ["orchestral", "orchestra or string orchestra, no soloists"],
+  ["concerto", "soloist(s) with orchestra or string orchestra"],
+  ["wind_band", "wind or brass band, wind or brass ensemble"],
+  ["solo_voice", "one or two voices, any accompaniment or none"],
+  ["choral", "any chorus, or three or more voices alone"],
+  ["stage_opera", "opera, operetta, musical, staged vocal work"],
+  ["stage_ballet", "ballet"],
+  ["film_media", "film, television or radio music"],
+  ["electronic", "with electronics or tape; no voices, chorus, orchestra, band"],
+  ["pedagogical", "methods, exercises, studies as teaching material"],
+  ["other", "none of the above, or unspecified"],
+];
+const BASES = [
+  ["eu_warning", "WorkNonPD-EU, WorkNonPD-USandEU"],
+  ["us_only", "WorkPD-USonly: public domain in the US only (not \"Non-PD US\")"],
+  ["licensed", "Works not in public domain, FileNonPD-PermissionGranted, Works Licensed through BMI / ASCAP / GEMA"],
+  ["wima", "WIMA files"],
+  ["us_routes", "Work-PD-US-notrenewed, PD-US-no notice"],
+  ["none", "none of these; WorkNonPD-US alone (a US warning) counts as none"],
+];
+const TABS = [
+  { id: "composers", label: "Composers", coll: "answers", src: "composers" },
+  { id: "works", label: "Works", coll: "answers", src: "works" },
+  { id: "practice", label: "Practice", coll: "practice", src: "practice" },
+  { id: "recheck_c", label: "Re-check composers", coll: "recheck", src: "composers_recheck", lockOf: "composers" },
+  { id: "recheck_w", label: "Re-check works", coll: "recheck", src: "works_recheck", lockOf: "works" },
+  { id: "export", label: "Progress & export" },
+];
+const COLLS = ["answers", "recheck", "practice"];
+const DAY = 86400000;
+const $ = (s, el = document) => el.querySelector(s);
+const kindOf = it => (it.composer_id ? "c" : "w");
+const enc = encodeURIComponent;
+
+const store = {
+  get(k) { try { return JSON.parse(localStorage.getItem("goldset." + k)); } catch { return null; } },
+  set(k, v) { try { localStorage.setItem("goldset." + k, JSON.stringify(v)); } catch {} },
+};
+
+const S = {
+  data: null, db: null, readOnly: false, connected: false,
+  server: { answers: {}, recheck: {}, practice: {} },
+  local: { answers: {}, recheck: {}, practice: {} },
+  ver: {}, timers: {}, inflight: {}, again: {},
+  tab: "composers", pos: {}, filter: "all", q: "",
+  saveMsg: "", saveErr: false,
+};
+const saved = store.get("view");
+if (saved && typeof saved === "object") { S.tab = saved.tab || S.tab; S.pos = saved.pos || {}; }
+
+// ---------- values and status ----------
+function val(coll, id) { return { ...(S.server[coll][id] || {}), ...(S.local[coll][id] || {}) }; }
+function itemsOf(tab) {
+  const d = S.data; if (!d || !tab.src) return [];
+  return tab.src === "practice" ? [...d.practice.composers, ...d.practice.works] : d[tab.src];
+}
+function complete(kind, v, it) {
+  if (kind === "w") return !!(v.force_family && v.has_files && v.rights_basis);
+  if (!v.wikidata_same_person || !v.imslp_check || !v.death_status) return false;
+  if (v.imslp_check === "found" && !(v.imslp_found_url || "").trim()) return false;
+  if (v.death_status !== "unknown" && !(v.death_source || "").trim()) return false;
+  return true;
+}
+function anyUnsure(kind, v) { return FIELDS[kind].some(f => v[f] === "unsure"); }
+function status(kind, v, it) {
+  const filled = FIELDS[kind].some(f => (v[f] || "").toString().trim());
+  if (!filled) return "empty";
+  if (!complete(kind, v, it)) return "partial";
+  return anyUnsure(kind, v) ? "unsure" : "done";
+}
+function warnings(kind, v, it) {
+  const w = [];
+  const unsureFields = FIELDS[kind].filter(f => v[f] === "unsure");
+  if (unsureFields.length && !(v.notes || "").trim()) w.push("You marked " + unsureFields.join(", ") + " as unsure. Write the reason in notes.");
+  if (kind === "c") {
+    if (v.imslp_check && it.imslp_url && ["found", "none"].includes(v.imslp_check)) w.push("This row has an IMSLP link, so the answer is same, different or unsure.");
+    if (v.imslp_check && !it.imslp_url && ["same", "different"].includes(v.imslp_check)) w.push("This row has no IMSLP link, so the answer is found, none or unsure.");
+    const u = (v.imslp_found_url || "").trim();
+    if (v.imslp_check === "found" && !u) w.push("Paste the IMSLP category URL you found.");
+    if (u && !/^https:\/\/imslp\.org\/wiki\/Category:/.test(u)) w.push("The found URL should start with https://imslp.org/wiki/Category:");
+    const y = (v.death_year || "").trim();
+    if (y && !/^\d{4}$/.test(y)) w.push("Death year must be four digits, like 1942.");
+    if (/^\d{4}$/.test(y) && +y > new Date().getFullYear()) w.push("Death year is in the future.");
+    if (y && v.death_status && v.death_status !== "dead") w.push("A death year only goes with dead. Clear it or change the status.");
+    if (v.death_status === "dead" && !y) w.push("No death year: fine only if no source gives the year (say so in notes).");
+    if (v.death_status && v.death_status !== "unknown" && !(v.death_source || "").trim()) w.push("Name the source you relied on, with its URL.");
+    if (v.death_status === "living") w.push("Living needs positive evidence of life after 2020. Put it in the source field.");
+  }
+  return w;
+}
+
+// ---------- saving ----------
+function edit(coll, id, field, value) {
+  const k = coll + "/" + id;
+  S.local[coll][id] = { ...val(coll, id), [field]: value };
+  S.ver[k] = (S.ver[k] || 0) + 1;
+  clearTimeout(S.timers[k]);
+  S.timers[k] = setTimeout(() => flush(coll, id), 450);
+  setSave("Unsaved changes…");
+  refreshStatus(coll, id);
+}
+async function flush(coll, id) {
+  const k = coll + "/" + id;
+  clearTimeout(S.timers[k]);
+  if (!S.local[coll][id]) return;
+  if (!S.db || S.readOnly) { setSave("Not saved: this view can't write answers.", true); return; }
+  if (S.inflight[k]) { S.again[k] = true; return; }
+  const v = S.ver[k];
+  const body = { item: id };
+  for (const f of new Set([...FIELDS.c, ...FIELDS.w])) { const x = S.local[coll][id][f]; if (x !== undefined) body[f] = x; }
+  body.updatedAt = new Date().toISOString();
+  S.inflight[k] = true; setSave("Saving…");
+  try {
+    try { await S.db.collection(coll).doc(id).set(body); }
+    catch (e) { if (e?.code !== "unavailable") throw e; await new Promise(r => setTimeout(r, 800 + Math.random() * 800)); await S.db.collection(coll).doc(id).set(body); }
+    S.server[coll][id] = body;
+    if (S.ver[k] === v) delete S.local[coll][id];
+    setSave("Saved " + new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }));
+  } catch (e) {
+    const why = e?.code === "invalid_argument" ? "only the owner can save answers here" : (e?.message || e?.code || "unknown error");
+    setSave("Not saved: " + why + ". Your edits stay on screen; try again.", true);
+    if (e?.code === "invalid_argument") S.readOnly = true;
+  } finally {
+    S.inflight[k] = false;
+    if (S.again[k]) { S.again[k] = false; flush(coll, id); }
+  }
+}
+function flushAll() { for (const c of COLLS) for (const id of Object.keys(S.local[c])) flush(c, id); }
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") flushAll(); });
+window.addEventListener("beforeunload", e => { if (COLLS.some(c => Object.keys(S.local[c]).length)) { flushAll(); e.preventDefault(); e.returnValue = ""; } });
+function setSave(msg, err = false) {
+  S.saveMsg = msg; S.saveErr = err;
+  const el = $("#save"); if (el) { el.textContent = msg; el.classList.toggle("err", err); }
+}
+
+// ---------- re-check lock ----------
+function setProgress(src) {
+  const kind = src === "composers" || src === "composers_recheck" ? "c" : "w";
+  const coll = src.endsWith("_recheck") ? "recheck" : "answers";
+  let done = 0, unsure = 0, started = 0, last = 0;
+  for (const it of S.data[src]) {
+    const v = val(coll, it.item), st = status(kind, v, it);
+    if (st !== "empty") started++;
+    if (st === "done" || st === "unsure") { done++; last = Math.max(last, Date.parse(v.updatedAt || 0) || 0); }
+    if (anyUnsure(kind, v)) unsure++;
+  }
+  const total = S.data[src].length;
+  return { total, done, unsure, started, left: total - done, finishedAt: done === total ? last : null };
+}
+function lockState(tab) {
+  const p = setProgress(tab.lockOf);
+  const early = store.get("early." + tab.id) === true;
+  if (p.finishedAt === null) return { locked: !early, reason: "unfinished", p };
+  const unlockAt = p.finishedAt + 7 * DAY;
+  return { locked: Date.now() < unlockAt && !early, reason: "waiting", unlockAt, p };
+}
+
+// ---------- rendering ----------
+function renderTabs() {
+  const nav = $("#tabs"); nav.textContent = "";
+  for (const t of TABS) {
+    const b = document.createElement("button");
+    b.className = "tab"; b.id = "tab-" + t.id; b.setAttribute("role", "tab");
+    b.setAttribute("aria-selected", String(S.tab === t.id));
+    b.textContent = t.label;
+    if (S.data && t.src && t.src !== "practice" && !t.lockOf) {
+      const p = setProgress(t.src);
+      const c = document.createElement("span"); c.className = "count"; c.textContent = p.done + "/" + p.total; b.append(c);
+    }
+    b.onclick = () => { if (S.tab !== t.id) { flushAll(); S.tab = t.id; S.filter = "all"; S.q = ""; persist(); render(); } };
+    nav.append(b);
+  }
+}
+function persist() { store.set("view", { tab: S.tab, pos: S.pos }); }
+function curTab() { return TABS.find(t => t.id === S.tab) || TABS[0]; }
+
+function render() {
+  renderTabs();
+  const main = $("#main"); main.textContent = "";
+  if (!S.data) return;
+  const tab = curTab();
+  if (tab.id === "export") return renderExport(main);
+  if (tab.lockOf) {
+    const L = lockState(tab);
+    if (L.locked) return renderLock(main, tab, L);
+  }
+  const items = itemsOf(tab);
+  let i = Math.min(S.pos[tab.id] || 0, items.length - 1);
+  S.pos[tab.id] = i;
+  const layout = document.createElement("div"); layout.className = "layout";
+  layout.append(renderSide(tab, items), renderCard(tab, items, i));
+  main.append(layout);
+  if (tab.lockOf) {
+    const n = document.createElement("p"); n.className = "help"; n.style.marginTop = "12px";
+    n.textContent = "Re-check answers are kept apart from your first pass. Don't open the Composers or Works tabs for these items until you finish.";
+    main.prepend(n);
+  }
+  if (tab.id === "practice") {
+    const n = document.createElement("p"); n.className = "help"; n.style.margin = "0 0 12px";
+    n.textContent = "Practice items are not in the sample and stay out of the export. Answer one, then open its worked answer to compare.";
+    main.prepend(n);
+  }
+}
+
+function filtered(tab, items) {
+  const q = S.q.trim().toLowerCase();
+  return items.map((it, i) => ({ it, i })).filter(({ it }) => {
+    const st = status(kindOf(it), val(tab.coll, it.item), it);
+    if (S.filter === "todo" && (st === "done" || st === "unsure")) return false;
+    if (S.filter === "unsure" && st !== "unsure") return false;
+    if (S.filter === "done" && st !== "done" && st !== "unsure") return false;
+    if (q && !(it.item + " " + (it.name || it.title || "") + " " + (it.composer || "")).toLowerCase().includes(q)) return false;
+    return true;
+  });
+}
+function renderSide(tab, items) {
+  const side = document.createElement("aside"); side.className = "side";
+  const f = document.createElement("div"); f.className = "filters";
+  for (const [k, l] of [["all", "All"], ["todo", "To do"], ["unsure", "Unsure"], ["done", "Done"]]) {
+    const c = document.createElement("button"); c.className = "chip"; c.id = "flt-" + k; c.textContent = l;
+    c.setAttribute("aria-pressed", String(S.filter === k));
+    c.onclick = () => { S.filter = k; render(); };
+    f.append(c);
+  }
+  const s = document.createElement("input"); s.className = "search"; s.id = "search"; s.type = "search";
+  s.placeholder = "Filter by name or item"; s.value = S.q; s.setAttribute("aria-label", "Filter items");
+  s.oninput = () => { S.q = s.value; fillList(tab, items, ul); };
+  const ul = document.createElement("ul"); ul.className = "list"; ul.id = "list";
+  fillList(tab, items, ul);
+  const lg = document.createElement("div"); lg.className = "legend";
+  lg.innerHTML = '<span><i class="dot"></i>empty</span><span><i class="dot partial"></i>started</span><span><i class="dot done"></i>done</span><span><i class="dot unsure"></i>done, with unsure</span>';
+  side.append(f, s, ul, lg);
+  return side;
+}
+function fillList(tab, items, ul) {
+  ul.textContent = "";
+  const rows = filtered(tab, items);
+  if (!rows.length) { const li = document.createElement("li"); li.className = "nomatch"; li.textContent = "Nothing matches this filter."; ul.append(li); return; }
+  for (const { it, i } of rows) {
+    const li = document.createElement("li"), b = document.createElement("button");
+    b.id = "li-" + it.item;
+    if (i === S.pos[tab.id]) b.setAttribute("aria-current", "true");
+    const d = document.createElement("i"); d.className = "dot " + status(kindOf(it), val(tab.coll, it.item), it); d.id = "dot-" + it.item;
+    const id = document.createElement("span"); id.className = "mono"; id.textContent = it.item;
+    const lb = document.createElement("span"); lb.className = "lbl"; lb.textContent = it.name || it.title;
+    if (it.composer) lb.title = it.title + " (" + it.composer + ")";
+    b.append(d, id, lb);
+    b.onclick = () => go(i);
+    li.append(b); ul.append(li);
+  }
+  const cur = ul.querySelector('[aria-current="true"]');
+  if (cur) requestAnimationFrame(() => { const top = cur.offsetTop - ul.clientHeight / 2; if (top > 0 && (cur.offsetTop < ul.scrollTop || cur.offsetTop > ul.scrollTop + ul.clientHeight - 30)) ul.scrollTop = top; });
+}
+function go(i) {
+  const tab = curTab(), items = itemsOf(tab);
+  if (i < 0 || i >= items.length) return;
+  const prev = items[S.pos[tab.id]]; if (prev) flush(tab.coll, prev.item);
+  S.pos[tab.id] = i; persist(); render();
+  const top = $(".card"); if (top && top.getBoundingClientRect().top < 0) top.scrollIntoView({ block: "start" });
+}
+function nextTodo() {
+  const tab = curTab(), items = itemsOf(tab), n = items.length, from = S.pos[tab.id];
+  for (let k = 1; k <= n; k++) {
+    const j = (from + k) % n, it = items[j], st = status(kindOf(it), val(tab.coll, it.item), it);
+    if (st === "empty" || st === "partial") return go(j);
+  }
+}
+
+function el(tag, attrs = {}, ...kids) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === "class") e.className = v; else if (k === "text") e.textContent = v;
+    else if (k.startsWith("on")) e[k] = v; else e.setAttribute(k, v);
+  }
+  for (const c of kids) if (c != null) e.append(c);
+  return e;
+}
+function ext(href, label, cls = "btn-link") { return el("a", { class: cls, href, target: "_blank", rel: "noopener", text: label + " ↗" }); }
+
+function renderCard(tab, items, i) {
+  const it = items[i], kind = kindOf(it), coll = tab.coll, id = it.item;
+  const v = () => val(coll, id);
+  const card = el("article", { class: "card", "aria-label": "Item " + id });
+  const head = el("header", { class: "card-head" });
+  const eyebrow = el("div", { class: "eyebrow" },
+    el("span", { class: "mono", text: id }),
+    el("span", { class: "mono", text: kind === "c" ? it.composer_id : "" }),
+    el("span", { text: (i + 1) + " of " + items.length }));
+  head.append(eyebrow);
+  if (kind === "c") {
+    head.append(el("h2", { class: "name", text: it.name }));
+    const links = el("div", { class: "links" }, ext(it.wikipedia_url, "Wikipedia"), ext(it.wikidata_url, "Wikidata"));
+    links.append(it.imslp_url ? ext(it.imslp_url, "IMSLP category") : el("span", { class: "nolink", text: "No IMSLP link in this row: search for one" }));
+    const n = enc(it.name);
+    const look = el("div", { class: "lookups" }, el("span", { text: "Look up:" }),
+      ext("https://imslp.org/index.php?title=Special:Search&search=" + n, "IMSLP search", ""),
+      ext("https://lobid.org/gnd/search?q=" + n + "&filter=type:Person", "GND", ""),
+      ext("https://id.loc.gov/search/?q=" + n + "&q=cs:http://id.loc.gov/authorities/names", "LoC", ""),
+      ext("https://catalogue.bnf.fr/rechercher.do?motRecherche=" + n, "BnF", ""),
+      ext("https://www.oxfordmusiconline.com/search?q=" + n + "&searchBtn=Search&isQuickSearch=true", "Grove", ""));
+    head.append(links, look);
+  } else {
+    head.append(el("h2", { class: "name", text: it.title }), el("p", { class: "sub", text: it.composer }),
+      el("div", { class: "links" }, ext(it.imslp_work_url, "IMSLP work page")));
+  }
+  card.append(head);
+
+  const warnUl = el("ul", { class: "warns", id: "warns", "aria-live": "polite" });
+  const groups = [];
+  function seg(field, opts, cls = "seg", onPick) {
+    const wrap = el("div", { class: cls, role: "group", "aria-label": field });
+    const btns = opts.map(o => {
+      const b = el("button", { class: "opt" + (o.v === "unsure" ? " u" : ""), id: "o-" + field + "-" + o.v, type: "button", "aria-pressed": "false" });
+      if (o.n) b.append(el("span", { class: "n", text: o.n }));
+      b.append(cls === "grid" ? el("b", { text: o.v }) : document.createTextNode(o.v));
+      if (o.hint) b.append(el("small", { text: o.hint }));
+      b.onclick = () => { const nv = v()[field] === o.v ? "" : o.v; edit(coll, id, field, nv); onPick?.(nv); sync(); };
+      return b;
+    });
+    wrap.append(...btns);
+    groups.push(() => { const cur = v()[field] || ""; btns.forEach((b, k) => b.setAttribute("aria-pressed", String(opts[k].v === cur))); });
+    return wrap;
+  }
+  function text(field, label, attrs = {}, area = false) {
+    const { grow, ...rest } = attrs;
+    const inp = el(area ? "textarea" : "input", { id: "t-" + field, ...rest });
+    inp.value = v()[field] || "";
+    inp.oninput = () => { edit(coll, id, field, inp.value); syncWarn(); };
+    inp.onblur = () => flush(coll, id);
+    groups.push(() => { if (document.activeElement !== inp) inp.value = v()[field] || ""; });
+    return { box: el("label", { class: "fld" + (grow ? " grow" : "") }, el("span", { text: label }), inp), inp };
+  }
+  const q = (title, field, ...kids) => el("section", { class: "q" }, el("h3", {}, title, field ? el("span", { class: "field", text: field }) : null), ...kids);
+
+  let yearInp, foundBox;
+  if (kind === "c") {
+    card.append(q("Same person on Wikidata?", "wikidata_same_person",
+      el("p", { class: "help", text: "Compare the Wikidata item with the Wikipedia article: name, dates, occupation, nationality. A namesake (painter, politician, father) is no." }),
+      seg("wikidata_same_person", ["yes", "no", "unsure"].map(x => ({ v: x })))));
+    const linked = !!it.imslp_url;
+    const found = text("imslp_found_url", "IMSLP category URL you found", { type: "url", placeholder: "https://imslp.org/wiki/Category:…", grow: "1" });
+    foundBox = found.box;
+    card.append(q(linked ? "Does the IMSLP category belong to this composer?" : "Does IMSLP have a composer category for this person?", "imslp_check",
+      el("p", { class: "help", text: linked
+        ? "Compare IMSLP's life dates, links and works with the Wikipedia article."
+        : "Search IMSLP for the name and its variants: transliterations, maiden names, name order. Found needs the URL." }),
+      seg("imslp_check", (linked ? ["same", "different", "unsure"] : ["found", "none", "unsure"]).map(x => ({ v: x }))),
+      linked ? null : el("div", { class: "row" }, found.box)));
+    const yr = text("death_year", "Death year", { inputmode: "numeric", maxlength: "4", placeholder: "YYYY", class: "year" });
+    yearInp = yr.inp;
+    const src = text("death_source", "Source: a GND number, or short name + URL or id", { placeholder: "118776312, or LoC n92085993", grow: "1" });
+    card.append(q("Death", "death_status",
+      el("p", { class: "help", text: "Living needs positive evidence of life after 2020. If you can't tell, use unknown. Leave the year empty if the person died but no source gives it." }),
+      seg("death_status", ["dead", "living", "unknown"].map(x => ({ v: x }))),
+      el("div", { class: "row" }, yr.box, src.box),
+      el("details", { class: "ref" }, el("summary", { text: "Source hierarchy" }),
+        el("ol", {},
+          el("li", { text: "National authority files: GND, BnF, Library of Congress, or their VIAF cluster." }),
+          el("li", { text: "Reference works: Grove / Oxford Music Online, MGG, Baker's, national biographies." }),
+          el("li", { text: "Institutions and press: music information centres, publishers, obituaries." }),
+          el("li", { text: "Wikipedia or Wikidata, only when nothing above has the date. Say so in the source." })),
+        el("p", { class: "help", style: "margin-top:6px", text: "Use two independent sources when they are quick to find. When they disagree, take the year most authorities give and write the conflict in notes." }))));
+  } else {
+    card.append(q("Instrumentation of the original version", "force_family",
+      el("p", { class: "help", text: "Judge the composer's original scoring and ignore arrangements by others. If the composer made several versions, pick the one later in this list." }),
+      seg("force_family", [...FAMILIES.map(([k, h], n) => ({ v: k, hint: h, n: String(n + 1) })), { v: "unsure", hint: "write why in notes" }], "grid")));
+    card.append(q("Files on the page?", "has_files",
+      el("p", { class: "help", text: "At least one score, part or recording file. Files on IMSLP's other servers count; cover images do not." }),
+      seg("has_files", ["yes", "no", "unsure"].map(x => ({ v: x })))));
+    card.append(q("IMSLP rights basis", "rights_basis",
+      el("p", { class: "help", text: "From the category list at the bottom of the work page, first match in this order. A file's Copyright line does not count; if it disagrees with the categories, say so in notes." }),
+      seg("rights_basis", [...BASES.map(([k, h], n) => ({ v: k, hint: h, n: String(n + 1) })), { v: "unsure", hint: "write why in notes" }], "grid")));
+  }
+  const notes = text("notes", "Conflicts between sources, doubts, page changes", { rows: "3" }, true);
+  notes.box.classList.add("grow");
+  card.append(el("section", { class: "q" }, el("h3", {}, "Notes", el("span", { class: "field", text: "notes" })), notes.box));
+  card.append(warnUl);
+  if (it.worked) {
+    const dl = el("dl", { class: "worked" });
+    for (const f of FIELDS[kind]) if (it.worked[f]) dl.append(el("dt", { text: f }), el("dd", { text: it.worked[f] }));
+    card.append(el("section", { class: "q" }, el("details", { class: "ref" }, el("summary", { text: "Worked answer" }), dl, el("p", { class: "help", text: it.why || "" }))));
+  }
+
+  const prev = el("button", { class: "nav", id: "prev", type: "button", text: "← Previous", onclick: () => go(i - 1) });
+  const next = el("button", { class: "nav", id: "next", type: "button", text: "Next →", onclick: () => go(i + 1) });
+  const todo = el("button", { class: "nav primary", id: "todo", type: "button", text: "Next to do", onclick: nextTodo });
+  if (i === 0) prev.disabled = true;
+  if (i === items.length - 1) next.disabled = true;
+  card.append(el("footer", { class: "card-foot" }, prev, next, todo, el("span", { class: "save" + (S.saveErr ? " err" : ""), id: "save", role: "status", text: S.saveMsg })));
+  card.append(el("p", { class: "keys" }, "Keys outside text fields: ", el("kbd", { text: "j" }), " next, ", el("kbd", { text: "k" }), " previous, ", el("kbd", { text: "n" }), " next to do."));
+
+  function syncWarn() {
+    warnUl.textContent = "";
+    for (const w of warnings(kind, v(), it)) warnUl.append(el("li", { text: w }));
+  }
+  function sync() {
+    groups.forEach(g => g());
+    if (kind === "c") {
+      const cur = v();
+      if (foundBox) foundBox.hidden = cur.imslp_check !== "found" && !(cur.imslp_found_url || "").trim();
+      yearInp.disabled = cur.death_status !== "dead" && !(cur.death_year || "").trim();
+    }
+    syncWarn();
+  }
+  card._sync = sync;
+  card._id = id;
+  sync();
+  return card;
+}
+
+function refreshStatus(coll, id) {
+  const tab = curTab();
+  if (tab.coll === coll) {
+    const it = itemsOf(tab).find(x => x.item === id);
+    const d = document.getElementById("dot-" + id);
+    if (it && d) d.className = "dot " + status(kindOf(it), val(coll, id), it);
+  }
+  renderTabs();
+}
+
+function renderLock(main, tab, L) {
+  const kindWord = tab.lockOf === "composers" ? "composers" : "works";
+  const p = el("div", { class: "panel lock" });
+  p.append(el("h2", { text: tab.label + " is locked" }));
+  if (L.reason === "unfinished") {
+    p.append(el("p", { text: "The re-check opens 7 days after you finish all " + L.p.total + " " + kindWord + ". " + L.p.left + " still need an answer." }));
+  } else {
+    const d = new Date(L.unlockAt);
+    p.append(el("p", { text: "You finished the " + kindWord + " on " + new Date(L.p.finishedAt).toLocaleDateString() + ". The re-check opens on " + d.toLocaleDateString() + " at " + d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) + "." }));
+  }
+  p.append(el("p", { class: "help", text: "The wait is what makes the re-check a measure of consistency rather than memory. It holds " + S.data[tab.src].length + " of the same items in a new order, and you answer them without looking at your first answers." }));
+  const b = el("button", { class: "nav", id: "early-" + tab.id, type: "button", text: "Open early…" });
+  b.onclick = () => {
+    if (b.dataset.armed) { store.set("early." + tab.id, true); render(); return; }
+    b.dataset.armed = "1"; b.textContent = "Open now, ignoring the 7-day rule"; b.classList.add("primary");
+  };
+  p.append(el("div", { class: "row" }, b));
+  main.append(p);
+}
+
+function tsvFor(src, coll) {
+  const kind = src.startsWith("composers") ? "c" : "w";
+  const cols = [...SHEET_COLS[kind], ...FIELDS[kind]];
+  const clean = s => String(s ?? "").replace(/[\t\r\n]+/g, " ").trim();
+  const lines = [cols.join("\t")];
+  for (const it of S.data[src]) { const v = val(coll, it.item); lines.push(cols.map(c => clean(c in it ? it[c] : v[c])).join("\t")); }
+  return lines.join("\n") + "\n";
+}
+function renderExport(main) {
+  const wrap = el("div", { class: "panel" });
+  wrap.append(el("h2", { text: "Progress" }));
+  const stats = el("div", { class: "stats" });
+  const C = setProgress("composers"), W = setProgress("works");
+  const mins = C.left * 3 + W.left;
+  stats.append(
+    el("div", { class: "stat" }, el("span", { class: "k", text: "Composers" }), el("span", { class: "v" }, String(C.done), el("small", { text: " / " + C.total }))),
+    el("div", { class: "stat" }, el("span", { class: "k", text: "Works" }), el("span", { class: "v" }, String(W.done), el("small", { text: " / " + W.total }))),
+    el("div", { class: "stat" }, el("span", { class: "k", text: "With unsure" }), el("span", { class: "v", text: String(C.unsure + W.unsure) })),
+    el("div", { class: "stat" }, el("span", { class: "k", text: "Time left, est." }), el("span", { class: "v" }, String(Math.floor(mins / 60)), el("small", { text: " h " + (mins % 60) + " min" }))));
+  wrap.append(stats);
+  wrap.append(el("p", { class: "help", text: "Estimate: 3 minutes per composer, 1 per work. Done means every required answer is filled; started items count as not done." }));
+  wrap.append(el("h2", { text: "Export" }));
+  wrap.append(el("p", { text: "On claude.ai, Claude reads your answers from this page's store and writes them into data/gold/" + S.data.dump + "/. In a local copy, paste each sheet over its file there. Each button copies a full sheet as TSV in the original row order." }));
+  const box = el("textarea", { class: "dump", id: "tsvbox", readonly: "", "aria-label": "Copied TSV" }); box.hidden = true;
+  const ex = el("div", { class: "exports" });
+  for (const [src, coll, file] of [["composers", "answers", "composers_sheet.tsv"], ["works", "answers", "works_sheet.tsv"], ["composers_recheck", "recheck", "composers_recheck.tsv"], ["works_recheck", "recheck", "works_recheck.tsv"]]) {
+    const msg = el("span", { class: "help", text: "" });
+    const b = el("button", { class: "nav", type: "button", id: "copy-" + src, text: "Copy" });
+    b.onclick = () => {
+      const t = tsvFor(src, coll);
+      const fallback = () => { box.hidden = false; box.value = t; box.focus(); box.select(); msg.textContent = "Copying is blocked here. The text is selected below; press Ctrl+C."; };
+      try { navigator.clipboard.writeText(t).then(() => { msg.textContent = "Copied " + S.data[src].length + " rows."; }, fallback); } catch { fallback(); }
+    };
+    ex.append(el("div", { class: "exp" }, el("span", { class: "mono", text: file }), b, msg));
+  }
+  wrap.append(ex, box);
+  main.append(wrap);
+}
+
+// ---------- keys ----------
+document.addEventListener("keydown", e => {
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+  const t = e.target;
+  if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA")) return;
+  const tab = curTab(); if (!tab.src || !$(".card")) return;
+  if (e.key === "j") go((S.pos[tab.id] || 0) + 1);
+  else if (e.key === "k") go((S.pos[tab.id] || 0) - 1);
+  else if (e.key === "n") nextTodo();
+});
+
+// ---------- boot ----------
+function conn(msg, bad = false) { const c = $("#conn"); c.textContent = msg; c.classList.toggle("bad", bad); }
+function banner(msg) { $("#bannerText").textContent = msg; $("#banner").hidden = !msg; }
+function onServer() {
+  const card = $(".card");
+  const tab = curTab();
+  if (card && card._sync && tab.coll && !S.local[tab.coll][card._id]) card._sync();
+  if (tab.id === "export" || (tab.lockOf && $(".lock"))) render();
+  else {
+    renderTabs();
+    for (const it of itemsOf(tab)) { const d = document.getElementById("dot-" + it.item); if (d) d.className = "dot " + status(kindOf(it), val(tab.coll, it.item), it); }
+  }
+}
+// Outside claude.ai (a local build opened in a browser) answers live in localStorage,
+// behind the same calls the page makes on the artifact's store.
+function localDb(dump) {
+  const key = c => "goldset." + dump + "." + c, subs = {};
+  const read = c => { try { return JSON.parse(localStorage.getItem(key(c))) || {}; } catch { return {}; } };
+  const snap = c => ({ docs: Object.entries(read(c)).map(([id, d]) => ({ id, exists: true, data: () => d })) });
+  localStorage.setItem(key("probe"), "{}"); localStorage.removeItem(key("probe"));
+  return {
+    collection: c => ({
+      doc: id => ({ async set(body) { const m = read(c); m[id] = body; localStorage.setItem(key(c), JSON.stringify(m)); (subs[c] || []).forEach(f => f(snap(c))); } }),
+      onSnapshot(next) { (subs[c] ||= []).push(next); setTimeout(() => next(snap(c)), 0); return () => {}; },
+    }),
+  };
+}
+async function boot() {
+  try {
+    S.data = JSON.parse($("#gold-data").textContent);
+    $("#dumpid").textContent = S.data.dump;
+  } catch (e) {
+    $("#main").innerHTML = ""; $("#main").append(el("div", { class: "panel" }, el("h2", { text: "No items in this page" }), el("p", { text: "Build it from the sheets: python scripts/gold_set.py form --dump <dump>." })));
+    return;
+  }
+  render();
+  if (!window.claude?.use) {
+    try { S.db = localDb(S.data.dump); } catch { S.db = null; }
+    if (S.db) { banner("Local copy: answers are saved in this browser only. Copy them into data/gold/" + S.data.dump + "/ from Progress & export."); return subscribe(true); }
+  }
+  const db = window.claude?.use ? await window.claude.use("db").catch(() => null) : null;
+  if (!db) {
+    conn("Not connected", true);
+    banner("Answers can't be saved in this view. Open the page on claude.ai while signed in; anything you click here is lost on reload.");
+    S.readOnly = true;
+    return;
+  }
+  S.db = db;
+  const user = await window.claude.use("user").catch(() => null);
+  if (user && (await user.isOwner().catch(() => true)) === false) {
+    S.readOnly = true;
+    banner("You can look through the items, but only the owner of this page can save answers.");
+  }
+  subscribe(false);
+}
+function subscribe(local) {
+  let first = 0;
+  for (const c of COLLS) {
+    S.db.collection(c).onSnapshot(snap => {
+      const m = {};
+      for (const d of snap.docs) m[d.id] = d.data();
+      S.server[c] = m;
+      if (++first >= COLLS.length) conn(local ? "Saving in this browser" : S.readOnly ? "Read only" : "Saving to this page");
+      onServer();
+    }, err => {
+      conn("Connection lost", true);
+      banner("The answer store stopped responding (" + (err?.code || "error") + "). Reload the page before you continue; unsaved edits on screen will be lost.");
+    });
+  }
+}
+boot();
+})();
+</script>
