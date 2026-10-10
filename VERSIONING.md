@@ -66,10 +66,10 @@ Dumps are **immutable**: never overwrite; add a new revision + meta file. A new 
 - **`dump_id`**: revision snapshot id (`rNNN`)  
 - **`created_at_utc`**: when that revision was written (for the viewer “built” date)
 
-Promote a historical dump into the revision series with:
+`scripts/pipeline.py` writes new revisions directly. To promote an old calendar-dated dump into the revision series, use the legacy helper:
 
 ```bash
-python scripts/promote_revision.py --from-dump <existing_id> --to rNNN
+python scripts/legacy/promote_revision.py --from-dump <existing_id> --to rNNN
 ```
 
 ## What consumers should pin

@@ -6,7 +6,7 @@ from an existing dump (or llm_residual_queue.json context), never overwrites
 imslp_tags / solid imslp_geninfo / wikidata styles. Writes a new rNNN dump.
 
 Example:
-  python scripts/llm_residual.py --from-dump r002 --to r003 \\
+  python scripts/legacy/llm_residual.py --from-dump r002 --to r003 \\
     --works-limit 100 --composers-limit 100 --reasoning xhigh
 """
 
@@ -28,6 +28,8 @@ from pathlib import Path
 
 import pandas as pd
 
+# Legacy scripts import shared modules from scripts/ and each other from scripts/legacy/.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from common import (  # noqa: E402

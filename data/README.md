@@ -8,11 +8,16 @@ Pipeline diagram: [`docs/PIPELINE.md`](../docs/PIPELINE.md).
 
 | File | Rows | dump_id |
 |---|---|---|
-| `composers_r013.tsv` | 3368 | `r013` |
-| `works_r013.tsv` | 28980 | `r013` |
-| `dump_meta_r013.json` | — | companion meta |
+| `composers_r015.tsv` | 3369 | `r015` |
+| `works_r015.tsv` | 29026 | `r015` |
+| `dump_meta_r015.json` | — | companion meta |
 
-Only the **latest** revision is kept in `data/` in git. Older `rNNN` / calendar dumps are recoverable from **git history** (not from gitignored `data/cache/`). Prefer `r013` for the viewer (`scripts/export_viewer_json.py --dump r013`).
+Only the **latest** revision is kept in `data/` in git. Older `rNNN` / calendar dumps are recoverable from **git history** (not from gitignored `data/cache/`). The viewer is exported from `r015` (`scripts/export_viewer_json.py --dump r015`).
+
+### What changed since r013
+
+- **r014 — first full refresh** with `scripts/pipeline.py refresh` (crawl 2026-10-09, pageviews October 2025 – September 2026): 3,369 composers (+1), 29,026 works (+46).
+- **r015 — LLM style consensus.** r014 plus an offline replay of the committed style ledger (`scripts/apply_llm_styles.py`): four `llm_style_*` composer columns, 2,842 composers with agreed styles and 2,748 with an agreed period. The 74 legacy LLM `style_tags` are retired, so `style_tags` is Wikidata-only. See [Composer styles](#composer-styles).
 
 ### What changed since r012
 
@@ -98,35 +103,19 @@ Dump cells retain ledger slugs; viewer export maps period slugs to IMSLP facet n
 
 ## Building / enriching
 
+The whole chain is one command ([`docs/PIPELINE.md`](../docs/PIPELINE.md), [`docs/AUTOMATION.md`](../docs/AUTOMATION.md)):
+
 ```bash
 pip install -r requirements.txt
-python scripts/build_dump.py --date YYYY-MM-DD
-python scripts/promote_revision.py --from-dump … --to rNNN
+python scripts/pipeline.py refresh --base r015                  # crawl + all stages → next revision
+python scripts/pipeline.py derive --from-dump r015 --to r016    # offline stages only
 
-# Complete IMSLP categories (network, ~25 min, resumable) → re-derive force
-python scripts/refetch_work_categories.py --dump r008
-python scripts/remap_force.py --from-dump r008 --to r009 --refresh-categories
-
-# Wikidata dates / scope / qa_flags from cache (offline)
-python scripts/remap_composers.py --from-dump r009 --to r010
-
-# Since v3.3.0 the whole chain is one command (docs/PIPELINE.md):
-python scripts/pipeline.py derive --from-dump r012 --to r013      # offline stages
-python scripts/pipeline.py refresh --base r013                     # crawl + all stages (docs/AUTOMATION.md)
-
-# Individual steps (what the pipeline runs):
-# Hand-reviewed overrides (offline), then IMSLP identity check (composer pages: network, ~1 min)
-python scripts/apply_overrides.py --from-dump r010 --to r011
-python scripts/refetch_composer_pages.py --dump r011
-python scripts/remap_imslp_matches.py --from-dump r011 --to r012
-
-python scripts/remap_work_evidence.py --from-dump r012 --to r013
-
-# Replay committed grounded consensus (offline; never calls a model)
-python scripts/apply_llm_styles.py --from-dump r014 --to r015
-
-python scripts/export_viewer_json.py --dump r013
-python scripts/check_release.py --dump r013 --viewer-data viewer/data
+python scripts/export_viewer_json.py --dump r015
+python scripts/check_release.py --dump r015 --viewer-data viewer/data
 ```
+
+The stages it runs, in order, each as `--from-dump rX --to rY`: `remap_force.py` → `carry_forward.py --base rPREV` → `remap_composers.py` → `apply_overrides.py` → `remap_imslp_matches.py` (after `refetch_composer_pages.py --dump rX`, network, ~1 min) → `remap_work_evidence.py` → `apply_llm_styles.py` (replays the committed ledger; never calls a model).
+
+Cache fillers (network, resumable): `refetch_work_categories.py --dump rX` (complete IMSLP work categories, ~25 min), `refetch_composer_pages.py`, `refetch_override_entities.py`. The one-off passes that produced older labels (GenInfo scrape, residual LLM force labels, calendar-dump promotion) are in [`scripts/legacy/`](../scripts/legacy/README.md).
 
 Caches: `data/cache/` (gitignored).

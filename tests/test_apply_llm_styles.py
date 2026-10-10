@@ -126,6 +126,7 @@ def test_cli_meta_dry_run_immutability_and_string_values(tmp_path, monkeypatch):
     assert meta["llm_styles"]["ledger_sha256"] == hashlib.sha256(path.read_bytes()).hexdigest()
     assert meta["llm_styles"]["policy"] == styles.policy_metadata()
     assert meta["llm_styles"]["counts"]["consensus_nonempty"] == 1
+    assert meta["llm_styles"]["ledger_path"] == str(path)  # outside the repo: kept as given
     assert meta["schema_version"] == 3 and meta["pd_reference_year"] == 2024
     assert common.dump_tsv_path("works", "r015").read_bytes() == common.dump_tsv_path("works", "r014").read_bytes()
     written = pd.read_csv(common.dump_tsv_path("composers", "r015"), sep="\t", dtype=str, keep_default_na=False)
@@ -153,3 +154,7 @@ def test_cli_stamps_existing_composer_dump_date_only(tmp_path, monkeypatch, has_
     else:
         assert "dump_date" not in written
     assert common.dump_tsv_path("works", "r998").read_bytes() == common.dump_tsv_path("works", "r014").read_bytes()
+
+
+def test_meta_ledger_path_is_repo_relative():
+    assert styles.meta_path_label(styles.default_ledger_path()) == "data/llm_ledger/style_labels.jsonl"
