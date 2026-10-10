@@ -8,11 +8,19 @@ Pipeline diagram: [`docs/PIPELINE.md`](../docs/PIPELINE.md).
 
 | File | Rows | dump_id |
 |---|---|---|
-| `composers_r016.tsv` | 3369 | `r016` |
-| `works_r016.tsv` | 29026 | `r016` |
-| `dump_meta_r016.json` | — | companion meta |
+| `composers_r017.tsv` | 3369 | `r017` |
+| `works_r017.tsv` | 29033 | `r017` |
+| `dump_meta_r017.json` | — | companion meta |
 
-Only the **latest** revision is kept in `data/` in git. Older `rNNN` / calendar dumps are recoverable from **git history** (not from gitignored `data/cache/`). The viewer is exported from `r016` (`scripts/export_viewer_json.py --dump r016`).
+Only the **latest** revision is kept in `data/` in git. Older `rNNN` / calendar dumps are recoverable from **git history** (not from gitignored `data/cache/`). The viewer is exported from `r017` (`scripts/export_viewer_json.py --dump r017`).
+
+### What changed since r016
+
+- **r017 — full refresh with authority ids and an identity guard** (`pipeline.py refresh`, crawl 2026-10-10, pageviews October 2025 – September 2026). Wikidata and IMSLP barely moved since r014: 7 works added, no EU PD status flips.
+  - New columns `gnd_id` and `viaf_id` after `wikidata_qid` (see *Columns added in r017*). GND for 2,897 composers (86.0%), VIAF for 3,262 (96.8%); 103 have neither.
+  - Jean Perrin is the Swiss composer (Q6171318, 1920–1989), not the physicist the list links (Q134085, 1870–1942): re-keyed by override. PD-now composers 778 → 777.
+  - Coarse Wikidata birth years (decade, century) are replaced by the list's year when it lies inside the interval: C. A. Bracco 1859 → 1850, Edgar Bara 1900 → 1876, Carter Larsen 2000 → 1955. Death years are never refined this way, because a coarse death often means "after 1912" and the list's year is then the last year the composer was known alive (Margherita Galeotti, Eugenia Calosso).
+  - New `qa_flags`: `list_years_conflict` (84), `gnd_death_conflict` (14), `gnd_from_lobid` (8).
 
 ### What changed since r015
 
@@ -108,6 +116,15 @@ Dump cells retain ledger slugs; viewer export maps period slugs to IMSLP facet n
 | `is_film_composer` | `true` / `false` — Wikidata occupation includes film composer |
 | `qa_flags` | pipe list, empty if none: `birth_rank_conflict`, `death_rank_conflict` (best-rank Wikidata claims disagree), `birth_imprecise`, `death_imprecise` (decade/century precision; the year is the interval's last year), `implausible_lifespan`, `death_before_birth`, `not_human` (QID is not a person), `no_composer_occupation` (QID may be a different person), `birth_from_list`, `death_from_list` (year from the Wikipedia list, not Wikidata); since r012 also `imslp_dates_conflict`, `imslp_p839_wrong`, `manual_override` |
 
+## Columns added in r017
+
+| Column | Values |
+|---|---|
+| `gnd_id` | GND (Gemeinsame Normdatei) id: Wikidata P227, first non-deprecated value (preferred rank first). Without one, a lobid.org name search supplies it only when exactly one GND person has the same birth year and the same death year (or no death year and a composer profession); those rows carry `gnd_from_lobid`. Link: `https://d-nb.info/gnd/<id>` |
+| `viaf_id` | VIAF id: Wikidata P214. Link: `https://viaf.org/viaf/<id>` |
+
+New `qa_flags` values: `list_years_conflict` (the Wikipedia list row gives a different birth or death year than the dump; a large gap usually means the list links the wrong person, a small one is a date dispute), `gnd_death_conflict` (the GND record's death year differs from `death_year`), `gnd_from_lobid` (`gnd_id` came from the name search, not Wikidata).
+
 ## Gold set
 
 [`gold/`](gold/README.md) holds a stratified sample of r016 (200 composers, 300 works) with blind annotation sheets, the annotation guide and, once annotated, error rates with Wilson intervals (`scripts/gold_set.py`). Until then, no field has a measured error rate.
@@ -129,11 +146,11 @@ The whole chain is one command ([`docs/PIPELINE.md`](../docs/PIPELINE.md), [`doc
 
 ```bash
 pip install -r requirements.txt
-python scripts/pipeline.py refresh --base r016                  # crawl + all stages → next revision
-python scripts/pipeline.py derive --from-dump r016 --to r017    # offline stages only
+python scripts/pipeline.py refresh --base r017                  # crawl + all stages → next revision
+python scripts/pipeline.py derive --from-dump r017 --to r018    # offline stages only
 
-python scripts/export_viewer_json.py --dump r016
-python scripts/check_release.py --dump r016 --viewer-data viewer/data
+python scripts/export_viewer_json.py --dump r017
+python scripts/check_release.py --dump r017 --viewer-data viewer/data
 ```
 
 The stages it runs, in order, each as `--from-dump rX --to rY`: `remap_force.py` → `carry_forward.py --base rPREV` → `remap_composers.py` → `apply_overrides.py` → `remap_imslp_matches.py` (after `refetch_composer_pages.py --dump rX`, network, ~1 min) → `remap_work_evidence.py` (after `refetch_work_files.py --dump rX` on refresh, network, ~10 min) → `apply_llm_styles.py` (replays the committed ledger; never calls a model).

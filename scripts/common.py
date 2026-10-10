@@ -168,6 +168,7 @@ def cache_set(namespace: str, key: str, payload: Any) -> None:
 # told "at most 1 request per second"; every IMSLP call goes through here.
 MIN_INTERVAL_BY_HOST: dict[str, float] = {
     "imslp.org": float(os.environ.get("EU_PD_IMSLP_MIN_INTERVAL", "1.0")),
+    "lobid.org": float(os.environ.get("EU_PD_LOBID_MIN_INTERVAL", "0.25")),
 }
 _last_request_at: dict[str, float] = {}
 

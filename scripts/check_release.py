@@ -19,6 +19,7 @@ import pandas as pd
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import common  # noqa: E402
+from authorities import AUTHORITY_COLUMNS, GND_ID_RE, VIAF_ID_RE  # noqa: E402
 from common import dump_meta_path, dump_tsv_path  # noqa: E402
 from force_family import force_family_from_categories  # noqa: E402
 from imslp_work_evidence import COPYRIGHT_TOKENS, FILE_HOSTS, FILE_HOSTS_COLUMN  # noqa: E402
@@ -32,6 +33,8 @@ MAX_EMPTY_CATEGORY_SHARE = 0.05
 # Largest allowed drop (percentage points) in the share of works with has_files
 # set, so a refresh that skips the file fetch cannot blank the column silently.
 MAX_HAS_FILES_DROP = 0.05
+# Same for composers with a GND or VIAF id (a skipped or failed authority stage).
+MAX_AUTHORITY_DROP = 0.05
 
 # Known form / non-genre QIDs that must never appear in STYLE_QID_TO_TAG.
 STYLE_QID_DENYLIST = {
@@ -107,6 +110,13 @@ def check_data_quality(
                       & works["has_files"].map(_as_str).ne("true")).sum()
             if orphan:
                 errors.append(f"works with file hosts but has_files != true: {int(orphan)}")
+
+    # --- Authority ids ---
+    for column, pattern in (("gnd_id", GND_ID_RE), ("viaf_id", VIAF_ID_RE)):
+        if column in composers:
+            bad = sorted({v for v in composers[column].map(_as_str) if v and not pattern.match(v)})
+            if bad:
+                errors.append(f"invalid {column} values: " + ", ".join(bad[:10]))
 
     # --- IMSLP category completeness ---
     if "imslp_genre_categories" in works.columns and len(works):
@@ -218,6 +228,13 @@ def check_regressions(
         if round(before - after, 9) > MAX_HAS_FILES_DROP:
             errors.append(f"works with has_files set fell from {before:.1%} to {after:.1%} "
                           "— file fetch skipped?")
+    for column in AUTHORITY_COLUMNS:
+        if column in composers and column in previous_composers and len(composers) and prev_n:
+            before = previous_composers[column].map(_as_str).ne("").mean()
+            after = composers[column].map(_as_str).ne("").mean()
+            if round(before - after, 9) > MAX_AUTHORITY_DROP:
+                errors.append(f"composers with {column} fell from {before:.1%} to {after:.1%} "
+                              "— authority stage skipped?")
     if "composer_id" not in composers or "composer_id" not in previous_composers:
         return errors, ["EU PD status flips and composer additions/removals unavailable: missing composer_id"]
     old = previous_composers.set_index("composer_id")

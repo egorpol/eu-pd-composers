@@ -232,6 +232,18 @@ def eu_pd_fields(death_year: Any, dump_year: int) -> dict[str, Any]:
     }
 
 
+def list_years_flags(years: dict[str, Any], list_birth: Any, list_death: Any) -> list[str]:
+    """`list_years_conflict` when the Wikipedia list row and the final years disagree.
+
+    A large gap is the usual sign that the list links the wrong person's article.
+    Compares final years, so list years that filled or refined Wikidata's agree.
+    """
+    for wd_year, list_year in ((years.get("birth_year"), list_birth), (years.get("death_year"), list_death)):
+        if wd_year is not None and list_year is not None and int(wd_year) != int(list_year):
+            return ["list_years_conflict"]
+    return []
+
+
 def write_dump(df: pd.DataFrame, stem: str, dump_date: date) -> Path:
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     path = DATA_DIR / f"{stem}_{dump_date.isoformat()}.tsv"
@@ -338,7 +350,12 @@ def build(args: argparse.Namespace) -> None:
                 (ent or {}).get("claims", {}),
                 fallback_birth=list_birth_i,
                 fallback_death=list_death_i,
+                refine_birth=True,
             )
+            years["qa_flags"] = pipe_join([
+                *pipe_split(years["qa_flags"]),
+                *list_years_flags(years, list_birth_i, list_death_i),
+            ])
             wd.update(years)
             birth_year = years["birth_year"]
             death_year = years["death_year"]

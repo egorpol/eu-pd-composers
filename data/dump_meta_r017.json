@@ -1,0 +1,1702 @@
+{
+  "dump_id": "r017",
+  "tool_version": "3.5.0",
+  "schema_version": 3,
+  "created_at_utc": "2026-10-10T19:55:44.950325+00:00",
+  "derived_from_dump_id": "r016",
+  "enrichment": "pipeline_refresh",
+  "output_files": {
+    "composers": "composers_r017.tsv",
+    "works": "works_r017.tsv"
+  },
+  "row_counts": {
+    "composers": 3369,
+    "works": 29033
+  },
+  "status_transitions": {
+    "matched \u2192 rejected_p839": 4,
+    "unverified_heuristic \u2192 matched": 280,
+    "unverified_heuristic \u2192 rejected_heuristic": 10
+  },
+  "status_counts": {
+    "matched": 1254,
+    "not_found": 2094,
+    "rejected_heuristic": 10,
+    "rejected_p839": 4,
+    "unverified_heuristic": 7
+  },
+  "rejected_heuristic": [
+    {
+      "name": "George Walker",
+      "qid": "Q1425389",
+      "category": "Category:Walker,_George",
+      "birth_year": 1922,
+      "death_year": 2018,
+      "imslp_born_year": null,
+      "imslp_died_year": 1911,
+      "template_kind": "person",
+      "dates": "conflict_strong",
+      "wikilink": "differs",
+      "old_status": "unverified_heuristic",
+      "new_status": "rejected_heuristic",
+      "method": "exact_name",
+      "reason": "dates_conflict_strong",
+      "evidence": [
+        "dates_conflict_strong",
+        "wikilink_differs"
+      ],
+      "collision": null,
+      "works_dropped": 0
+    },
+    {
+      "name": "Karl Marx",
+      "qid": "Q882538",
+      "category": "Category:Marx,_Karl",
+      "birth_year": 1897,
+      "death_year": 1985,
+      "imslp_born_year": 1818,
+      "imslp_died_year": 1883,
+      "template_kind": "person",
+      "dates": "conflict_strong",
+      "wikilink": "differs",
+      "old_status": "unverified_heuristic",
+      "new_status": "rejected_heuristic",
+      "method": "exact_name",
+      "reason": "dates_conflict_strong",
+      "evidence": [
+        "dates_conflict_strong",
+        "wikilink_differs"
+      ],
+      "collision": null,
+      "works_dropped": 0
+    },
+    {
+      "name": "William Wordsworth",
+      "qid": "Q1604561",
+      "category": "Category:Wordsworth,_William",
+      "birth_year": 1908,
+      "death_year": 1988,
+      "imslp_born_year": 1770,
+      "imslp_died_year": 1850,
+      "template_kind": "person",
+      "dates": "conflict_strong",
+      "wikilink": "differs",
+      "old_status": "unverified_heuristic",
+      "new_status": "rejected_heuristic",
+      "method": "exact_name",
+      "reason": "dates_conflict_strong",
+      "evidence": [
+        "dates_conflict_strong",
+        "wikilink_differs"
+      ],
+      "collision": null,
+      "works_dropped": 0
+    },
+    {
+      "name": "Joseph Beer",
+      "qid": "Q88552",
+      "category": "Category:Beer,_Joseph",
+      "birth_year": 1908,
+      "death_year": 1987,
+      "imslp_born_year": 1744,
+      "imslp_died_year": 1812,
+      "template_kind": "person",
+      "dates": "conflict_strong",
+      "wikilink": "differs",
+      "old_status": "unverified_heuristic",
+      "new_status": "rejected_heuristic",
+      "method": "exact_name",
+      "reason": "dates_conflict_strong",
+      "evidence": [
+        "dates_conflict_strong",
+        "wikilink_differs"
+      ],
+      "collision": null,
+      "works_dropped": 1
+    },
+    {
+      "name": "Donald Harris",
+      "qid": "Q5294491",
+      "category": "Category:Harris,_Donald",
+      "birth_year": 1931,
+      "death_year": 2016,
+      "imslp_born_year": 1921,
+      "imslp_died_year": 1957,
+      "template_kind": "person",
+      "dates": "conflict_strong",
+      "wikilink": "unknown",
+      "old_status": "unverified_heuristic",
+      "new_status": "rejected_heuristic",
+      "method": "exact_name",
+      "reason": "dates_conflict_strong",
+      "evidence": [
+        "dates_conflict_strong"
+      ],
+      "collision": null,
+      "works_dropped": 0
+    },
+    {
+      "name": "Leo Smit",
+      "qid": "Q2341356",
+      "category": "Category:Smit,_Leo",
+      "birth_year": 1921,
+      "death_year": 1999,
+      "imslp_born_year": 1900,
+      "imslp_died_year": 1943,
+      "template_kind": "person",
+      "dates": "conflict_strong",
+      "wikilink": "differs",
+      "old_status": "unverified_heuristic",
+      "new_status": "rejected_heuristic",
+      "method": "exact_name",
+      "reason": "dates_conflict_strong; collision_lost (wikidata_p839)",
+      "evidence": [
+        "dates_conflict_strong",
+        "wikilink_differs",
+        "collision_lost"
+      ],
+      "collision": {
+        "category": "Category:Smit,_Leo",
+        "claimants": [
+          {
+            "qid": "Q643984",
+            "name": "Leo Smit",
+            "dates": "agree",
+            "wikilink": "agree"
+          },
+          {
+            "qid": "Q2341356",
+            "name": "Leo Smit",
+            "dates": "conflict_strong",
+            "wikilink": "differs"
+          }
+        ],
+        "winner": "Q643984",
+        "winner_name": "Leo Smit",
+        "reason": "wikidata_p839"
+      },
+      "works_dropped": 4
+    },
+    {
+      "name": "William Sweeney",
+      "qid": "Q3930934",
+      "category": "Category:Sweeney,_William",
+      "birth_year": 1950,
+      "death_year": null,
+      "imslp_born_year": 1856,
+      "imslp_died_year": 1917,
+      "template_kind": "person",
+      "dates": "conflict_strong",
+      "wikilink": "unknown",
+      "old_status": "unverified_heuristic",
+      "new_status": "rejected_heuristic",
+      "method": "exact_name",
+      "reason": "dates_conflict_strong",
+      "evidence": [
+        "dates_conflict_strong"
+      ],
+      "collision": null,
+      "works_dropped": 1
+    },
+    {
+      "name": "Rudolf Kelterborn",
+      "qid": "Q685080",
+      "category": "Category:Kelterborn,_Rudolf",
+      "birth_year": 1931,
+      "death_year": 2021,
+      "imslp_born_year": 1843,
+      "imslp_died_year": 1909,
+      "template_kind": "person",
+      "dates": "conflict_strong",
+      "wikilink": "unknown",
+      "old_status": "unverified_heuristic",
+      "new_status": "rejected_heuristic",
+      "method": "exact_name",
+      "reason": "dates_conflict_strong",
+      "evidence": [
+        "dates_conflict_strong"
+      ],
+      "collision": null,
+      "works_dropped": 0
+    },
+    {
+      "name": "John Hawkins",
+      "qid": "Q1700403",
+      "category": "Category:Hawkins,_John",
+      "birth_year": 1944,
+      "death_year": 2007,
+      "imslp_born_year": 1719,
+      "imslp_died_year": 1789,
+      "template_kind": "person",
+      "dates": "conflict_strong",
+      "wikilink": "differs",
+      "old_status": "unverified_heuristic",
+      "new_status": "rejected_heuristic",
+      "method": "exact_name",
+      "reason": "dates_conflict_strong",
+      "evidence": [
+        "dates_conflict_strong",
+        "wikilink_differs"
+      ],
+      "collision": null,
+      "works_dropped": 0
+    },
+    {
+      "name": "William Reed",
+      "qid": "Q8017433",
+      "category": "Category:Reed,_William",
+      "birth_year": 1910,
+      "death_year": 2002,
+      "imslp_born_year": 1859,
+      "imslp_died_year": 1945,
+      "template_kind": "person",
+      "dates": "conflict_strong",
+      "wikilink": "differs",
+      "old_status": "unverified_heuristic",
+      "new_status": "rejected_heuristic",
+      "method": "exact_name",
+      "reason": "dates_conflict_strong; collision_lost (dates_agree)",
+      "evidence": [
+        "dates_conflict_strong",
+        "wikilink_differs",
+        "collision_lost"
+      ],
+      "collision": {
+        "category": "Category:Reed,_William",
+        "claimants": [
+          {
+            "qid": "Q373961",
+            "name": "William Reed",
+            "dates": "agree",
+            "wikilink": "differs"
+          },
+          {
+            "qid": "Q8017433",
+            "name": "William Reed",
+            "dates": "conflict_strong",
+            "wikilink": "differs"
+          }
+        ],
+        "winner": "Q373961",
+        "winner_name": "William Reed",
+        "reason": "dates_agree"
+      },
+      "works_dropped": 5
+    }
+  ],
+  "rejected_p839": [
+    {
+      "name": "John White",
+      "qid": "Q3182735",
+      "category": "Category:White,_John",
+      "birth_year": 1936,
+      "death_year": 2024,
+      "imslp_born_year": 1855,
+      "imslp_died_year": 1902,
+      "template_kind": "person",
+      "dates": "conflict_strong",
+      "wikilink": "unknown",
+      "old_status": "matched",
+      "new_status": "rejected_p839",
+      "method": "wikidata_p839",
+      "reason": "dates_conflict_strong",
+      "evidence": [
+        "dates_conflict_strong"
+      ],
+      "collision": null,
+      "works_dropped": 0
+    },
+    {
+      "name": "Jind\u0159ich Feld",
+      "qid": "Q1370733",
+      "category": "Category:Feld,_Jind\u0159ich",
+      "birth_year": 1925,
+      "death_year": 2007,
+      "imslp_born_year": 1883,
+      "imslp_died_year": 1953,
+      "template_kind": "person",
+      "dates": "conflict_strong",
+      "wikilink": "unknown",
+      "old_status": "matched",
+      "new_status": "rejected_p839",
+      "method": "wikidata_p839",
+      "reason": "dates_conflict_strong",
+      "evidence": [
+        "dates_conflict_strong"
+      ],
+      "collision": null,
+      "works_dropped": 0
+    },
+    {
+      "name": "John Lambert",
+      "qid": "Q15485321",
+      "category": "Category:Lambert,_John",
+      "birth_year": 1926,
+      "death_year": 1995,
+      "imslp_born_year": null,
+      "imslp_died_year": 1892,
+      "template_kind": "composer",
+      "dates": "conflict_strong",
+      "wikilink": "unknown",
+      "old_status": "matched",
+      "new_status": "rejected_p839",
+      "method": "wikidata_p839",
+      "reason": "dates_conflict_strong",
+      "evidence": [
+        "dates_conflict_strong"
+      ],
+      "collision": null,
+      "works_dropped": 1
+    },
+    {
+      "name": "Karl H\u00f6ller",
+      "qid": "Q315122",
+      "category": "Category:H\u00f6ller,_Georg",
+      "birth_year": 1907,
+      "death_year": 1987,
+      "imslp_born_year": 1838,
+      "imslp_died_year": 1901,
+      "template_kind": "person",
+      "dates": "conflict_strong",
+      "wikilink": "unknown",
+      "old_status": "matched",
+      "new_status": "rejected_p839",
+      "method": "wikidata_p839",
+      "reason": "dates_conflict_strong",
+      "evidence": [
+        "dates_conflict_strong"
+      ],
+      "collision": null,
+      "works_dropped": 1
+    }
+  ],
+  "weak_conflicts_kept": [
+    {
+      "name": "Leo Ornstein",
+      "qid": "Q1558656",
+      "category": "Category:Ornstein,_Leo",
+      "birth_year": 1893,
+      "death_year": 2002,
+      "imslp_born_year": 1895,
+      "imslp_died_year": 2002,
+      "template_kind": "person",
+      "dates": "conflict_weak",
+      "wikilink": "agree",
+      "old_status": "matched",
+      "new_status": "matched",
+      "method": "wikidata_p839",
+      "reason": "dates_conflict_weak",
+      "evidence": [
+        "dates_conflict_weak",
+        "wikilink_agree"
+      ],
+      "collision": null,
+      "works_dropped": 0
+    },
+    {
+      "name": "Alan Bush",
+      "qid": "Q584010",
+      "category": "Category:Bush,_Alan",
+      "birth_year": 1900,
+      "death_year": 1995,
+      "imslp_born_year": 1900,
+      "imslp_died_year": 1992,
+      "template_kind": "person",
+      "dates": "conflict_weak",
+      "wikilink": "agree",
+      "old_status": "unverified_heuristic",
+      "new_status": "matched",
+      "method": "exact_name",
+      "reason": "dates_conflict_weak; wikilink_agree",
+      "evidence": [
+        "dates_conflict_weak",
+        "wikilink_agree"
+      ],
+      "collision": null,
+      "works_dropped": 0
+    },
+    {
+      "name": "Oskar Rieding",
+      "qid": "Q64959",
+      "category": "Category:Rieding,_Oskar",
+      "birth_year": 1846,
+      "death_year": 1916,
+      "imslp_born_year": 1840,
+      "imslp_died_year": 1918,
+      "template_kind": "person",
+      "dates": "conflict_weak",
+      "wikilink": "agree",
+      "old_status": "matched",
+      "new_status": "matched",
+      "method": "wikidata_p839",
+      "reason": "dates_conflict_weak",
+      "evidence": [
+        "dates_conflict_weak",
+        "wikilink_agree"
+      ],
+      "collision": null,
+      "works_dropped": 0
+    },
+    {
+      "name": "John Palmer",
+      "qid": "Q1701317",
+      "category": "Category:Palmer,_John",
+      "birth_year": 1959,
+      "death_year": null,
+      "imslp_born_year": 1961,
+      "imslp_died_year": null,
+      "template_kind": "person",
+      "dates": "conflict_weak",
+      "wikilink": "unknown",
+      "old_status": "unverified_heuristic",
+      "new_status": "unverified_heuristic",
+      "method": "exact_name",
+      "reason": "dates_conflict_weak; wikilink_unknown",
+      "evidence": [
+        "dates_conflict_weak"
+      ],
+      "collision": null,
+      "works_dropped": 0
+    },
+    {
+      "name": "St\u00e9phan Elmas",
+      "qid": "Q2343243",
+      "category": "Category:Elmas,_Stephan",
+      "birth_year": 1864,
+      "death_year": 1937,
+      "imslp_born_year": 1862,
+      "imslp_died_year": 1937,
+      "template_kind": "person",
+      "dates": "conflict_weak",
+      "wikilink": "agree",
+      "old_status": "matched",
+      "new_status": "matched",
+      "method": "wikidata_p839",
+      "reason": "dates_conflict_weak",
+      "evidence": [
+        "dates_conflict_weak",
+        "wikilink_agree"
+      ],
+      "collision": null,
+      "works_dropped": 0
+    },
+    {
+      "name": "Jaime Teixidor",
+      "qid": "Q983006",
+      "category": "Category:Teixidor,_Jaime",
+      "birth_year": 1884,
+      "death_year": 1957,
+      "imslp_born_year": 1886,
+      "imslp_died_year": 1957,
+      "template_kind": "person",
+      "dates": "conflict_weak",
+      "wikilink": "agree",
+      "old_status": "unverified_heuristic",
+      "new_status": "matched",
+      "method": "exact_name",
+      "reason": "dates_conflict_weak; wikilink_agree",
+      "evidence": [
+        "dates_conflict_weak",
+        "wikilink_agree"
+      ],
+      "collision": null,
+      "works_dropped": 0
+    },
+    {
+      "name": "Vladimir Shcherbachov",
+      "qid": "Q963653",
+      "category": "Category:Shcherbachyov,_Vladimir",
+      "birth_year": 1887,
+      "death_year": 1952,
+      "imslp_born_year": 1889,
+      "imslp_died_year": 1952,
+      "template_kind": "person",
+      "dates": "conflict_weak",
+      "wikilink": "agree",
+      "old_status": "matched",
+      "new_status": "matched",
+      "method": "wikidata_p839",
+      "reason": "dates_conflict_weak",
+      "evidence": [
+        "dates_conflict_weak",
+        "wikilink_agree"
+      ],
+      "collision": null,
+      "works_dropped": 0
+    },
+    {
+      "name": "Hugh Blair",
+      "qid": "Q5930050",
+      "category": "Category:Blair,_Hugh",
+      "birth_year": 1864,
+      "death_year": 1932,
+      "imslp_born_year": 1862,
+      "imslp_died_year": 1932,
+      "template_kind": "composer",
+      "dates": "conflict_weak",
+      "wikilink": "agree",
+      "old_status": "matched",
+      "new_status": "matched",
+      "method": "wikidata_p839",
+      "reason": "dates_conflict_weak",
+      "evidence": [
+        "dates_conflict_weak",
+        "wikilink_agree"
+      ],
+      "collision": null,
+      "works_dropped": 0
+    },
+    {
+      "name": "Lucia Contini Anselmi",
+      "qid": "Q6696630",
+      "category": "Category:Anselmino,_Lucia",
+      "birth_year": 1876,
+      "death_year": 1913,
+      "imslp_born_year": 1876,
+      "imslp_died_year": 1935,
+      "template_kind": "person",
+      "dates": "conflict_weak",
+      "wikilink": "agree",
+      "old_status": "matched",
+      "new_status": "matched",
+      "method": "wikidata_p839",
+      "reason": "dates_conflict_weak",
+      "evidence": [
+        "dates_conflict_weak",
+        "wikilink_agree"
+      ],
+      "collision": null,
+      "works_dropped": 0
+    },
+    {
+      "name": "Alexei Haieff",
+      "qid": "Q1428724",
+      "category": "Category:Haieff,_Alexei",
+      "birth_year": 1914,
+      "death_year": 1994,
+      "imslp_born_year": 1919,
+      "imslp_died_year": 1994,
+      "template_kind": "person",
+      "dates": "conflict_weak",
+      "wikilink": "agree",
+      "old_status": "unverified_heuristic",
+      "new_status": "matched",
+      "method": "exact_name",
+      "reason": "dates_conflict_weak; wikilink_agree",
+      "evidence": [
+        "dates_conflict_weak",
+        "wikilink_agree"
+      ],
+      "collision": null,
+      "works_dropped": 0
+    },
+    {
+      "name": "Mar\u00eda Luisa Sep\u00falveda",
+      "qid": "Q935718",
+      "category": "Category:Sep\u00falveda,_Mar\u00eda_Luisa",
+      "birth_year": 1883,
+      "death_year": 1958,
+      "imslp_born_year": 1898,
+      "imslp_died_year": 1958,
+      "template_kind": "person",
+      "dates": "conflict_weak",
+      "wikilink": "agree",
+      "old_status": "matched",
+      "new_status": "matched",
+      "method": "wikidata_p839",
+      "reason": "dates_conflict_weak",
+      "evidence": [
+        "dates_conflict_weak",
+        "wikilink_agree"
+      ],
+      "collision": null,
+      "works_dropped": 0
+    },
+    {
+      "name": "Caro Roma",
+      "qid": "Q5044190",
+      "category": "Category:Roma,_Caro",
+      "birth_year": 1866,
+      "death_year": 1937,
+      "imslp_born_year": 1869,
+      "imslp_died_year": 1937,
+      "template_kind": "person",
+      "dates": "conflict_weak",
+      "wikilink": "agree",
+      "old_status": "matched",
+      "new_status": "matched",
+      "method": "wikidata_p839",
+      "reason": "dates_conflict_weak",
+      "evidence": [
+        "dates_conflict_weak",
+        "wikilink_agree"
+      ],
+      "collision": null,
+      "works_dropped": 0
+    },
+    {
+      "name": "Oliveria Prescott",
+      "qid": "Q7087973",
+      "category": "Category:Prescott,_Oliveria",
+      "birth_year": 1842,
+      "death_year": 1917,
+      "imslp_born_year": 1842,
+      "imslp_died_year": 1919,
+      "template_kind": "person",
+      "dates": "conflict_weak",
+      "wikilink": "agree",
+      "old_status": "matched",
+      "new_status": "matched",
+      "method": "wikidata_p839",
+      "reason": "dates_conflict_weak",
+      "evidence": [
+        "dates_conflict_weak",
+        "wikilink_agree"
+      ],
+      "collision": null,
+      "works_dropped": 0
+    },
+    {
+      "name": "C. A. Bracco",
+      "qid": "Q15429956",
+      "category": "Category:Bracco,_C._A.",
+      "birth_year": 1850,
+      "death_year": 1903,
+      "imslp_born_year": null,
+      "imslp_died_year": 1905,
+      "template_kind": "person",
+      "dates": "conflict_weak",
+      "wikilink": "agree",
+      "old_status": "unverified_heuristic",
+      "new_status": "matched",
+      "method": "exact_name",
+      "reason": "dates_conflict_weak; wikilink_agree",
+      "evidence": [
+        "dates_conflict_weak",
+        "wikilink_agree"
+      ],
+      "collision": null,
+      "works_dropped": 0
+    }
+  ],
+  "collisions": [
+    {
+      "category": "Category:Smit,_Leo",
+      "claimants": [
+        {
+          "qid": "Q643984",
+          "name": "Leo Smit",
+          "dates": "agree",
+          "wikilink": "agree"
+        },
+        {
+          "qid": "Q2341356",
+          "name": "Leo Smit",
+          "dates": "conflict_strong",
+          "wikilink": "differs"
+        }
+      ],
+      "winner": "Q643984",
+      "winner_name": "Leo Smit",
+      "reason": "wikidata_p839"
+    },
+    {
+      "category": "Category:Reed,_William",
+      "claimants": [
+        {
+          "qid": "Q373961",
+          "name": "William Reed",
+          "dates": "agree",
+          "wikilink": "differs"
+        },
+        {
+          "qid": "Q8017433",
+          "name": "William Reed",
+          "dates": "conflict_strong",
+          "wikilink": "differs"
+        }
+      ],
+      "winner": "Q373961",
+      "winner_name": "William Reed",
+      "reason": "dates_agree"
+    }
+  ],
+  "p839_dates_conflicts": [
+    {
+      "name": "Leo Ornstein",
+      "qid": "Q1558656",
+      "category": "Category:Ornstein,_Leo",
+      "birth_year": 1893,
+      "death_year": 2002,
+      "imslp_born_year": 1895,
+      "imslp_died_year": 2002,
+      "template_kind": "person",
+      "dates": "conflict_weak",
+      "wikilink": "agree",
+      "old_status": "matched",
+      "new_status": "matched",
+      "method": "wikidata_p839",
+      "reason": "dates_conflict_weak",
+      "evidence": [
+        "dates_conflict_weak",
+        "wikilink_agree"
+      ],
+      "collision": null,
+      "works_dropped": 0
+    },
+    {
+      "name": "Oskar Rieding",
+      "qid": "Q64959",
+      "category": "Category:Rieding,_Oskar",
+      "birth_year": 1846,
+      "death_year": 1916,
+      "imslp_born_year": 1840,
+      "imslp_died_year": 1918,
+      "template_kind": "person",
+      "dates": "conflict_weak",
+      "wikilink": "agree",
+      "old_status": "matched",
+      "new_status": "matched",
+      "method": "wikidata_p839",
+      "reason": "dates_conflict_weak",
+      "evidence": [
+        "dates_conflict_weak",
+        "wikilink_agree"
+      ],
+      "collision": null,
+      "works_dropped": 0
+    },
+    {
+      "name": "John White",
+      "qid": "Q3182735",
+      "category": "Category:White,_John",
+      "birth_year": 1936,
+      "death_year": 2024,
+      "imslp_born_year": 1855,
+      "imslp_died_year": 1902,
+      "template_kind": "person",
+      "dates": "conflict_strong",
+      "wikilink": "unknown",
+      "old_status": "matched",
+      "new_status": "rejected_p839",
+      "method": "wikidata_p839",
+      "reason": "dates_conflict_strong",
+      "evidence": [
+        "dates_conflict_strong"
+      ],
+      "collision": null,
+      "works_dropped": 0
+    },
+    {
+      "name": "Jind\u0159ich Feld",
+      "qid": "Q1370733",
+      "category": "Category:Feld,_Jind\u0159ich",
+      "birth_year": 1925,
+      "death_year": 2007,
+      "imslp_born_year": 1883,
+      "imslp_died_year": 1953,
+      "template_kind": "person",
+      "dates": "conflict_strong",
+      "wikilink": "unknown",
+      "old_status": "matched",
+      "new_status": "rejected_p839",
+      "method": "wikidata_p839",
+      "reason": "dates_conflict_strong",
+      "evidence": [
+        "dates_conflict_strong"
+      ],
+      "collision": null,
+      "works_dropped": 0
+    },
+    {
+      "name": "St\u00e9phan Elmas",
+      "qid": "Q2343243",
+      "category": "Category:Elmas,_Stephan",
+      "birth_year": 1864,
+      "death_year": 1937,
+      "imslp_born_year": 1862,
+      "imslp_died_year": 1937,
+      "template_kind": "person",
+      "dates": "conflict_weak",
+      "wikilink": "agree",
+      "old_status": "matched",
+      "new_status": "matched",
+      "method": "wikidata_p839",
+      "reason": "dates_conflict_weak",
+      "evidence": [
+        "dates_conflict_weak",
+        "wikilink_agree"
+      ],
+      "collision": null,
+      "works_dropped": 0
+    },
+    {
+      "name": "Vladimir Shcherbachov",
+      "qid": "Q963653",
+      "category": "Category:Shcherbachyov,_Vladimir",
+      "birth_year": 1887,
+      "death_year": 1952,
+      "imslp_born_year": 1889,
+      "imslp_died_year": 1952,
+      "template_kind": "person",
+      "dates": "conflict_weak",
+      "wikilink": "agree",
+      "old_status": "matched",
+      "new_status": "matched",
+      "method": "wikidata_p839",
+      "reason": "dates_conflict_weak",
+      "evidence": [
+        "dates_conflict_weak",
+        "wikilink_agree"
+      ],
+      "collision": null,
+      "works_dropped": 0
+    },
+    {
+      "name": "Hugh Blair",
+      "qid": "Q5930050",
+      "category": "Category:Blair,_Hugh",
+      "birth_year": 1864,
+      "death_year": 1932,
+      "imslp_born_year": 1862,
+      "imslp_died_year": 1932,
+      "template_kind": "composer",
+      "dates": "conflict_weak",
+      "wikilink": "agree",
+      "old_status": "matched",
+      "new_status": "matched",
+      "method": "wikidata_p839",
+      "reason": "dates_conflict_weak",
+      "evidence": [
+        "dates_conflict_weak",
+        "wikilink_agree"
+      ],
+      "collision": null,
+      "works_dropped": 0
+    },
+    {
+      "name": "John Lambert",
+      "qid": "Q15485321",
+      "category": "Category:Lambert,_John",
+      "birth_year": 1926,
+      "death_year": 1995,
+      "imslp_born_year": null,
+      "imslp_died_year": 1892,
+      "template_kind": "composer",
+      "dates": "conflict_strong",
+      "wikilink": "unknown",
+      "old_status": "matched",
+      "new_status": "rejected_p839",
+      "method": "wikidata_p839",
+      "reason": "dates_conflict_strong",
+      "evidence": [
+        "dates_conflict_strong"
+      ],
+      "collision": null,
+      "works_dropped": 1
+    },
+    {
+      "name": "Karl H\u00f6ller",
+      "qid": "Q315122",
+      "category": "Category:H\u00f6ller,_Georg",
+      "birth_year": 1907,
+      "death_year": 1987,
+      "imslp_born_year": 1838,
+      "imslp_died_year": 1901,
+      "template_kind": "person",
+      "dates": "conflict_strong",
+      "wikilink": "unknown",
+      "old_status": "matched",
+      "new_status": "rejected_p839",
+      "method": "wikidata_p839",
+      "reason": "dates_conflict_strong",
+      "evidence": [
+        "dates_conflict_strong"
+      ],
+      "collision": null,
+      "works_dropped": 1
+    },
+    {
+      "name": "Lucia Contini Anselmi",
+      "qid": "Q6696630",
+      "category": "Category:Anselmino,_Lucia",
+      "birth_year": 1876,
+      "death_year": 1913,
+      "imslp_born_year": 1876,
+      "imslp_died_year": 1935,
+      "template_kind": "person",
+      "dates": "conflict_weak",
+      "wikilink": "agree",
+      "old_status": "matched",
+      "new_status": "matched",
+      "method": "wikidata_p839",
+      "reason": "dates_conflict_weak",
+      "evidence": [
+        "dates_conflict_weak",
+        "wikilink_agree"
+      ],
+      "collision": null,
+      "works_dropped": 0
+    },
+    {
+      "name": "Mar\u00eda Luisa Sep\u00falveda",
+      "qid": "Q935718",
+      "category": "Category:Sep\u00falveda,_Mar\u00eda_Luisa",
+      "birth_year": 1883,
+      "death_year": 1958,
+      "imslp_born_year": 1898,
+      "imslp_died_year": 1958,
+      "template_kind": "person",
+      "dates": "conflict_weak",
+      "wikilink": "agree",
+      "old_status": "matched",
+      "new_status": "matched",
+      "method": "wikidata_p839",
+      "reason": "dates_conflict_weak",
+      "evidence": [
+        "dates_conflict_weak",
+        "wikilink_agree"
+      ],
+      "collision": null,
+      "works_dropped": 0
+    },
+    {
+      "name": "Caro Roma",
+      "qid": "Q5044190",
+      "category": "Category:Roma,_Caro",
+      "birth_year": 1866,
+      "death_year": 1937,
+      "imslp_born_year": 1869,
+      "imslp_died_year": 1937,
+      "template_kind": "person",
+      "dates": "conflict_weak",
+      "wikilink": "agree",
+      "old_status": "matched",
+      "new_status": "matched",
+      "method": "wikidata_p839",
+      "reason": "dates_conflict_weak",
+      "evidence": [
+        "dates_conflict_weak",
+        "wikilink_agree"
+      ],
+      "collision": null,
+      "works_dropped": 0
+    },
+    {
+      "name": "Oliveria Prescott",
+      "qid": "Q7087973",
+      "category": "Category:Prescott,_Oliveria",
+      "birth_year": 1842,
+      "death_year": 1917,
+      "imslp_born_year": 1842,
+      "imslp_died_year": 1919,
+      "template_kind": "person",
+      "dates": "conflict_weak",
+      "wikilink": "agree",
+      "old_status": "matched",
+      "new_status": "matched",
+      "method": "wikidata_p839",
+      "reason": "dates_conflict_weak",
+      "evidence": [
+        "dates_conflict_weak",
+        "wikilink_agree"
+      ],
+      "collision": null,
+      "works_dropped": 0
+    }
+  ],
+  "unverified_heuristic": [
+    {
+      "name": "Robert Ashley",
+      "qid": "Q2524056",
+      "category": "Category:Ashley,_Robert",
+      "birth_year": 1930,
+      "death_year": 2014,
+      "imslp_born_year": null,
+      "imslp_died_year": null,
+      "template_kind": "person",
+      "dates": "unknown",
+      "wikilink": "unknown",
+      "old_status": "unverified_heuristic",
+      "new_status": "unverified_heuristic",
+      "method": "exact_name",
+      "reason": "no_comparable_years",
+      "evidence": [
+        "dates_unknown"
+      ],
+      "collision": null,
+      "works_dropped": 0
+    },
+    {
+      "name": "Jonathan Harvey",
+      "qid": "Q499742",
+      "category": "Category:Harvey,_Jonathan",
+      "birth_year": 1939,
+      "death_year": 2012,
+      "imslp_born_year": null,
+      "imslp_died_year": null,
+      "template_kind": "person",
+      "dates": "unknown",
+      "wikilink": "unknown",
+      "old_status": "unverified_heuristic",
+      "new_status": "unverified_heuristic",
+      "method": "exact_name",
+      "reason": "no_comparable_years",
+      "evidence": [
+        "dates_unknown"
+      ],
+      "collision": null,
+      "works_dropped": 0
+    },
+    {
+      "name": "Julian Anderson",
+      "qid": "Q2746982",
+      "category": "Category:Anderson,_Julian",
+      "birth_year": 1967,
+      "death_year": null,
+      "imslp_born_year": null,
+      "imslp_died_year": null,
+      "template_kind": "person",
+      "dates": "unknown",
+      "wikilink": "unknown",
+      "old_status": "unverified_heuristic",
+      "new_status": "unverified_heuristic",
+      "method": "exact_name",
+      "reason": "no_comparable_years",
+      "evidence": [
+        "dates_unknown"
+      ],
+      "collision": null,
+      "works_dropped": 0
+    },
+    {
+      "name": "John Palmer",
+      "qid": "Q1701317",
+      "category": "Category:Palmer,_John",
+      "birth_year": 1959,
+      "death_year": null,
+      "imslp_born_year": 1961,
+      "imslp_died_year": null,
+      "template_kind": "person",
+      "dates": "conflict_weak",
+      "wikilink": "unknown",
+      "old_status": "unverified_heuristic",
+      "new_status": "unverified_heuristic",
+      "method": "exact_name",
+      "reason": "dates_conflict_weak; wikilink_unknown",
+      "evidence": [
+        "dates_conflict_weak"
+      ],
+      "collision": null,
+      "works_dropped": 0
+    },
+    {
+      "name": "Thomas Wilson",
+      "qid": "Q2606422",
+      "category": "Category:Wilson,_Thomas",
+      "birth_year": 1927,
+      "death_year": 2001,
+      "imslp_born_year": null,
+      "imslp_died_year": null,
+      "template_kind": "person",
+      "dates": "unknown",
+      "wikilink": "unknown",
+      "old_status": "unverified_heuristic",
+      "new_status": "unverified_heuristic",
+      "method": "exact_name",
+      "reason": "no_comparable_years",
+      "evidence": [
+        "dates_unknown"
+      ],
+      "collision": null,
+      "works_dropped": 0
+    },
+    {
+      "name": "Stephen Brown",
+      "qid": "Q7608789",
+      "category": "Category:Brown,_Stephen",
+      "birth_year": 1948,
+      "death_year": null,
+      "imslp_born_year": null,
+      "imslp_died_year": null,
+      "template_kind": "person",
+      "dates": "unknown",
+      "wikilink": "unknown",
+      "old_status": "unverified_heuristic",
+      "new_status": "unverified_heuristic",
+      "method": "exact_name",
+      "reason": "no_comparable_years",
+      "evidence": [
+        "dates_unknown"
+      ],
+      "collision": null,
+      "works_dropped": 0
+    },
+    {
+      "name": "Malcolm MacDonald",
+      "qid": "Q6742453",
+      "category": "Category:MacDonald,_Malcolm",
+      "birth_year": 1916,
+      "death_year": 1992,
+      "imslp_born_year": null,
+      "imslp_died_year": null,
+      "template_kind": "person",
+      "dates": "unknown",
+      "wikilink": "unknown",
+      "old_status": "unverified_heuristic",
+      "new_status": "unverified_heuristic",
+      "method": "exact_name",
+      "reason": "no_comparable_years",
+      "evidence": [
+        "dates_unknown"
+      ],
+      "collision": null,
+      "works_dropped": 0
+    }
+  ],
+  "works_dropped": 13,
+  "pd_works_dropped": 0,
+  "evidence_counts": {
+    "collision_lost": 2,
+    "collision_won": 2,
+    "dates_agree": 1241,
+    "dates_conflict_strong": 14,
+    "dates_conflict_weak": 14,
+    "dates_unknown": 11,
+    "page_missing": 5,
+    "performer_page": 11,
+    "wikilink_agree": 989,
+    "wikilink_differs": 221
+  },
+  "notes": [
+    "Offline parse of cached IMSLP work-page categories (imslp_page_cats)",
+    "Added imslp_style, imslp_first_published, imslp_copyright_flags, imslp_librettists after composition_year",
+    "Style names strip the trailing ' style' suffix; first published uses YYYY-only categories",
+    "Copyright categories map to normalised tokens; unmapped rights-like categories are reported",
+    "has_files / imslp_file_hosts from cached page files (imslp_page_files): non-image files only; hosts ca (main server), us (PMLUS), asia (PMLASIA) from file name prefixes",
+    "Redirect and missing pages yield empty evidence cells",
+    "Uncached pages keep their prior cells per cache; rows without a page id are empty",
+    "Composers copied unchanged except dump_date; works dump_date stamped only when present"
+  ],
+  "composer_columns": [
+    "composer_id",
+    "name_display",
+    "name_sort",
+    "name_aliases",
+    "birth_year",
+    "death_year",
+    "date_precision",
+    "wikipedia_url",
+    "wikidata_url",
+    "wikidata_qid",
+    "gnd_id",
+    "viaf_id",
+    "nationality_label_wiki",
+    "citizenship_qids",
+    "citizenship_iso",
+    "occupations",
+    "scope_class",
+    "scope_class_src",
+    "is_film_composer",
+    "qa_flags",
+    "eu_pd_year",
+    "eu_pd_status",
+    "years_until_eu_pd",
+    "style_tags",
+    "style_tags_src",
+    "llm_style_tags",
+    "llm_style_period",
+    "llm_style_votes",
+    "llm_style_src",
+    "notable_works",
+    "notable_works_qids",
+    "imslp_category",
+    "imslp_url",
+    "imslp_match_status",
+    "imslp_match_method",
+    "imslp_match_evidence",
+    "imslp_works_count",
+    "pageviews_enwiki",
+    "pageviews_window",
+    "schema_version",
+    "dump_date",
+    "legacy_notable_works_raw",
+    "legacy_remarks_raw",
+    "work_categories_present",
+    "works_count_by_category",
+    "works_count_total"
+  ],
+  "work_columns": [
+    "work_id",
+    "composer_id",
+    "imslp_pageid",
+    "imslp_work_url",
+    "title",
+    "imslp_genre_categories",
+    "force_family",
+    "force_family_src",
+    "genre_form",
+    "has_files",
+    "imslp_file_hosts",
+    "fetched_at",
+    "instrumentation_raw",
+    "piece_style_raw",
+    "composition_year",
+    "imslp_style",
+    "imslp_first_published",
+    "imslp_copyright_flags",
+    "imslp_librettists"
+  ],
+  "coverage": {
+    "imslp_style": {
+      "count": 28971,
+      "pct": 99.79
+    },
+    "imslp_first_published": {
+      "count": 21451,
+      "pct": 73.88
+    },
+    "imslp_copyright_flags": {
+      "count": 9889,
+      "pct": 34.06
+    },
+    "imslp_librettists": {
+      "count": 7915,
+      "pct": 27.26
+    }
+  },
+  "style_counts": {
+    "Romantic": 16046,
+    "Early 20th century": 9849,
+    "Modern": 2775,
+    "Classical": 73,
+    "Jazz": 72,
+    "Baroque": 44,
+    "Traditional (folk)": 43,
+    "Non-western classical": 37,
+    "Renaissance": 24,
+    "Medieval": 5,
+    "Ancient": 1,
+    "Rom\u00e1ntico": 1,
+    "Traditional": 1
+  },
+  "copyright_token_counts": {
+    "nonpd_ca_text": 35,
+    "nonpd_eu": 4592,
+    "nonpd_licensed": 2306,
+    "nonpd_us": 3521,
+    "pd_ca_rost": 32,
+    "pd_eu_rost": 342,
+    "pd_us_no_notice": 22,
+    "pd_us_notrenewed": 312,
+    "pd_us_only": 890,
+    "permission_granted": 1,
+    "pro_licensed": 147,
+    "wima": 384
+  },
+  "unmapped_copyright_categories": {},
+  "distinct_librettists": 3819,
+  "eu_pd_status_x_nonpd_eu": {
+    "not_pd \u00d7 no_nonpd_eu": 3307,
+    "not_pd \u00d7 nonpd_eu": 4527,
+    "pd \u00d7 no_nonpd_eu": 20326,
+    "pd \u00d7 nonpd_eu": 65,
+    "unknown_death \u00d7 no_nonpd_eu": 808
+  },
+  "pd_composer_nonpd_eu_examples": [
+    {
+      "title": "Impromptu, Op.135",
+      "composer": "Josef Bohuslav Foerster",
+      "composer_id": "Q450803",
+      "imslp_first_published": "1951",
+      "imslp_librettists": ""
+    },
+    {
+      "title": "String Quartet in D minor",
+      "composer": "Emil von Reznicek",
+      "composer_id": "Q550639",
+      "imslp_first_published": "1923",
+      "imslp_librettists": ""
+    },
+    {
+      "title": "Serenata Veneziana",
+      "composer": "Emil von Sauer",
+      "composer_id": "Q447133",
+      "imslp_first_published": "",
+      "imslp_librettists": ""
+    },
+    {
+      "title": "Waltz-Impromptu",
+      "composer": "Emil von Sauer",
+      "composer_id": "Q447133",
+      "imslp_first_published": "",
+      "imslp_librettists": ""
+    },
+    {
+      "title": "Petites pi\u00e8ces pour piano \u00e0 4 mains",
+      "composer": "Guy Ropartz",
+      "composer_id": "Q1379409",
+      "imslp_first_published": "1903",
+      "imslp_librettists": ""
+    },
+    {
+      "title": "Piano Trio",
+      "composer": "Guy Ropartz",
+      "composer_id": "Q1379409",
+      "imslp_first_published": "1919",
+      "imslp_librettists": ""
+    },
+    {
+      "title": "Francesca da Rimini",
+      "composer": "Paul Gilson",
+      "composer_id": "Q958774",
+      "imslp_first_published": "",
+      "imslp_librettists": "Dante Alighieri|Guilliaume, Jules"
+    },
+    {
+      "title": "Ludions",
+      "composer": "Erik Satie",
+      "composer_id": "Q187192",
+      "imslp_first_published": "1926",
+      "imslp_librettists": "Fargue, L\u00e9on-Paul"
+    },
+    {
+      "title": "Suite for Two Pianos Founded upon Old Irish Melodies, Op.104",
+      "composer": "Amy Beach",
+      "composer_id": "Q235699",
+      "imslp_first_published": "1924",
+      "imslp_librettists": ""
+    },
+    {
+      "title": "L'ancienne maison de campagne, Op.124",
+      "composer": "Charles Koechlin",
+      "composer_id": "Q72543",
+      "imslp_first_published": "1937",
+      "imslp_librettists": ""
+    },
+    {
+      "title": "3 Organ Sonatinas, Op.107",
+      "composer": "Charles Koechlin",
+      "composer_id": "Q72543",
+      "imslp_first_published": "1930",
+      "imslp_librettists": ""
+    },
+    {
+      "title": "2 M\u00e9lodies, Op.50",
+      "composer": "Albert Roussel",
+      "composer_id": "Q313376",
+      "imslp_first_published": "1934",
+      "imslp_librettists": "Chalupt, Ren\u00e9"
+    },
+    {
+      "title": "Der Zarewitsch",
+      "composer": "Franz Leh\u00e1r",
+      "composer_id": "Q191917",
+      "imslp_first_published": "",
+      "imslp_librettists": "Jenbach, B\u00e9la|Reichert, Heinz"
+    },
+    {
+      "title": "Prelude on a Moravian Folksong",
+      "composer": "V\u00edt\u011bzslav Nov\u00e1k",
+      "composer_id": "Q347611",
+      "imslp_first_published": "1954",
+      "imslp_librettists": ""
+    },
+    {
+      "title": "6 M\u00e9lodies, Op.25",
+      "composer": "Joseph Jongen",
+      "composer_id": "Q561259",
+      "imslp_first_published": "1926",
+      "imslp_librettists": "Bussine, Romain|Gilbart, Olympe|Hardy, Adolphe|V\u0103c\u0103rescu, Elena"
+    }
+  ],
+  "no_pageid": 0,
+  "missing_cache": 0,
+  "kept_prior": 0,
+  "redirect_or_missing_page": 61,
+  "has_files_counts": {
+    "(empty)": 61,
+    "false": 42,
+    "true": 28930
+  },
+  "file_host_counts": {
+    "asia": 831,
+    "ca": 27194,
+    "us": 1150
+  },
+  "unknown_file_hosts": [],
+  "score_files_total": 137737,
+  "files_missing_cache": 0,
+  "files_kept_prior": 0,
+  "files_redirect_or_missing_page": 61,
+  "llm_styles": {
+    "policy": {
+      "id": "llm_consensus_grounded_v2",
+      "condition": "grounded",
+      "prompt_version": "style-v2",
+      "labellers": [
+        {
+          "backend": "codex",
+          "model": "gpt-6.1-sol",
+          "effort": "low",
+          "key": "gpt-6.1-sol@low",
+          "name": "GPT-6.1 Sol"
+        },
+        {
+          "backend": "cursor",
+          "model": "grok-4.7-low",
+          "effort": "",
+          "key": "grok-4.7-low",
+          "name": "Grok 4.7"
+        }
+      ]
+    },
+    "ledger_path": "data/llm_ledger/style_labels.jsonl",
+    "ledger_sha256": "f912321077d71697768a10aeb1ef97193070d7e68d1d2f11574cbcb237c6c4ab",
+    "counts": {
+      "consensus_nonempty": 2842,
+      "both_labelled_no_consensus": 517,
+      "missing_labellers": 10,
+      "period_nonempty": 2748,
+      "both_labelled": 3359,
+      "legacy_retired": 0
+    }
+  },
+  "pd_reference_year": 2026,
+  "source_dump_id": "2026-10-10",
+  "stages": [
+    {
+      "script": "build_dump.py",
+      "dump_id": "2026-10-10",
+      "enrichment": "build_dump",
+      "row_counts": {
+        "composers": 3369,
+        "works": 29046,
+        "imslp_matched_p839": 976,
+        "imslp_unverified_heuristic": 299
+      }
+    },
+    {
+      "script": "remap_force.py",
+      "dump_id": "pipeline_stage_01",
+      "enrichment": "remap_force_ids_pd",
+      "row_counts": {
+        "composers": 3369,
+        "works": 29046,
+        "force_rows_changed": 0,
+        "pd_rows_changed": 0,
+        "duplicate_composer_rows_removed": 0,
+        "work_rows_deduped": 0
+      }
+    },
+    {
+      "script": "carry_forward.py",
+      "dump_id": "pipeline_stage_02",
+      "enrichment": "carry_forward",
+      "row_counts": {
+        "composers": 3369,
+        "works": 29046
+      }
+    },
+    {
+      "script": "remap_composers.py",
+      "dump_id": "pipeline_stage_03",
+      "enrichment": "remap_composers_wikidata",
+      "row_counts": {
+        "composers": 3369,
+        "works": 29046
+      }
+    },
+    {
+      "script": "apply_overrides.py",
+      "dump_id": "pipeline_stage_04",
+      "enrichment": "apply_composer_overrides",
+      "row_counts": {
+        "composers": 3369,
+        "works": 29046
+      }
+    },
+    {
+      "script": "remap_authorities.py",
+      "dump_id": "pipeline_stage_05",
+      "enrichment": "remap_authorities",
+      "row_counts": {
+        "composers": 3369,
+        "works": 29046
+      }
+    },
+    {
+      "script": "remap_imslp_matches.py",
+      "dump_id": "pipeline_stage_06",
+      "enrichment": "remap_imslp_identity",
+      "row_counts": {
+        "composers": 3369,
+        "works": 29033
+      }
+    },
+    {
+      "script": "remap_work_evidence.py",
+      "dump_id": "pipeline_stage_07",
+      "enrichment": "remap_work_evidence",
+      "row_counts": {
+        "composers": 3369,
+        "works": 29033
+      }
+    },
+    {
+      "script": "apply_llm_styles.py",
+      "dump_id": "pipeline_stage_08",
+      "enrichment": "apply_llm_styles",
+      "row_counts": {
+        "composers": 3369,
+        "works": 29033
+      }
+    }
+  ],
+  "crawl_date": "2026-10-10",
+  "pageviews_range": [
+    "20251001",
+    "20260930"
+  ],
+  "carry_forward": {
+    "base_dump_id": "r016",
+    "carried_forward": {
+      "force_family": 366,
+      "instrumentation_raw": 198,
+      "piece_style_raw": 200,
+      "composition_year": 94
+    },
+    "lost_rows": {
+      "works": [
+        [
+          "Q330862",
+          "249764"
+        ],
+        [
+          "Q330862",
+          "1349127"
+        ],
+        [
+          "Q330862",
+          "26913"
+        ],
+        [
+          "Q330862",
+          "988352"
+        ],
+        [
+          "Q330862",
+          "1485099"
+        ],
+        [
+          "Q330862",
+          "1521171"
+        ],
+        [
+          "Q330862",
+          "777549"
+        ],
+        [
+          "Q330862",
+          "782244"
+        ],
+        [
+          "Q330862",
+          "1469036"
+        ],
+        [
+          "Q330862",
+          "1513007"
+        ],
+        [
+          "Q330862",
+          "1498633"
+        ],
+        [
+          "Q330862",
+          "1324836"
+        ],
+        [
+          "Q330862",
+          "1635521"
+        ],
+        [
+          "Q330862",
+          "144988"
+        ],
+        [
+          "Q330862",
+          "102726"
+        ],
+        [
+          "Q330862",
+          "1326036"
+        ],
+        [
+          "Q330862",
+          "458520"
+        ],
+        [
+          "Q330862",
+          "1328591"
+        ],
+        [
+          "Q330862",
+          "102873"
+        ],
+        [
+          "Q330862",
+          "1568538"
+        ],
+        [
+          "Q330862",
+          "1544506"
+        ],
+        [
+          "Q330862",
+          "1348470"
+        ],
+        [
+          "Q330862",
+          "1368136"
+        ],
+        [
+          "Q330862",
+          "1365884"
+        ],
+        [
+          "Q330862",
+          "102788"
+        ],
+        [
+          "Q330862",
+          "102770"
+        ],
+        [
+          "Q709658",
+          "943126"
+        ]
+      ],
+      "composers": [
+        "Q6831259",
+        "Q4731863",
+        "Q330862",
+        "Q709658",
+        "Q276413",
+        "wiki:John_Mitchell"
+      ]
+    },
+    "lost_decisions": {
+      "force_family": [],
+      "instrumentation_raw": [],
+      "piece_style_raw": [],
+      "composition_year": []
+    },
+    "lost_decision_counts": {
+      "force_family": 0,
+      "instrumentation_raw": 0,
+      "piece_style_raw": 0,
+      "composition_year": 0
+    }
+  }
+}

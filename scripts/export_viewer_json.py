@@ -160,6 +160,12 @@ def export(dump_id: str, out_dir: Path) -> None:
             entry["style_src"] = ""
         if str(_clean(row.get("is_film_composer"))).lower() == "true":
             entry["film"] = True
+        # One authority record per composer: GND, else VIAF.
+        gnd, viaf = str(_clean(row.get("gnd_id"))), str(_clean(row.get("viaf_id")))
+        if gnd:
+            entry["gnd"] = gnd
+        elif viaf:
+            entry["viaf"] = viaf
         llm_styles = [_llm_facet_value(s) for s in _pipe_list(row.get("llm_style_tags"))]
         llm_period = _llm_facet_value(str(_clean(row.get("llm_style_period")) or ""))
         llm_votes = _llm_votes(row.get("llm_style_votes"), llm_policy["labellers"])

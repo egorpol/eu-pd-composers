@@ -1,12 +1,12 @@
 {
-  "dump_id": "r016",
-  "dump_label": "dump r016 \u00b7 built 2026-10-10",
-  "created_at_utc": "2026-10-10T14:12:34.916052+00:00",
+  "dump_id": "r017",
+  "dump_label": "dump r017 \u00b7 built 2026-10-10",
+  "created_at_utc": "2026-10-10T19:55:44.950325+00:00",
   "schema_version": 3,
-  "generated_at_utc": "2026-10-10T14:12:37.049156+00:00",
+  "generated_at_utc": "2026-10-10T19:55:48.124214+00:00",
   "counts": {
     "composers": 3369,
-    "works": 29026,
+    "works": 29033,
     "composers_with_works": 1058
   },
   "files": {
@@ -158,8 +158,8 @@
       "ZA"
     ],
     "imslp_style": {
-      "Romantic": 16050,
-      "Early 20th century": 9841,
+      "Romantic": 16047,
+      "Early 20th century": 9849,
       "Modern": 2775,
       "Classical": 73,
       "Jazz": 72,

@@ -220,3 +220,39 @@ def test_lifespan_flags_use_final_years():
         enrich_from_entity(ent), ent["claims"], fallback_birth=None, fallback_death=1962
     )
     assert years["qa_flags"] == "implausible_lifespan|death_from_list"
+
+
+@pytest.mark.parametrize("birth, precision, fallback, expected, flags", [
+    # Edgar Bara: P569 "19th century" (stored as 1900); the list gives 1876.
+    (1850, 7, 1876, 1876, "birth_imprecise|birth_from_list"),
+    # A list year outside the century interval (1801–1900) is not a refinement.
+    (1850, 7, 1901, 1900, "birth_imprecise|implausible_lifespan"),
+    # Decade 1850s is stored as 1859; the list's 1850 lies inside (C. A. Bracco).
+    (1855, 8, 1850, 1850, "birth_imprecise|birth_from_list"),
+    # A precise Wikidata year is never replaced by the list.
+    (1859, 9, 1850, 1859, ""),
+])
+def test_list_year_refines_a_coarse_wikidata_birth(birth, precision, fallback, expected, flags):
+    ent = entity(births=[time_claim(birth, precision=precision)], deaths=[time_claim(1903, precision=11)])
+    years = apply_year_fallbacks(
+        enrich_from_entity(ent), ent["claims"], fallback_birth=fallback, fallback_death=1903, refine_birth=True
+    )
+    assert years["birth_year"] == expected
+    assert years["qa_flags"] == flags
+
+
+def test_coarse_death_year_is_never_refined():
+    # Margherita Galeotti: P570 "20th century" (stored as 2000). Her article says
+    # "after 1912"; the list's 1912 is a floruit, and would make her PD too early.
+    ent = entity(births=[time_claim(1867, precision=9)], deaths=[time_claim(2000, precision=7)])
+    years = apply_year_fallbacks(
+        enrich_from_entity(ent), ent["claims"], fallback_birth=1867, fallback_death=1912, refine_birth=True
+    )
+    assert (years["death_year"], years["qa_flags"]) == (2000, "death_imprecise|implausible_lifespan")
+
+
+def test_coarse_birth_is_refined_only_on_request():
+    # A prior dump's 1854 for a 1850s birth may be an older reading: keep 1859.
+    ent = entity(births=[time_claim(1855, precision=8)], deaths=[time_claim(1920, precision=11)])
+    years = apply_year_fallbacks(enrich_from_entity(ent), ent["claims"], fallback_birth=1854, fallback_death=1920)
+    assert (years["birth_year"], years["qa_flags"]) == (1859, "birth_imprecise")

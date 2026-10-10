@@ -87,6 +87,8 @@ def test_export_evidence_keys_and_film_and_null_views(patched_paths):
                 composer_id="Q2",
                 name_display="Bob",
                 name_sort="Bob",
+                gnd_id="118551027",
+                viaf_id="30939465",
                 is_film_composer="false",
                 pageviews_enwiki="0",
                 eu_pd_status="not_pd",
@@ -98,6 +100,7 @@ def test_export_evidence_keys_and_film_and_null_views(patched_paths):
                 composer_id="Q3",
                 name_display="Carol",
                 name_sort="Carol",
+                viaf_id="12345",
                 is_film_composer="TRUE",
                 pageviews_enwiki="42",
                 work_categories_present="",
@@ -159,6 +162,10 @@ def test_export_evidence_keys_and_film_and_null_views(patched_paths):
     assert by_id["Q2"]["views"] == 0
     assert by_id["Q3"]["film"] is True
     assert by_id["Q3"]["views"] == 42
+    # One authority link: GND when present, else VIAF, else none.
+    assert (by_id["Q2"]["gnd"], "viaf" in by_id["Q2"]) == ("118551027", False)
+    assert (by_id["Q3"]["viaf"], "gnd" in by_id["Q3"]) == ("12345", False)
+    assert "gnd" not in by_id["Q1"] and "viaf" not in by_id["Q1"]
 
     w1 = next(w for w in w_map["Q1"] if w["t"] == "Sonata")
     assert w1["st"] == ["Romantic", "Early 20th century"]
