@@ -1,13 +1,13 @@
 {
-  "dump_id": "r015",
+  "dump_id": "r016",
   "tool_version": "3.5.0",
   "schema_version": 3,
-  "created_at_utc": "2026-10-10T12:08:53.187840+00:00",
-  "derived_from_dump_id": "r014",
-  "enrichment": "apply_llm_styles",
+  "created_at_utc": "2026-10-10T14:12:34.916052+00:00",
+  "derived_from_dump_id": "r015",
+  "enrichment": "remap_work_evidence",
   "output_files": {
-    "composers": "composers_r015.tsv",
-    "works": "works_r015.tsv"
+    "composers": "composers_r016.tsv",
+    "works": "works_r016.tsv"
   },
   "row_counts": {
     "composers": 3369,
@@ -15,24 +15,24 @@
   },
   "coverage": {
     "imslp_style": {
-      "count": 28964,
+      "count": 28966,
       "pct": 99.79
     },
     "imslp_first_published": {
-      "count": 21443,
+      "count": 21444,
       "pct": 73.88
     },
     "imslp_copyright_flags": {
-      "count": 6461,
-      "pct": 22.26
+      "count": 9884,
+      "pct": 34.05
     },
     "imslp_librettists": {
-      "count": 7913,
-      "pct": 27.26
+      "count": 7914,
+      "pct": 27.27
     }
   },
   "style_counts": {
-    "Romantic": 16047,
+    "Romantic": 16049,
     "Early 20th century": 9841,
     "Modern": 2775,
     "Classical": 73,
@@ -43,25 +43,31 @@
     "Renaissance": 24,
     "Medieval": 5,
     "Ancient": 1,
-    "Rom\u00e1ntico": 1,
+    "Romántico": 1,
     "Traditional": 1
   },
   "copyright_token_counts": {
     "nonpd_ca_text": 35,
     "nonpd_eu": 4587,
+    "nonpd_licensed": 2306,
     "nonpd_us": 3516,
     "pd_ca_rost": 32,
     "pd_eu_rost": 342,
-    "permission_granted": 1
+    "pd_us_no_notice": 22,
+    "pd_us_notrenewed": 312,
+    "pd_us_only": 890,
+    "permission_granted": 1,
+    "pro_licensed": 147,
+    "wima": 384
   },
   "unmapped_copyright_categories": {},
-  "distinct_librettists": 3818,
+  "distinct_librettists": 3819,
   "eu_pd_status_x_nonpd_eu": {
-    "not_pd \u00d7 no_nonpd_eu": 3307,
-    "not_pd \u00d7 nonpd_eu": 4522,
-    "pd \u00d7 no_nonpd_eu": 20324,
-    "pd \u00d7 nonpd_eu": 65,
-    "unknown_death \u00d7 no_nonpd_eu": 808
+    "not_pd × no_nonpd_eu": 3307,
+    "not_pd × nonpd_eu": 4522,
+    "pd × no_nonpd_eu": 20324,
+    "pd × nonpd_eu": 65,
+    "unknown_death × no_nonpd_eu": 808
   },
   "pd_composer_nonpd_eu_examples": [
     {
@@ -93,7 +99,7 @@
       "imslp_librettists": ""
     },
     {
-      "title": "Petites pi\u00e8ces pour piano \u00e0 4 mains",
+      "title": "Petites pièces pour piano à 4 mains",
       "composer": "Guy Ropartz",
       "composer_id": "Q1379409",
       "imslp_first_published": "1903",
@@ -118,7 +124,7 @@
       "composer": "Erik Satie",
       "composer_id": "Q187192",
       "imslp_first_published": "1926",
-      "imslp_librettists": "Fargue, L\u00e9on-Paul"
+      "imslp_librettists": "Fargue, Léon-Paul"
     },
     {
       "title": "Suite for Two Pianos Founded upon Old Irish Melodies, Op.104",
@@ -142,42 +148,44 @@
       "imslp_librettists": ""
     },
     {
-      "title": "2 M\u00e9lodies, Op.50",
+      "title": "2 Mélodies, Op.50",
       "composer": "Albert Roussel",
       "composer_id": "Q313376",
       "imslp_first_published": "1934",
-      "imslp_librettists": "Chalupt, Ren\u00e9"
+      "imslp_librettists": "Chalupt, René"
     },
     {
       "title": "Der Zarewitsch",
-      "composer": "Franz Leh\u00e1r",
+      "composer": "Franz Lehár",
       "composer_id": "Q191917",
       "imslp_first_published": "",
-      "imslp_librettists": "Jenbach, B\u00e9la|Reichert, Heinz"
+      "imslp_librettists": "Jenbach, Béla|Reichert, Heinz"
     },
     {
       "title": "Prelude on a Moravian Folksong",
-      "composer": "V\u00edt\u011bzslav Nov\u00e1k",
+      "composer": "Vítězslav Novák",
       "composer_id": "Q347611",
       "imslp_first_published": "1954",
       "imslp_librettists": ""
     },
     {
-      "title": "6 M\u00e9lodies, Op.25",
+      "title": "6 Mélodies, Op.25",
       "composer": "Joseph Jongen",
       "composer_id": "Q561259",
       "imslp_first_published": "1926",
-      "imslp_librettists": "Bussine, Romain|Gilbart, Olympe|Hardy, Adolphe|V\u0103c\u0103rescu, Elena"
+      "imslp_librettists": "Bussine, Romain|Gilbart, Olympe|Hardy, Adolphe|Văcărescu, Elena"
     }
   ],
   "missing_cache": 0,
-  "redirect_or_missing_page": 61,
+  "redirect_or_missing_page": 0,
   "notes": [
     "Offline parse of cached IMSLP work-page categories (imslp_page_cats)",
     "Added imslp_style, imslp_first_published, imslp_copyright_flags, imslp_librettists after composition_year",
     "Style names strip the trailing ' style' suffix; first published uses YYYY-only categories",
-    "Copyright categories map to normalised tokens; unmapped NonPD/RoST/copyright cats are reported",
+    "Copyright categories map to normalised tokens; unmapped rights-like categories are reported",
+    "has_files / imslp_file_hosts from cached page files (imslp_page_files): non-image files only; hosts ca (main server), us (PMLUS), asia (PMLASIA) from file name prefixes",
     "Redirect and missing pages yield empty evidence cells",
+    "Uncached pages keep their prior cells per cache; rows without a page id are empty",
     "Composers copied unchanged except dump_date; works dump_date stamped only when present"
   ],
   "pd_reference_year": 2026,
@@ -315,6 +323,7 @@
     "force_family_src",
     "genre_form",
     "has_files",
+    "imslp_file_hosts",
     "fetched_at",
     "instrumentation_raw",
     "piece_style_raw",
@@ -571,7 +580,7 @@
         }
       ]
     },
-    "ledger_path": "/home/egor/Nextcloud/code/public_repos/PublicDomainSheetMusicFinder/data/llm_ledger/style_labels.jsonl",
+    "ledger_path": "data/llm_ledger/style_labels.jsonl",
     "ledger_sha256": "f912321077d71697768a10aeb1ef97193070d7e68d1d2f11574cbcb237c6c4ab",
     "counts": {
       "consensus_nonempty": 2842,
@@ -581,5 +590,22 @@
       "both_labelled": 3360,
       "legacy_retired": 74
     }
-  }
+  },
+  "no_pageid": 0,
+  "kept_prior": 0,
+  "has_files_counts": {
+    "(empty)": 61,
+    "false": 42,
+    "true": 28923
+  },
+  "file_host_counts": {
+    "asia": 831,
+    "ca": 27187,
+    "us": 1150
+  },
+  "unknown_file_hosts": [],
+  "score_files_total": 137726,
+  "files_missing_cache": 0,
+  "files_kept_prior": 0,
+  "files_redirect_or_missing_page": 61
 }

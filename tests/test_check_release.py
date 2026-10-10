@@ -61,6 +61,27 @@ def test_llm_style_sanity_and_legacy_revision_compatibility():
     assert not check_release.check_data_quality(c, w, {})[0]
 
 
+def test_work_evidence_vocabularies():
+    c, w = frames(1, 4)
+    w["imslp_copyright_flags"] = ["nonpd_eu|wima", "pd_us_only", "", "made_up"]
+    w["has_files"] = ["true", "false", "", "maybe"]
+    w["imslp_file_hosts"] = ["ca|us", "asia", "", "eu"]
+    errors, warnings = check_release.check_data_quality(c, w, {})
+    assert errors == ["unknown imslp_copyright_flags tokens: made_up", "invalid has_files values: maybe",
+                      "works with file hosts but has_files != true: 2"]
+    assert any("new IMSLP file hosts" in warning and "eu" in warning for warning in warnings)
+
+
+@pytest.mark.parametrize("filled_after,failed", [(95, False), (94, True)])
+def test_has_files_coverage_cannot_collapse(filled_after, failed):
+    c, w = frames()
+    pc, pw = frames()
+    pw["has_files"] = "true"
+    w["has_files"] = ["true"] * filled_after + [""] * (100 - filled_after)
+    errors, _ = check_release.check_regressions(c, w, pc, pw)
+    assert bool(errors) == failed
+
+
 def test_cli_against_loads_baseline(tmp_path, monkeypatch, capsys):
     monkeypatch.setattr(common, "DATA_DIR", tmp_path)
     monkeypatch.setattr(common, "CACHE_DIR", tmp_path / "cache")

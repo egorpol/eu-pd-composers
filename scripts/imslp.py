@@ -163,38 +163,40 @@ def list_category_works(
 PAGE_CATS_NAMESPACE = "imslp_page_cats"
 
 
-def _categories_continuation(data: dict) -> Optional[dict[str, str]]:
-    """Continuation params for prop=categories (MW 1.18 `query-continue` or modern `continue`)."""
-    legacy = (data.get("query-continue") or {}).get("categories")
+def _continuation(data: dict, prop: str, token: str) -> Optional[dict[str, str]]:
+    """Continuation params for a prop list (MW 1.18 `query-continue` or modern `continue`)."""
+    legacy = (data.get("query-continue") or {}).get(prop)
     if legacy:
         return legacy
     modern = data.get("continue")
-    if modern and "clcontinue" in modern:
+    if modern and token in modern:
         return modern
     return None
 
 
-def fetch_page_categories(
+def _fetch_page_lists(
     pageids: list[int],
     session: requests.Session,
     *,
-    use_cache: bool = True,
-    batch_size: int = 50,
-    sleep_s: float = 0.15,
+    namespace: str,
+    prop: str,
+    prefix: str,
+    use_cache: bool,
+    batch_size: int,
+    sleep_s: float,
 ) -> dict[int, dict[str, Any]]:
-    """Map IMSLP page ids → {title, categories, missing, redirect, fetched_at}.
+    """Page ids → {title, <prop>, missing, redirect, fetched_at} for one MediaWiki prop list.
 
-    Follows category continuation until every page in a batch is complete, and
-    only then caches. API-level errors raise instead of becoming empty lists.
-    Categories are returned without the `Category:` prefix, unfiltered.
-    `redirect` marks pages IMSLP has since merged into another page; those
-    carry no categories of their own.
+    Follows continuation until every page in a batch is complete, and only then
+    caches. API-level errors raise instead of becoming empty lists. List items
+    are returned without `prefix` (e.g. `Category:`), unfiltered.
     """
+    limit_param, token = {"categories": ("cllimit", "clcontinue"), "images": ("imlimit", "imcontinue")}[prop]
     out: dict[int, dict[str, Any]] = {}
     pending: list[int] = []
     for pid in dict.fromkeys(int(p) for p in pageids):
         if use_cache:
-            cached = cache_get(PAGE_CATS_NAMESPACE, str(pid))
+            cached = cache_get(namespace, str(pid))
             if cached is not None:
                 out[pid] = cached
                 continue
@@ -205,8 +207,8 @@ def fetch_page_categories(
         params: dict[str, Any] = {
             "action": "query",
             "pageids": "|".join(str(p) for p in batch),
-            "prop": "categories|info",
-            "cllimit": "max",
+            "prop": f"{prop}|info",
+            limit_param: "max",
             "format": "json",
         }
         pages: dict[int, dict[str, Any]] = {}
@@ -220,7 +222,7 @@ def fetch_page_categories(
                     pid,
                     {
                         "title": page.get("title", ""),
-                        "categories": [],
+                        prop: [],
                         "missing": False,
                         "redirect": False,
                     },
@@ -229,13 +231,13 @@ def fetch_page_categories(
                     entry["missing"] = True
                 if "redirect" in page:
                     entry["redirect"] = True
-                for c in page.get("categories", []):
-                    ctitle = c.get("title", "")
-                    if ctitle.startswith("Category:"):
-                        ctitle = ctitle[len("Category:") :]
-                    if ctitle not in entry["categories"]:
-                        entry["categories"].append(ctitle)
-            cont = _categories_continuation(data)
+                for item in page.get(prop, []):
+                    title = item.get("title", "")
+                    if title.startswith(prefix):
+                        title = title[len(prefix) :]
+                    if title not in entry[prop]:
+                        entry[prop].append(title)
+            cont = _continuation(data, prop, token)
             if not cont:
                 break
             params.update(cont)
@@ -243,13 +245,59 @@ def fetch_page_categories(
         now = datetime.now(timezone.utc).isoformat()
         for pid in batch:
             entry = pages.get(
-                pid, {"title": "", "categories": [], "missing": True, "redirect": False}
+                pid, {"title": "", prop: [], "missing": True, "redirect": False}
             )
             entry = {"pageid": pid, **entry, "fetched_at": now}
             out[pid] = entry
             if use_cache:
-                cache_set(PAGE_CATS_NAMESPACE, str(pid), entry)
+                cache_set(namespace, str(pid), entry)
     return out
+
+
+def fetch_page_categories(
+    pageids: list[int],
+    session: requests.Session,
+    *,
+    use_cache: bool = True,
+    batch_size: int = 50,
+    sleep_s: float = 0.15,
+) -> dict[int, dict[str, Any]]:
+    """Map IMSLP page ids → {title, categories, missing, redirect, fetched_at}.
+
+    Complete category lists (continuation followed), without the `Category:`
+    prefix. `redirect` marks pages IMSLP has since merged into another page;
+    those carry no categories of their own.
+    """
+    return _fetch_page_lists(
+        pageids, session, namespace=PAGE_CATS_NAMESPACE, prop="categories", prefix="Category:",
+        use_cache=use_cache, batch_size=batch_size, sleep_s=sleep_s,
+    )
+
+
+# Files linked from each work page (scores, audio, and placeholders for files
+# hosted on IMSLP's other servers), keyed by page id. File names carry the
+# hosting server (PMLP… Canada, PMLUS… US-only server, PMLASIA…), which is the
+# evidence for has_files and file hosts.
+PAGE_FILES_NAMESPACE = "imslp_page_files"
+
+
+def fetch_page_files(
+    pageids: list[int],
+    session: requests.Session,
+    *,
+    use_cache: bool = True,
+    batch_size: int = 50,
+    sleep_s: float = 0.15,
+) -> dict[int, dict[str, Any]]:
+    """Map IMSLP page ids → {title, images, missing, redirect, fetched_at}.
+
+    `images` holds every linked file title without the `File:` prefix, not only
+    scores; classify by extension and name prefix downstream.
+    """
+    return _fetch_page_lists(
+        pageids, session, namespace=PAGE_FILES_NAMESPACE, prop="images", prefix="File:",
+        use_cache=use_cache, batch_size=batch_size, sleep_s=sleep_s,
+    )
 
 
 # Raw wikitext of composer category pages ({{#fte:person |Born Year=… }}),

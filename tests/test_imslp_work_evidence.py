@@ -111,6 +111,15 @@ def test_unmapped_copyright_category_reported_but_not_in_cell():
         "Files PD somewhere due to RoST",
         "Rostropovich, Mstislav/Dedicatee",
         "Frost, Robert/Librettist",
+        "Works Licensed through SACEM",
+        "WorkPD-CAonly",
+        "Items in the public domain on Mars",
+        "WIMA mirror files",
+        "Scores published by BMI Canada",
+        "Scores from BandMusic PDF",
+        "Submission Project",
+        "Tag 'fl ob cl bn hpd str'",
+        "Wimann, Anna/Editor",
     ]
     result = evidence.work_evidence(cats)
     assert result["imslp_copyright_flags"] == "nonpd_eu"
@@ -119,7 +128,47 @@ def test_unmapped_copyright_category_reported_but_not_in_cell():
         "Some Future NonPD Flag",
         "Items under mystery copyright regime",
         "Files PD somewhere due to RoST",
+        "Works Licensed through SACEM",
+        "WorkPD-CAonly",
+        "Items in the public domain on Mars",
+        "WIMA mirror files",
     ]
+
+
+def test_rights_basis_categories_map_to_tokens():
+    result = evidence.work_evidence([
+        "Works not in public domain",
+        "WorkPD-USonly",
+        "Work-PD-US-notrenewed",
+        "PD-US-no notice",
+        "WIMA files",
+        "Works Licensed through BMI",
+        "Works Licensed through GEMA",
+    ])
+    assert result["imslp_copyright_flags"] == (
+        "nonpd_licensed|pd_us_no_notice|pd_us_notrenewed|pd_us_only|pro_licensed|wima"
+    )
+
+
+def test_file_evidence_hosts_and_images():
+    files = [
+        "Cover scan.jpg",
+        "TN-PMLP7-PMLUS1-placeholder.png",
+        "PMLP7-PMLUS1-placeholder-score.pdf",
+        "PMLP7-PMLASIA2-placeholder-parts.PDF",
+        "PMLP7-PMLP9-nested-token.pdf",
+        "PMLP7-Plain score.pdf",
+        "WIMA.01f5-legacy-name.mid",
+        "SIBLEY1802.10954-score.pdf",
+    ]
+    assert evidence.file_evidence(files) == {"has_files": "true", "imslp_file_hosts": "asia|ca|us"}
+    assert evidence.file_host("PMLP7-PMLEU3-new-server.pdf") == "eu"
+    assert evidence.file_evidence(["PMLP7-PMLUS1-x.mp3"]) == {"has_files": "true", "imslp_file_hosts": "us"}
+
+
+@pytest.mark.parametrize("files", [[], ["Cover.jpg", "TN-PMLP7-x.png", "PV-preview.PNG"]])
+def test_file_evidence_without_scores(files):
+    assert evidence.file_evidence(files) == {"has_files": "false", "imslp_file_hosts": ""}
 
 
 def test_empty_categories_yield_empty_cells():
@@ -136,6 +185,16 @@ def _page(categories=None, *, redirect=False, missing=False, pageid=1, title="Wo
         "pageid": pageid,
         "title": title,
         "categories": list(categories or []),
+        "missing": missing,
+        "redirect": redirect,
+        "fetched_at": "2026-01-01T00:00:00+00:00",
+    }
+
+
+def _files(images=None, *, redirect=False, missing=False, pageid=1):
+    return {
+        "pageid": pageid,
+        "images": list(images or []),
         "missing": missing,
         "redirect": redirect,
         "fetched_at": "2026-01-01T00:00:00+00:00",
@@ -204,11 +263,17 @@ def source(monkeypatch):
             title="Unmapped Copy",
         ),
     }
+    files = {
+        "10": _files(["PMLP10-score.pdf", "PMLP10-PMLUS3-placeholder.pdf", "Cover.jpg"], pageid=10),
+        "11": _files(redirect=True, pageid=11),
+        "12": _files(["Cover.jpg"], pageid=12),
+        "13": _files(["PMLP13-PMLASIA1-placeholder.mp3"], pageid=13),
+    }
     calls: list[tuple[str, str]] = []
 
     def cache_get(namespace, key):
         calls.append((namespace, key))
-        return pages.get(key)
+        return {"imslp_page_cats": pages, "imslp_page_files": files}[namespace].get(key)
 
     monkeypatch.setattr(common, "cache_get", cache_get)
     monkeypatch.setattr(remap, "cache_get", cache_get)
@@ -289,7 +354,39 @@ def test_remap_fills_evidence_and_reports(source):
     assert report["distinct_librettists"] == 2
     assert report["eu_pd_status_x_nonpd_eu"]["pd × nonpd_eu"] == 1
     assert report["pd_composer_nonpd_eu_examples"][0]["title"] == "Unmapped Copy"
-    assert [key for _, key in calls] == ["10", "11", "12", "13", "99"]
+    assert [key for ns, key in calls if ns == "imslp_page_cats"] == ["10", "11", "12", "13", "99"]
+    assert [key for ns, key in calls if ns == "imslp_page_files"] == ["10", "11", "12", "13", "99"]
+
+
+def test_remap_fills_file_columns(source):
+    composers, works, _ = source
+    works = pd.concat(
+        [works, pd.DataFrame([{**_work(20, composer_id="Q1", title="No Page"), "imslp_pageid": ""}])],
+        ignore_index=True,
+    )
+    works["imslp_file_hosts"] = "stale"
+    out, report = remap.remap_work_evidence(composers, works)
+    columns = list(out.columns)
+    assert columns[columns.index("has_files") + 1] == "imslp_file_hosts"
+    assert columns.count("imslp_file_hosts") == 1
+    assert out["has_files"].tolist() == ["true", "", "false", "true", "true", ""]
+    # Uncached page 99 keeps its prior cells; a row without a page id has none.
+    assert out["imslp_file_hosts"].tolist() == ["ca|us", "", "", "asia", "stale", ""]
+    assert report["has_files_counts"] == {"(empty)": 2, "false": 1, "true": 3}
+    assert report["file_host_counts"] == {"asia": 1, "ca": 1, "stale": 1, "us": 1}
+    assert report["unknown_file_hosts"] == ["stale"]
+    assert report["score_files_total"] == 3
+    assert report["files_missing_cache"] == 1
+    assert report["files_kept_prior"] == 1
+    assert report["files_redirect_or_missing_page"] == 1
+
+
+def test_file_columns_added_when_absent(source):
+    composers, works, _ = source
+    works = works.drop(columns=["has_files"])
+    out, _ = remap.remap_work_evidence(composers, works)
+    assert list(out.columns)[-2:] == ["has_files", "imslp_file_hosts"]
+    assert out.loc[4, "has_files"] == ""
 
 
 def test_untouched_columns_round_trip(source):
@@ -298,7 +395,8 @@ def test_untouched_columns_round_trip(source):
     out, _ = remap.remap_work_evidence(composers, works)
     pd.testing.assert_frame_equal(works, original)
     for col in works.columns:
-        assert out[col].tolist() == works[col].tolist()
+        if col != "has_files":
+            assert out[col].tolist() == works[col].tolist()
 
 
 def test_recomputes_existing_evidence_columns(source):
@@ -330,7 +428,8 @@ def dump_files(tmp_path, monkeypatch, source):
     composers.to_csv(tmp_path / "composers_r012.tsv", sep="\t", index=False)
     works.to_csv(tmp_path / "works_r012.tsv", sep="\t", index=False)
     (tmp_path / "dump_meta_r012.json").write_text(
-        json.dumps({"created_at_utc": "2026-01-01T00:00:00+00:00"})
+        json.dumps({"created_at_utc": "2026-01-01T00:00:00+00:00", "pd_reference_year": 2026,
+                    "enrichment": "pipeline_derive"})
     )
     return tmp_path, composers, works, calls
 
@@ -354,6 +453,8 @@ def test_dry_run_report_content_without_writes(dump_files, capsys):
     assert "Unmapped Copy — PD Composer (Q2)" in output
     assert "Missing cache entries: 1" in output
     assert "Redirect / missing pages: 2" in output
+    assert "Missing file cache entries: 1 (prior file cells kept: 1)" in output
+    assert "  us: 1" in output
 
 
 def test_cli_round_trip_untouched_columns_and_meta(dump_files):
@@ -366,7 +467,8 @@ def test_cli_round_trip_untouched_columns_and_meta(dump_files):
         directory / "works_r999.tsv", sep="\t", dtype=str, keep_default_na=False,
     )
     for col in works.columns:
-        assert written_works[col].tolist() == works[col].tolist()
+        if col != "has_files":
+            assert written_works[col].tolist() == works[col].tolist()
     assert written_works.loc[0, "imslp_style"] == "Romantic|Early 20th century"
     assert written_works.loc[0, "untouched"] == "keep-me"
 
@@ -384,6 +486,10 @@ def test_cli_round_trip_untouched_columns_and_meta(dump_files):
     assert meta["coverage"]["imslp_librettists"]["count"] == 1
     assert meta["unmapped_copyright_categories"] == {"Some New NonPD Category": 1}
     assert meta["pd_composer_nonpd_eu_examples"][0]["composer"] == "PD Composer"
+    assert meta["pd_reference_year"] == 2026
+    assert meta["created_at_utc"] != "2026-01-01T00:00:00+00:00"
+    assert meta["work_columns"] == list(written_works.columns)
+    assert meta["has_files_counts"] == {"(empty)": 1, "false": 1, "true": 3}
 
 
 @pytest.mark.parametrize("filename", [

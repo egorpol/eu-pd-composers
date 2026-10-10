@@ -21,12 +21,17 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import common  # noqa: E402
 from common import dump_meta_path, dump_tsv_path  # noqa: E402
 from force_family import force_family_from_categories  # noqa: E402
+from imslp_work_evidence import COPYRIGHT_TOKENS, FILE_HOSTS, FILE_HOSTS_COLUMN  # noqa: E402
 from style_vocab import ERA_SLUG_SET, STYLE_SLUG_SET  # noqa: E402
 from wikidata_enrich import STYLE_QID_TO_TAG  # noqa: E402
 
 # Share of works without any IMSLP genre/force category. r008 shipped 62.8%
 # because of a truncated category fetch; a complete crawl is well under 5%.
 MAX_EMPTY_CATEGORY_SHARE = 0.05
+
+# Largest allowed drop (percentage points) in the share of works with has_files
+# set, so a refresh that skips the file fetch cannot blank the column silently.
+MAX_HAS_FILES_DROP = 0.05
 
 # Known form / non-genre QIDs that must never appear in STYLE_QID_TO_TAG.
 STYLE_QID_DENYLIST = {
@@ -81,6 +86,27 @@ def check_data_quality(
             legacy = composers["style_tags_src"].map(_as_str).str.startswith("llm").sum()
             if legacy:
                 errors.append(f"legacy LLM style_tags_src rows: {int(legacy)}")
+
+    # --- Work evidence vocabularies ---
+    if "imslp_copyright_flags" in works:
+        unknown = {t for value in works["imslp_copyright_flags"].map(_as_str)
+                   for t in common.pipe_split(value)} - COPYRIGHT_TOKENS
+        if unknown:
+            errors.append("unknown imslp_copyright_flags tokens: " + ", ".join(sorted(unknown)))
+    if "has_files" in works:
+        bad = set(works["has_files"].map(_as_str)) - {"", "true", "false"}
+        if bad:
+            errors.append("invalid has_files values: " + ", ".join(sorted(bad)))
+    if FILE_HOSTS_COLUMN in works:
+        hosts = {h for value in works[FILE_HOSTS_COLUMN].map(_as_str) for h in common.pipe_split(value)}
+        if hosts - FILE_HOSTS:
+            warnings.append("new IMSLP file hosts (map them in imslp_work_evidence): "
+                            + ", ".join(sorted(hosts - FILE_HOSTS)))
+        if "has_files" in works:
+            orphan = (works[FILE_HOSTS_COLUMN].map(_as_str).ne("")
+                      & works["has_files"].map(_as_str).ne("true")).sum()
+            if orphan:
+                errors.append(f"works with file hosts but has_files != true: {int(orphan)}")
 
     # --- IMSLP category completeness ---
     if "imslp_genre_categories" in works.columns and len(works):
@@ -186,6 +212,12 @@ def check_regressions(
         missing = [col for col in previous if col not in following]
         if missing:
             errors.append(f"schema drift in {stem}: missing columns {', '.join(missing)}")
+    if "has_files" in works and "has_files" in previous_works and len(works) and len(previous_works):
+        before = previous_works["has_files"].map(_as_str).ne("").mean()
+        after = works["has_files"].map(_as_str).ne("").mean()
+        if round(before - after, 9) > MAX_HAS_FILES_DROP:
+            errors.append(f"works with has_files set fell from {before:.1%} to {after:.1%} "
+                          "— file fetch skipped?")
     if "composer_id" not in composers or "composer_id" not in previous_composers:
         return errors, ["EU PD status flips and composer additions/removals unavailable: missing composer_id"]
     old = previous_composers.set_index("composer_id")

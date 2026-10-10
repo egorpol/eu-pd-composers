@@ -83,7 +83,7 @@ def commands(repository, monkeypatch):
                 df.to_csv(data_dir / f"{stem}_{dump_id}.tsv", sep="\t", index=False)
             (data_dir / f"dump_meta_{dump_id}.json").write_text(json.dumps({
                 "created_at_utc": dump_id + "T00:00:00+00:00", "row_counts": {"composers": 1, "works": 1}}))
-        elif script in {"refetch_composer_pages.py", "refetch_override_entities.py"}:
+        elif script in {"refetch_composer_pages.py", "refetch_override_entities.py", "refetch_work_files.py"}:
             pass
         elif script == "export_viewer_json.py":
             dump_id = arguments[arguments.index("--dump") + 1]
@@ -116,7 +116,7 @@ def test_offline_derive_no_promote(repository, commands, tmp_path, capsys):
     assert staging.is_dir()
     assert before == {p.name: p.read_bytes() for p in data.glob("*") if p.is_file()}
     calls, _ = commands
-    assert not any(call[0] in {"build_dump.py", "refetch_composer_pages.py", "refetch_override_entities.py",
+    assert not any(call[0] in {"build_dump.py", "refetch_composer_pages.py", "refetch_override_entities.py", "refetch_work_files.py",
                                "export_viewer_json.py"} for call in calls)
     assert all(call[2] == staging and call[3] == cache for call in calls)
     assert "STAGING=" in capsys.readouterr().out
@@ -135,7 +135,8 @@ def test_derive_adds_work_evidence_by_default(repository, commands, tmp_path):
                                                 "--staging", str(tmp_path / "staging")]))
     prev, nxt = diff_dumps.read_dump("r001"), diff_dumps.read_dump("r999", staging)
     added = [c for c in nxt["works"].columns if c not in prev["works"].columns]
-    assert added == ["imslp_style", "imslp_first_published", "imslp_copyright_flags", "imslp_librettists"]
+    assert added == ["imslp_file_hosts", "imslp_style", "imslp_first_published", "imslp_copyright_flags",
+                     "imslp_librettists"]
     shared = [c for c in prev["works"].columns if c != "dump_date"]
     pd.testing.assert_frame_equal(prev["works"][shared], nxt["works"][shared])
     assert [c for c in nxt["composers"] if c not in prev["composers"]] == list(apply_llm_styles.LLM_STYLE_COLUMNS)
@@ -157,7 +158,7 @@ def test_refresh_promotes_only_final_and_restores_decisions(repository, commands
     assert calls[1][1] == ["--date", "2026-10-09", "--pageviews-start", "20251001", "--pageviews-end", "20260930"]
     assert [call[0] for call in calls] == ["refetch_override_entities.py", "build_dump.py", "remap_force.py", "carry_forward.py", "remap_composers.py",
                                           "apply_overrides.py", "refetch_composer_pages.py", "remap_imslp_matches.py",
-                                          "remap_work_evidence.py", "apply_llm_styles.py", "check_release.py", "export_viewer_json.py", "check_release.py"]
+                                          "refetch_work_files.py", "remap_work_evidence.py", "apply_llm_styles.py", "check_release.py", "export_viewer_json.py", "check_release.py"]
     override_call = next(call for call in calls if call[0] == "apply_overrides.py")
     assert override_call[1][-2:] == ["--overrides", str(repo / "data/overrides/composers.tsv")]
     for script, args, directory, used_cache in calls:
