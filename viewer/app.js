@@ -11,6 +11,47 @@ const IMSLP_STATUS_LABELS = {
 const CF_TOOLTIP =
   "IMSLP's own copyright flag on the work page — not a legal determination from this dump.";
 
+/** IMSLP rights tokens → badge label, IMSLP's meaning, and whether it warns (copyright) or informs. */
+const CF_BADGES = [
+  { tokens: ["nonpd_eu"], label: "IMSLP: not PD in EU", note: "", warn: true },
+  { tokens: ["nonpd_us"], label: "IMSLP: not PD in US", note: "", warn: true },
+  {
+    tokens: ["nonpd_licensed", "permission_granted"],
+    label: "IMSLP: in copyright, hosted by permission",
+    note: "Not public domain anywhere; hosted with the copyright owner's permission or under Creative Commons.",
+    warn: true,
+  },
+  {
+    tokens: ["pro_licensed"],
+    label: "IMSLP: licensed via BMI / ASCAP / GEMA",
+    note: "Hosted under a performing-rights-society licence.",
+    warn: true,
+  },
+  {
+    tokens: ["pd_us_only", "pd_us_notrenewed", "pd_us_no_notice"],
+    label: "IMSLP: PD in US only",
+    note: "Public domain in the US only (e.g. copyright not renewed or no notice); still protected elsewhere.",
+    warn: true,
+  },
+  {
+    tokens: ["wima"],
+    label: "IMSLP: WIMA files",
+    note: "Files from the Werner Icking Music Archive, usually new editions under their own licence.",
+    warn: false,
+  },
+];
+
+const FILE_HOST_BADGES = {
+  us: {
+    label: "Files: US server",
+    note: "Some files are on IMSLP's US server (PMLUS), which hosts works that are public domain in the US only.",
+  },
+  asia: {
+    label: "Files: life+50 server",
+    note: "Some files are on IMSLP's PMLASIA server, which hosts works that are public domain under life+50 terms.",
+  },
+};
+
 const STYLE_LABEL_OVERRIDES = {
   late_romantic: "Late Romantic",
   national_folk: "National / folk",
@@ -726,18 +767,23 @@ function imslpStatusText(status) {
   return IMSLP_STATUS_LABELS[status] || status;
 }
 
-function workEvidenceHtml(w) {
+function evBadge(label, note, warn) {
+  const title = note ? `${note} ${CF_TOOLTIP}` : CF_TOOLTIP;
+  return `<span class="ev-badge${warn ? "" : " info"}" title="${escapeHtml(title)}">${escapeHtml(label)}</span>`;
+}
+
+export function workEvidenceHtml(w) {
   const bits = [];
   const cf = w.cf || [];
-  if (cf.includes("nonpd_eu")) {
-    bits.push(
-      `<span class="ev-badge" title="${escapeHtml(CF_TOOLTIP)}">IMSLP: not PD in EU</span>`
-    );
+  for (const badge of CF_BADGES) {
+    if (badge.tokens.some((t) => cf.includes(t))) bits.push(evBadge(badge.label, badge.note, badge.warn));
   }
-  if (cf.includes("nonpd_us")) {
-    bits.push(
-      `<span class="ev-badge" title="${escapeHtml(CF_TOOLTIP)}">IMSLP: not PD in US</span>`
-    );
+  if (w.hf === false) {
+    bits.push(evBadge("IMSLP: no files", "The IMSLP work page links no score or recording.", false));
+  }
+  for (const host of w.fh || []) {
+    const badge = FILE_HOST_BADGES[host];
+    if (badge) bits.push(evBadge(badge.label, badge.note, false));
   }
   if (w.fp != null && w.fp !== "") {
     bits.push(`<span class="pub-year">pub. ${escapeHtml(w.fp)}</span>`);

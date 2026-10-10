@@ -118,6 +118,7 @@ def export(dump_id: str, out_dir: Path) -> None:
     has_imslp_style = "imslp_style" in works.columns
     has_imslp_fp = "imslp_first_published" in works.columns
     has_imslp_cf = "imslp_copyright_flags" in works.columns
+    has_file_hosts = "imslp_file_hosts" in works.columns
 
     meta = {}
     meta_path = dump_meta_path(dump_id)
@@ -200,6 +201,13 @@ def export(dump_id: str, out_dir: Path) -> None:
             flags = _pipe_list(row.get("imslp_copyright_flags"))
             if flags:
                 work_entry["cf"] = flags
+        # Only the exceptions: pages without scores, and files off IMSLP's main server.
+        if str(_clean(row.get("has_files"))).lower() == "false":
+            work_entry["hf"] = False
+        if has_file_hosts:
+            hosts = _pipe_list(row.get("imslp_file_hosts"))
+            if any(host != "ca" for host in hosts):
+                work_entry["fh"] = hosts
         by_composer[cid].append(work_entry)
 
     out_dir.mkdir(parents=True, exist_ok=True)

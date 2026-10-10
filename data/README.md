@@ -8,11 +8,29 @@ Pipeline diagram: [`docs/PIPELINE.md`](../docs/PIPELINE.md).
 
 | File | Rows | dump_id |
 |---|---|---|
-| `composers_r015.tsv` | 3369 | `r015` |
-| `works_r015.tsv` | 29026 | `r015` |
-| `dump_meta_r015.json` | — | companion meta |
+| `composers_r016.tsv` | 3369 | `r016` |
+| `works_r016.tsv` | 29026 | `r016` |
+| `dump_meta_r016.json` | — | companion meta |
 
-Only the **latest** revision is kept in `data/` in git. Older `rNNN` / calendar dumps are recoverable from **git history** (not from gitignored `data/cache/`). The viewer is exported from `r015` (`scripts/export_viewer_json.py --dump r015`).
+Only the **latest** revision is kept in `data/` in git. Older `rNNN` / calendar dumps are recoverable from **git history** (not from gitignored `data/cache/`). The viewer is exported from `r016` (`scripts/export_viewer_json.py --dump r016`).
+
+### What changed since r015
+
+- **r016 — IMSLP rights categories and files.** r015 plus an offline replay of `scripts/remap_work_evidence.py` over the cached work-page categories and the new file lists (`imslp_page_files`, fetched 2026-10-10). Composers are unchanged.
+  - Six more `imslp_copyright_flags` tokens, so 34.1% of works now carry a flag (was 22.3%):
+
+    | Token | IMSLP category | Works |
+    |---|---|---:|
+    | `nonpd_licensed` | Works not in public domain ("not PD anywhere", hosted by permission or under Creative Commons) | 2,306 |
+    | `pd_us_only` | WorkPD-USonly | 890 |
+    | `pd_us_notrenewed` | Work-PD-US-notrenewed | 312 |
+    | `pd_us_no_notice` | PD-US-no notice | 22 |
+    | `wima` | WIMA files (Werner Icking Music Archive) | 384 |
+    | `pro_licensed` | Works Licensed through BMI / ASCAP / GEMA | 147 |
+
+  - `has_files` is filled: `true` when the page links any score, part or recording (images such as covers and thumbnails do not count). 28,923 works `true`, 42 `false`, 61 empty (the page now redirects).
+  - New column `imslp_file_hosts` after `has_files`: the IMSLP servers holding those files, read from the file names. `ca` = main (Canadian) server; `us` = `PMLUS…` files, IMSLP's server for works PD in the US only (1,150 works); `asia` = `PMLASIA…` files, its server for works PD under life+50 (831 works).
+  - 5 other evidence cells differ from r015: 4 style / publication cells because the local category cache predates the r014 crawl by about 12 hours, and 1 librettist list from 63 work pages fetched fresh for r016.
 
 ### What changed since r013
 
@@ -93,7 +111,7 @@ Dump cells retain ledger slugs; viewer export maps period slugs to IMSLP facet n
 ## Caveats (read these)
 
 - **Not legal advice.** `eu_pd_*` is a death-year + 71 calendar heuristic against the dump snapshot year, for the composer only. It ignores lyricists/librettists of vocal and stage works, editions, and national deviations. Missing death → `unknown_death` (not `living`).
-- **Work pages, not score files.** IMSLP links are work pages; `has_files` is not a verified inventory.
+- **Work pages, not checked scores.** `has_files` means the work page links at least one non-image file; nobody checked that a file is complete, legible or the right work. Files on the `us` and `asia` servers are hosted there because they are not public domain in Canada; check their status in your country.
 - **Tags are research aids and often wrong.** `force_family` comes from IMSLP categories, scraped General Information, title heuristics and earlier LLM passes. `style_tags` comes from Wikidata; `llm_style_tags` is model consensus from the ledger. Check the source/vote columns and verify on IMSLP/Wikidata.
 - Trust order for force: `imslp_tags` > `imslp_geninfo` > `title` > `llm` / `llm_luna_xhigh` / `llm_grok`. The remaining ~370 LLM labels come from title-only passes (`llm`: gpt-6-luna at low reasoning) and residual passes; no accuracy evaluation exists yet.
 - Rows with `qa_flags` deserve a manual look before you rely on their dates or identity.
@@ -107,15 +125,15 @@ The whole chain is one command ([`docs/PIPELINE.md`](../docs/PIPELINE.md), [`doc
 
 ```bash
 pip install -r requirements.txt
-python scripts/pipeline.py refresh --base r015                  # crawl + all stages → next revision
-python scripts/pipeline.py derive --from-dump r015 --to r016    # offline stages only
+python scripts/pipeline.py refresh --base r016                  # crawl + all stages → next revision
+python scripts/pipeline.py derive --from-dump r016 --to r017    # offline stages only
 
-python scripts/export_viewer_json.py --dump r015
-python scripts/check_release.py --dump r015 --viewer-data viewer/data
+python scripts/export_viewer_json.py --dump r016
+python scripts/check_release.py --dump r016 --viewer-data viewer/data
 ```
 
-The stages it runs, in order, each as `--from-dump rX --to rY`: `remap_force.py` → `carry_forward.py --base rPREV` → `remap_composers.py` → `apply_overrides.py` → `remap_imslp_matches.py` (after `refetch_composer_pages.py --dump rX`, network, ~1 min) → `remap_work_evidence.py` → `apply_llm_styles.py` (replays the committed ledger; never calls a model).
+The stages it runs, in order, each as `--from-dump rX --to rY`: `remap_force.py` → `carry_forward.py --base rPREV` → `remap_composers.py` → `apply_overrides.py` → `remap_imslp_matches.py` (after `refetch_composer_pages.py --dump rX`, network, ~1 min) → `remap_work_evidence.py` (after `refetch_work_files.py --dump rX` on refresh, network, ~10 min) → `apply_llm_styles.py` (replays the committed ledger; never calls a model).
 
-Cache fillers (network, resumable): `refetch_work_categories.py --dump rX` (complete IMSLP work categories, ~25 min), `refetch_composer_pages.py`, `refetch_override_entities.py`. The one-off passes that produced older labels (GenInfo scrape, residual LLM force labels, calendar-dump promotion) are in [`scripts/legacy/`](../scripts/legacy/README.md).
+Cache fillers (network, resumable): `refetch_work_categories.py --dump rX` (complete IMSLP work categories, ~25 min), `refetch_work_files.py --dump rX` (files linked from each work page, ~10 min), `refetch_composer_pages.py`, `refetch_override_entities.py`. The one-off passes that produced older labels (GenInfo scrape, residual LLM force labels, calendar-dump promotion) are in [`scripts/legacy/`](../scripts/legacy/README.md).
 
 Caches: `data/cache/` (gitignored).

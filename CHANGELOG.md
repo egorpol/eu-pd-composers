@@ -8,10 +8,23 @@ Dump snapshots: revision `dump_id` (`rNNN`) — see [VERSIONING.md](VERSIONING.m
 
 ## [Unreleased]
 
+Schema stays **3** (one added works column). Dump: **r016**.
+
+### Added
+- Dump **r016** = r015 + an offline replay of `remap_work_evidence.py` (composers unchanged): IMSLP rights categories on 34.1% of works (was 22.3%), `has_files` filled for the first time, and the new `imslp_file_hosts` column
+- Six `imslp_copyright_flags` tokens for IMSLP rights categories the mapping missed: `nonpd_licensed` (Works not in public domain, 2,306 works), `pd_us_only` (890), `pd_us_notrenewed` (312), `pd_us_no_notice` (22), `wima` (384), `pro_licensed` (Works Licensed through BMI / ASCAP / GEMA, 147)
+- `scripts/refetch_work_files.py` and `imslp.fetch_page_files`: the files each work page links (`imslp_page_files` cache, `prop=images` by page id, resumable). `remap_work_evidence.py` derives `has_files` (any non-image file: 28,923 `true`, 42 `false`, 61 redirects empty) and `imslp_file_hosts` after it: `ca` main server, `us` (`PMLUS…`, IMSLP's US-only PD server, 1,150 works), `asia` (`PMLASIA…`, its life+50 server, 831 works). Pages missing from the file cache keep their prior file cells
+- `pipeline.py refresh` runs `refetch_work_files.py` before `remap_work_evidence.py` (about 600 IMSLP requests)
+- Release gates: unknown `imslp_copyright_flags` tokens, invalid `has_files` values, hosts without files, and a has_files coverage drop of more than 5 points fail; a new IMSLP file server warns
+- `scripts/rights_basis.py`: offline report of each work's IMSLP rights basis by the composer's death-year band, IMSLP's EU-warning rate per band, and file hosts for not-yet-PD works without a rights category. On r016 IMSLP warns on 86.2% of works by composers who died 1956–71 and on 0.3% of works by PD-now composers
+- Viewer badges for the new rights tokens (warnings for copyright, neutral for WIMA), pages with no files (`hf`), and files on IMSLP's US or life+50 servers (`fh`)
+
 ### Changed
 - One-off passes the pipeline no longer runs (`enrich_dump`, `enrich_geninfo`, `remap_styles`, `llm_force_family`, `prepare_llm_residual`, `llm_residual`, `filter_cohort`, `inventory_style_gaps`, `promote_revision` and two LLM schemas) moved to `scripts/legacy/`, with a README saying which labels in the dump each produced
 - README rewritten around current figures (r015), use cases and maintainer tasks; `data/README.md`, `docs/PIPELINE.md`, `docs/AUTOMATION.md` and `viewer/README.md` updated to r015 and the `apply_llm_styles` stage
 - Dump meta records the style ledger path relative to the repository rather than as an absolute local path
+- The unmapped-rights detector in `imslp_work_evidence.py` also catches `public domain`, `PD-`, `WIMA`, `Licensed through`, `Creative Commons` and `permission` categories (it used to see only `NonPD`, `RoST` and `copyright`), without matching names such as Rostropovich or publisher categories such as "Scores published by BMI Canada"
+- `remap_work_evidence.py` run on its own keeps the source revision's meta (reference year, stages, LLM policy) and records `composer_columns` / `work_columns`
 
 ### Fixed
 - `remap_work_evidence.py` no longer clears a work's IMSLP evidence when its page is missing from the local `imslp_page_cats` cache: the prior cells are kept, counted (`missing_cache`, `kept_prior`, `no_pageid` in the report and dump meta) and logged as a warning. An offline `derive` from r015 with an incomplete local cache had wiped 159 cells on 63 works
@@ -24,7 +37,7 @@ Dump snapshots: revision `dump_id` (`rNNN`) — see [VERSIONING.md](VERSIONING.m
 - Lyricist-aware PD flags: librettist life dates (names are now in `imslp_librettists`)
 - LLM force decision ledger (today: force labels carry forward from the previous revision)
 - Dataset licence + `CITATION.cff`; gold set and error rates
-- `--work-files` for `has_files`
+- A full `pipeline.py derive` from r015 re-applies the local Wikidata and IMSLP composer caches (2026-09-24), which predate the r014 crawl: it changed 12 composer cells, so r016 was built as a single-stage replay. Refresh the local caches before the next derive
 
 ## [3.5.0] - 2026-10-10
 

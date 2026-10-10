@@ -684,6 +684,13 @@ tbody tr.empty td {
   vertical-align: middle;
 }
 
+.ev-badge.info {
+  font-weight: 500;
+  color: var(--ink-soft);
+  border-color: color-mix(in srgb, var(--ink-soft) 40%, transparent);
+  background: transparent;
+}
+
 .pub-year {
   display: inline-block;
   margin-left: 0.35rem;

@@ -6,7 +6,7 @@ Composer-first UI over the versioned dump. No backend.
 
 ```bash
 # Refresh JSON from a dump
-python scripts/export_viewer_json.py --dump r015
+python scripts/export_viewer_json.py --dump r016
 
 # Serve (module scripts need HTTP)
 python -m http.server 8080 --directory viewer
@@ -19,7 +19,7 @@ python -m http.server 8080 --directory viewer
 |---|---|
 | `data/manifest.json` | dump_id, facets (incl. IMSLP period vocabulary + force-source tiers), `style_tags_coverage`, pageviews window label, disclaimer |
 | `data/composers.json` | filterable composer rows (`film` when applicable; missing pageviews are `null`) |
-| `data/works_by_composer.json` | `composer_id` → work list (`st` / `fp` / `cf` when present) |
+| `data/works_by_composer.json` | `composer_id` → work list (`st` / `fp` / `cf` when present; `hf: false` when the page links no score or recording; `fh` = file hosts when any file is off IMSLP's main server) |
 
 ## Filters & URL state
 
@@ -55,6 +55,13 @@ Impressionism, Neoclassicism · Grok 4.7: Impressionism); period: Early 20th cen
 Both rows with no shared styles show `LLM: no consensus` and the votes (`—` for
 abstention); one missing row shows `incomplete labelling`. Never-labelled composers
 omit the LLM part.
+
+Each work row shows IMSLP's own rights evidence as badges (tooltips give IMSLP's
+meaning; none is a legal determination). Copyright warnings: not PD in EU / US,
+in copyright and hosted by permission (`nonpd_licensed`, `permission_granted`),
+licensed via BMI / ASCAP / GEMA, PD in US only (`pd_us_*`). Neutral notes: WIMA
+files, no files on the page (`hf: false`), and files on IMSLP's US or life+50
+servers (`fh`).
 
 Filters, sort, and selected composer id are mirrored into the query string (`history.replaceState`) for shareable links (`style`, `styleSrc=wikidata,imslp,llm`). Legacy URLs keep working: `eu=pd` → `pd=now`; `eu=not_pd` → `pd=next,soon,later`; `eu=unknown_death` → `pd=unknown`; `pd=within5` → `pd=next,soon`; `ist=X` / `imslpStyle=X` → `style=X` with `styleSrc=imslp`; bare `style=Y` still applies with all sources on.
 

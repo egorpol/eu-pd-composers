@@ -114,6 +114,8 @@ def test_export_evidence_keys_and_film_and_null_views(patched_paths):
                 imslp_first_published="1926",
                 imslp_copyright_flags="nonpd_eu|nonpd_us",
                 imslp_librettists="Someone",
+                has_files="true",
+                imslp_file_hosts="ca|us",
             ),
             _base_work(
                 work_id="W2",
@@ -125,6 +127,8 @@ def test_export_evidence_keys_and_film_and_null_views(patched_paths):
                 imslp_first_published="",
                 imslp_copyright_flags="",
                 imslp_librettists="",
+                has_files="false",
+                imslp_file_hosts="",
             ),
             _base_work(
                 work_id="W3",
@@ -135,6 +139,8 @@ def test_export_evidence_keys_and_film_and_null_views(patched_paths):
                 imslp_style="Baroque",
                 imslp_first_published="1900",
                 imslp_copyright_flags="pd_eu_rost",
+                has_files="true",
+                imslp_file_hosts="ca",
             ),
         ]
     )
@@ -159,12 +165,20 @@ def test_export_evidence_keys_and_film_and_null_views(patched_paths):
     assert w1["fp"] == 1926
     assert w1["cf"] == ["nonpd_eu", "nonpd_us"]
     assert "librettists" not in w1
+    assert w1["fh"] == ["ca", "us"]
+    assert "hf" not in w1
     assert "imslp_librettists" not in w1
 
     w2 = next(w for w in w_map["Q1"] if w["t"] == "Empty evidence")
     assert "st" not in w2
     assert "fp" not in w2
     assert "cf" not in w2
+    assert w2["hf"] is False
+    assert "fh" not in w2
+
+    w3 = w_map["Q2"][0]
+    assert "hf" not in w3
+    assert "fh" not in w3
 
     assert manifest["pageviews_window_label"] == "2025"
     assert list(manifest["facets"]["imslp_style"].items()) == [

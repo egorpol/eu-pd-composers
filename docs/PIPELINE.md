@@ -134,10 +134,10 @@ Identity rule (`scripts/imslp_identity.py`): compare dump birth/death years with
 - `pipeline.py refresh --base rPREV`: cold crawl (`build_dump.py`) plus every stage below in a staging dir; promotes **one** new revision whose meta lists the stages; re-exports the viewer; runs `check_release.py --against rPREV`. Used by the monthly workflow ([AUTOMATION.md](AUTOMATION.md)).
 - `pipeline.py derive --from-dump rX --to rY`: the offline stages only (rules or overrides changed). By default it may add work-evidence and composer `llm_style_*` columns; `--preserve-schema` fails on any column change. Every output stamps `dump_date` with its revision id when the column exists; `derive` on an already-derived dump reproduces its TSVs modulo `dump_date` when the local cache matches the one that built it: uncached pages and entities keep their prior cells, but a stale cache entry overwrites them.
 - `refresh` first runs `refetch_override_entities.py` (preflight: override re-key targets into the cache), then `build_dump.py`.
-- Stage order: `remap_force` → `carry_forward` (earlier LLM force / GenInfo decisions, joined on composer + IMSLP page id; never over a category-derived label) → `remap_composers` → `apply_overrides` → (`refetch_composer_pages`) `remap_imslp_matches` → `remap_work_evidence` → `apply_llm_styles`.
+- Stage order: `remap_force` → `carry_forward` (earlier LLM force / GenInfo decisions, joined on composer + IMSLP page id; never over a category-derived label) → `remap_composers` → `apply_overrides` → (`refetch_composer_pages`) `remap_imslp_matches` → (`refetch_work_files`) `remap_work_evidence` → `apply_llm_styles`. The two `refetch_*` steps run on `refresh` only.
 - `apply_llm_styles` reads the committed ledger after composer re-keys, selects grounded `style-v2` rows from the two pinned labellers, writes consensus/votes/period/provenance, and retires legacy `llm*` composer tags. The meta records policy, ledger SHA-256 and counts. Carry-forward retains no LLM composer styles; replay is their only source. See [ledger policy](../data/llm_ledger/README.md).
 - `diff_dumps.py rPREV rNEXT --out diff.md --summary-json summary.json` writes the review report (PD flips, identity changes, works added or removed, label transitions, schema changes).
-- `check_release.py --against rPREV` fails if composers change by more than 3%, works drop by more than 5%, or a column disappears.
+- `check_release.py --against rPREV` fails if composers change by more than 3%, works drop by more than 5%, a column disappears, or the share of works with `has_files` set falls by more than 5 points (a skipped file fetch). It also checks the `imslp_copyright_flags` and `has_files` vocabularies and warns on a new IMSLP file server.
 - `EU_PD_DATA_DIR` / `EU_PD_CACHE_DIR` move the data and cache dirs (staging uses them).
 
 ## Typical commands
@@ -158,6 +158,11 @@ python scripts/remap_force.py --from-dump r008 --to r009 --refresh-categories
 # Rank-aware Wikidata dates, scope, qa_flags from cached entities → next revision
 python scripts/remap_composers.py --from-dump r009 --to r010
 
+# Files linked from each work page into cache (network, resumable), then replay
+# work evidence (rights categories, has_files, imslp_file_hosts) → next revision
+python scripts/refetch_work_files.py --dump r015
+python scripts/remap_work_evidence.py --from-dump r015 --to r016
+
 # Replay committed grounded style consensus (offline; no model calls)
 python scripts/apply_llm_styles.py --from-dump r014 --to r015
 
@@ -174,13 +179,13 @@ python scripts/legacy/prepare_llm_residual.py --dump rNNN
 python scripts/legacy/llm_residual.py --from-dump rNNN --to rNNN+1 --reasoning xhigh
 ```
 
-Caches: `data/cache/` (gitignored). Complete work categories under `imslp_page_cats/`; composer pages under `imslp_cat_page/` (by page id; the old title-keyed `imslp_work_cats/` is truncated — do not use). GenInfo under `imslp_geninfo/`; LLM batches under hashed cache keys. Older dumps: git history only.
+Caches: `data/cache/` (gitignored). Complete work categories under `imslp_page_cats/`, linked files under `imslp_page_files/` (both by page id); composer pages under `imslp_cat_page/` (by page id; the old title-keyed `imslp_work_cats/` is truncated — do not use). GenInfo under `imslp_geninfo/`; LLM batches under hashed cache keys. Older dumps: git history only.
 
 ## Filter viewer
 
 ```bash
-python scripts/export_viewer_json.py --dump r015
-python scripts/check_release.py --dump r015 --viewer-data viewer/data
+python scripts/export_viewer_json.py --dump r016
+python scripts/check_release.py --dump r016 --viewer-data viewer/data
 python -m http.server 8080 --directory viewer
 ```
 

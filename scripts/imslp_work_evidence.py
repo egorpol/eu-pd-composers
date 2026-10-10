@@ -1,4 +1,8 @@
-"""Parse IMSLP work-page categories into style / publication / copyright / librettist cells."""
+"""Parse IMSLP work pages into evidence cells.
+
+Categories give style / publication / copyright / librettist cells; the files
+linked from the page give `has_files` and the IMSLP servers hosting them.
+"""
 
 from __future__ import annotations
 
@@ -17,7 +21,18 @@ COPYRIGHT_CATEGORY_FLAGS: dict[str, tuple[str, ...]] = {
     "Files PD in Canada due to RoST": ("pd_ca_rost",),
     "Items with text under copyright in Canada": ("nonpd_ca_text",),
     "FileNonPD-PermissionGranted": ("permission_granted",),
+    # IMSLP: "not in the public domain anywhere", hosted by permission or under Creative Commons.
+    "Works not in public domain": ("nonpd_licensed",),
+    "WorkPD-USonly": ("pd_us_only",),
+    "Work-PD-US-notrenewed": ("pd_us_notrenewed",),
+    "PD-US-no notice": ("pd_us_no_notice",),
+    "WIMA files": ("wima",),
+    "WIMA duplicate files": ("wima",),
+    "Works Licensed through BMI": ("pro_licensed",),
+    "Works Licensed through ASCAP": ("pro_licensed",),
+    "Works Licensed through GEMA": ("pro_licensed",),
 }
+COPYRIGHT_TOKENS = frozenset(t for tokens in COPYRIGHT_CATEGORY_FLAGS.values() for t in tokens)
 
 EVIDENCE_COLUMNS = (
     "imslp_style",
@@ -29,12 +44,24 @@ EVIDENCE_COLUMNS = (
 _STYLE_SUFFIX = " style"
 _LIBRETTIST_SUFFIX = "/Librettist"
 _PUB_YEAR_RE = re.compile(r"^Works first published in (\d{4})$")
-# NonPD / copyright are safe substrings; RoST needs boundaries so names like
-# Rostropovich / Frost / Crosti are not treated as copyright categories.
+# NonPD / copyright / public domain / licensed are safe substrings; RoST needs
+# boundaries so names like Rostropovich / Frost / Crosti are not treated as
+# copyright categories. PD- and WIMA match case-sensitively ("hpd" tags, names);
+# "Licensed through" skips publisher categories such as "Scores published by BMI Canada".
 _UNMAPPED_COPYRIGHT_RE = re.compile(
-    r"NonPD|(?<![A-Za-z0-9])RoST(?![A-Za-z0-9])|copyright",
+    r"NonPD|(?<![A-Za-z0-9])RoST(?![A-Za-z0-9])|copyright|public domain|licensed through"
+    r"|creative commons|permission|(?-i:PD-|WIMA)",
     re.IGNORECASE,
 )
+
+FILE_HOSTS_COLUMN = "imslp_file_hosts"
+# Covers, thumbnails (TN-…) and previews (PV-…) are not scores or recordings.
+_IMAGE_EXTENSIONS = frozenset({"bmp", "gif", "jpeg", "jpg", "png", "svg", "tif", "tiff", "webp"})
+# Files on IMSLP's other servers are named PMLP<page>-<SERVER><n>-…; any other
+# name (PMLP<page>-…, nested PMLP tokens, legacy names) is on the main server.
+_SERVER_TOKEN_RE = re.compile(r"^PMLP\d+-(PML[A-Z]+)\d+-")
+FILE_HOST_BY_TOKEN = {"PMLP": "ca", "PMLUS": "us", "PMLASIA": "asia"}
+FILE_HOSTS = frozenset(FILE_HOST_BY_TOKEN.values())
 
 
 def work_evidence(categories: list[str]) -> dict[str, str]:
@@ -72,6 +99,29 @@ def work_evidence(categories: list[str]) -> dict[str, str]:
         "imslp_first_published": str(min(years)) if years else "",
         "imslp_copyright_flags": "|".join(sorted(flag_tokens)),
         "imslp_librettists": "|".join(librettists),
+    }
+
+
+def score_files(files: Iterable[str]) -> list[str]:
+    """Linked files that are scores, parts or recordings (not images)."""
+    return [f for f in files if f.rpartition(".")[2].lower() not in _IMAGE_EXTENSIONS]
+
+
+def file_host(name: str) -> str:
+    """IMSLP server holding a file: ca (main), us, asia, or a lowercased new token."""
+    match = _SERVER_TOKEN_RE.match(name)
+    if not match:
+        return "ca"
+    token = match.group(1)
+    return FILE_HOST_BY_TOKEN.get(token, token[3:].lower())
+
+
+def file_evidence(files: list[str]) -> dict[str, str]:
+    """`has_files` and sorted file hosts from a work page's linked file titles (no File: prefix)."""
+    scores = score_files(files)
+    return {
+        "has_files": "true" if scores else "false",
+        FILE_HOSTS_COLUMN: "|".join(sorted({file_host(f) for f in scores})),
     }
 
 

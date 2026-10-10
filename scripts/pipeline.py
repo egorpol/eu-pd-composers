@@ -19,7 +19,7 @@ import pandas as pd
 
 import common
 from apply_llm_styles import LLM_STYLE_COLUMNS, default_ledger_path
-from imslp_work_evidence import EVIDENCE_COLUMNS
+from imslp_work_evidence import EVIDENCE_COLUMNS, FILE_HOSTS_COLUMN
 
 log = logging.getLogger("pipeline")
 SCRIPTS = Path(__file__).resolve().parent
@@ -88,6 +88,8 @@ def offline_stages(
     for number, (script, extra) in enumerate(steps, start=1):
         if script == "remap_imslp_matches.py" and refresh:
             run_script("refetch_composer_pages.py", ["--dump", current], staging, cache)
+        if script == "remap_work_evidence.py" and refresh:
+            run_script("refetch_work_files.py", ["--dump", current], staging, cache)
         output = f"pipeline_stage_{number:02d}"
         run_script(script, ["--from-dump", current, "--to", output, *extra], staging, cache)
         stages.append(_record_stage(staging, output, script))
@@ -110,7 +112,8 @@ def prepare_result(
             added = [c for c in frame.columns if c not in original.columns]
             removed = [c for c in original.columns if c not in frame.columns]
             # derive adds only supported evidence columns; --preserve-schema forbids any change.
-            allowed = () if preserve_schema else (EVIDENCE_COLUMNS if stem == "works" else LLM_STYLE_COLUMNS)
+            allowed = () if preserve_schema else (
+                (*EVIDENCE_COLUMNS, FILE_HOSTS_COLUMN) if stem == "works" else LLM_STYLE_COLUMNS)
             if removed or any(c not in allowed for c in added):
                 raise ValueError(f"derive changed {stem} schema: added {added}, removed {removed}")
             if preserve_schema:
