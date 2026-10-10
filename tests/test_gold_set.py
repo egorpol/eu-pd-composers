@@ -1,6 +1,8 @@
 """Gold set sampler and scorer (offline, synthetic dumps)."""
 
 import argparse
+import json
+import re
 
 import pandas as pd
 import pytest
@@ -199,3 +201,81 @@ def test_sample_refuses_to_overwrite(tmp_path, monkeypatch):
     with pytest.raises(FileExistsError, match="Refusing to overwrite"):
         gs.run_sample(args)
     assert sheet.read_bytes() == before
+
+
+def test_form_page_carries_shown_columns_only(tmp_path):
+    result = gs.build_sample(_composers(), _works(), seed=7, n_composers=30, n_works=40, minimum=3,
+                             recheck_share=0.1)
+    for kind in gs.SETS:
+        for part in ("sheet", "recheck"):
+            frame = result[kind][part].copy()
+            if part == "sheet":
+                frame.loc[0, "notes"] = "an answer that must not leak"
+                if kind == "works":
+                    frame.loc[1, "title"] = "Lied </script><b>"
+            frame.to_csv(tmp_path / f"{kind}_{part}.tsv", sep="\t", index=False)
+    page, local = gs.run_form(argparse.Namespace(dump="r900", gold_dir=str(tmp_path), out_dir=str(tmp_path / "out")))
+    html = page.read_text(encoding="utf-8")
+    start = html.index('<script id="gold-data" type="application/json">')
+    block = html[start:html.index("</script>", start)]
+    data = json.loads(block[block.index(">") + 1:])
+    assert data["dump"] == "r900"
+    assert [len(data[k]) for k in ("composers", "works", "composers_recheck", "works_recheck")] == [30, 40, 3, 4]
+    assert set(data["composers"][0]) == {"item", *gs.SHOWN["composers"]}
+    assert data["works"][1]["title"] == "Lied </script><b>"
+    assert "must not leak" not in html and gs.FORM_PLACEHOLDER not in html
+    assert [i["item"] for i in data["practice"]["works"]] == ["P-W1", "P-W2"]
+    assert local.read_text(encoding="utf-8").startswith("<!doctype html>")
+
+
+def test_form_template_matches_scorer_vocabulary():
+    template = gs.FORM_TEMPLATE.read_text(encoding="utf-8")
+    keys = lambda a, b: re.findall(r'^\s*\["([a-z_]+)", "', template[template.index(a):template.index(b)], re.M)
+    assert keys("const FAMILIES", "const BASES") == [f for f in gs.FORCE_FAMILIES if f != "unclassified"]
+    assert keys("const BASES", "const TABS") == list(gs.BASIS_LABELS)
+    columns = lambda a, b: {k: re.findall(r'"([a-z_]+)"', v) for k, v in re.findall(
+        r'^\s+([cw]): \[(.*)\],$', template[template.index(a):template.index(b)], re.M)}
+    assert columns("const FIELDS", "const SHEET_COLS") == {"c": list(gs.GOLD_FIELDS["composers"]),
+                                                          "w": list(gs.GOLD_FIELDS["works"])}
+    assert columns("const SHEET_COLS", "const FAMILIES") == {"c": ["item", *gs.SHOWN["composers"]],
+                                                            "w": ["item", *gs.SHOWN["works"]]}
+
+
+def test_import_form_answers(tmp_path):
+    result = gs.build_sample(_composers(), _works(), seed=7, n_composers=30, n_works=40, minimum=3,
+                             recheck_share=0.1)
+    for kind in gs.SETS:
+        for part in ("sheet", "recheck"):
+            result[kind][part].to_csv(tmp_path / f"{kind}_{part}.tsv", sep="\t", index=False)
+    sheet_path = tmp_path / "works_sheet.tsv"
+    sheet = pd.read_csv(sheet_path, sep="\t", dtype=str, keep_default_na=False)
+    sheet.loc[sheet["item"] == "W002", "notes"] = "typed in a spreadsheet"
+    sheet.loc[sheet["item"] == "W003", "notes"] = "cleared in the form"
+    sheet.to_csv(sheet_path, sep="\t", index=False)
+    recheck_item = result["composers"]["recheck"]["item"].iloc[0]
+    store = tmp_path / "store"
+    docs = {
+        "answers/W001.json": {"item": "W001", "force_family": "concerto", "has_files": "yes",
+                              "rights_basis": "none", "notes": "harp\tand\nstrings", "updatedAt": "x"},
+        "answers/W003.json": {"item": "W003", "force_family": "harp_only"},
+        "answers/probe.json": {"item": "probe"},
+        f"recheck/{recheck_item}.json": {"item": recheck_item, "wikidata_same_person": "yes",
+                                         "death_source": " 118776312 "},
+    }
+    for name, doc in docs.items():
+        (store / name).parent.mkdir(parents=True, exist_ok=True)
+        (store / name).write_text(json.dumps(doc), encoding="utf-8")
+    composers_before = (tmp_path / "composers_sheet.tsv").read_bytes()
+    summary = gs.import_answers(tmp_path, store)
+    works = pd.read_csv(sheet_path, sep="\t", dtype=str, keep_default_na=False).set_index("item")
+    assert works.loc["W001", list(gs.GOLD_FIELDS["works"])].tolist() == ["concerto", "yes", "none", "harp and strings"]
+    assert works.loc["W002", "notes"] == "typed in a spreadsheet"
+    assert works.loc["W003", "notes"] == ""
+    assert summary["works_sheet.tsv"] == {"imported": 2, "problems": ["W003 force_family='harp_only'"]}
+    assert summary["answers_unknown"] == ["probe"]
+    assert summary["composers_recheck.tsv"]["imported"] == 1
+    recheck = pd.read_csv(tmp_path / "composers_recheck.tsv", sep="\t", dtype=str, keep_default_na=False)
+    assert recheck.loc[recheck["item"] == recheck_item, "death_source"].item() == "GND 118776312"
+    assert gs._cell("death_source", "LoC n92085993") == "LoC n92085993" and gs._cell("notes", "118776312") == "118776312"
+    assert (tmp_path / "composers_sheet.tsv").read_bytes() == composers_before
+    assert list(works.reset_index().columns) == ["item", *gs.SHOWN["works"], *gs.GOLD_FIELDS["works"]]
