@@ -876,6 +876,11 @@ function renderDetail() {
   if (c.wiki) links.push(`<a href="${escapeHtml(c.wiki)}" target="_blank" rel="noopener">Wikipedia</a>`);
   if (c.wikidata) links.push(`<a href="${escapeHtml(c.wikidata)}" target="_blank" rel="noopener">Wikidata</a>`);
   if (c.imslp) links.push(`<a href="${escapeHtml(c.imslp)}" target="_blank" rel="noopener">IMSLP</a>`);
+  if (c.gnd) {
+    links.push(`<a href="https://d-nb.info/gnd/${encodeURIComponent(c.gnd)}" target="_blank" rel="noopener" title="Gemeinsame Normdatei (German National Library)">GND</a>`);
+  } else if (c.viaf) {
+    links.push(`<a href="https://viaf.org/viaf/${encodeURIComponent(c.viaf)}" target="_blank" rel="noopener" title="Virtual International Authority File">VIAF</a>`);
+  }
 
   const years = lifeSpan(c, " – ");
   const euDetail = liveEuDetail(c.eu_year, state.currentYear);

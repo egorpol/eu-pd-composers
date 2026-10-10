@@ -15,4 +15,5 @@ def _no_politeness_delay(monkeypatch):
     import common
 
     monkeypatch.setitem(common.MIN_INTERVAL_BY_HOST, "imslp.org", 0.0)
+    monkeypatch.setitem(common.MIN_INTERVAL_BY_HOST, "lobid.org", 0.0)
     monkeypatch.setattr(common, "_last_request_at", {})

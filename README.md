@@ -1,5 +1,7 @@
 # eu-pd-composers
 
+**Find public-domain scores and works for performance, analysis and research.**
+
 A versioned dataset and a static browser for finding 20th-century classical composers whose music is likely public domain in the EU (life + 70 years), with links to their works on IMSLP.
 
 **Live viewer:** [egorpol.github.io/eu-pd-composers](https://egorpol.github.io/eu-pd-composers/) · **Release:** v3.5.0 · **Dump:** r016 (schema 3) · [Changelog](CHANGELOG.md) · [Versioning](VERSIONING.md)
@@ -43,7 +45,7 @@ Cite the revision id (`r016`) and the release tag. Column reference and caveats:
 | Task | How | Network |
 |---|---|---|
 | Rebuild from current Wikipedia, Wikidata and IMSLP | Run the **refresh** workflow in GitHub Actions, or `python scripts/pipeline.py refresh --base r016`. It opens a PR with a readable diff | Yes, about 2–2.5 h (IMSLP at ≤ 1 request/s) |
-| Fix a wrong person, date or IMSLP match | Add a sourced row to [`data/overrides/composers.tsv`](data/overrides/README.md), then derive. A re-key to a new Wikidata item first needs `python scripts/refetch_override_entities.py` | Only for new re-key targets |
+| Fix a wrong person, date or IMSLP match | `python scripts/identity_candidates.py --dump r017 --out build/identity.tsv` lists rows whose list years, occupation or type disagree with Wikidata, with candidate items. Add a sourced row to [`data/overrides/composers.tsv`](data/overrides/README.md), then derive. A re-key to a new Wikidata item first needs `python scripts/refetch_override_entities.py` | For the review queue and new re-key targets |
 | Change a rule (instrumentation mapping, identity check, PD arithmetic) | Edit the code, then `python scripts/pipeline.py derive --from-dump r016 --to r017` | No |
 | Relabel composer styles with LLMs | `scripts/llm_style_pass.py` appends to the committed ledger in `data/llm_ledger/` (a local step that needs approval); `derive` replays it. The pipeline never calls a model | Model CLIs only |
 | Review a revision | `python scripts/diff_dumps.py r016 r017 --out diff.md` and `python scripts/check_release.py --dump r017 --against r016` | No |
@@ -63,7 +65,8 @@ flowchart LR
     F[Instrumentation from<br/>IMSLP categories] --> C[Carry forward earlier<br/>GenInfo / LLM labels]
     C --> R[Rank-aware dates,<br/>QA flags, PD status]
     R --> O[Reviewed overrides]
-    O --> M[IMSLP identity check]
+    O --> A[GND / VIAF ids,<br/>GND death check]
+    A --> M[IMSLP identity check]
     M --> E[Work evidence]
     E --> L[Replay LLM style<br/>ledger]
   end
@@ -77,6 +80,17 @@ flowchart LR
 1. **Crawl** (network): the Wikipedia list gives names; Wikidata gives identity and dates; IMSLP gives each composer's work pages and every page's complete category list. All responses are cached in `data/cache/` (gitignored).
 2. **Offline stages** (no model calls): each stage reads one revision and writes the next, so a single rule change re-derives everything downstream. Wrong-person IMSLP matches are rejected by comparing life dates; hand-reviewed overrides are applied before the identity check.
 3. **Release**: gates fail the build on large unexplained changes (composers ±3%, works −5%, lost columns, inconsistent labels), and a diff report lists PD flips, identity changes and label transitions for review.
+
+## How LLMs are used
+
+LLMs label two things, and both labels are kept apart from the facts they could distort:
+
+- **Instrumentation of 364 works** (1.3%) whose IMSLP categories name no instrument family. These are earlier guesses carried forward and marked `force_family_src = llm`; a category-derived label always replaces them.
+- **Composer styles for 3,369 composers.** Two models (`gpt-6.1-sol` @low and `grok-4.7-low`), each given the composer's Wikipedia lead, label style and period; only labels both agree on reach the `llm_style_*` columns, with each model's vote kept.
+
+LLMs never decide a composer's identity, life dates or public-domain status, the IMSLP match, IMSLP rights categories, authority ids or whether a work has files. Those come from Wikidata, the Wikipedia list, GND and IMSLP by fixed rules, and the exceptions are hand-reviewed overrides with a source per row.
+
+Every style decision is a row in the append-only ledger in `data/llm_ledger/` (model, prompt version, input hash, output). The pipeline never calls a model: `apply_llm_styles.py` replays the ledger offline, so a rebuild reproduces the same labels. The instrumentation guesses predate the ledger and are carried forward from the previous revision. Two models agreeing is not the same as being right: the style labels are compared with Wikidata and IMSLP periods for agreement only, and their accuracy is still unmeasured.
 
 ## What it does not do (yet)
 
@@ -98,14 +112,15 @@ viewer/                       # static filter UI, published by GitHub Pages
 scripts/
   pipeline.py                 # refresh (crawl + all stages) / derive (offline stages)
   build_dump.py               # crawl: Wikipedia → Wikidata → pageviews → IMSLP
-  remap_force.py, carry_forward.py, remap_composers.py, apply_overrides.py,
+  remap_force.py, carry_forward.py, remap_composers.py, apply_overrides.py, remap_authorities.py,
   remap_imslp_matches.py, remap_work_evidence.py, apply_llm_styles.py   # offline stages, in order
   refetch_*.py                # cache fillers (network, resumable)
   check_release.py, diff_dumps.py, export_viewer_json.py               # gates, review, viewer
   llm_style_pass.py, fetch_wikipedia_leads.py, style_agreement.py, pilot_sample.py   # LLM style study
   rights_basis.py             # IMSLP rights evidence vs the composer rule, by death year
+  identity_candidates.py      # review queue of suspect identities with candidate Wikidata items
   gold_set.py                 # gold-set sampler (blind sheets) and scorer (Wilson intervals)
-  common.py, imslp.py, wikidata_enrich.py, force_family.py, …          # shared modules
+  common.py, imslp.py, wikidata_enrich.py, authorities.py, force_family.py, …   # shared modules
   legacy/                     # one-off passes that produced older labels; not run by the pipeline
 tests/                        # offline pytest suite (no network)
 docs/PIPELINE.md, docs/AUTOMATION.md

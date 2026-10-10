@@ -220,3 +220,30 @@ def test_lifespan_flags_use_final_years():
         enrich_from_entity(ent), ent["claims"], fallback_birth=None, fallback_death=1962
     )
     assert years["qa_flags"] == "implausible_lifespan|death_from_list"
+
+
+@pytest.mark.parametrize("birth, death, precision, fallback, expected, flags", [
+    # Margherita Galeotti: P570 "20th century" (stored as 2000); the list gives 1912.
+    (1867, 2000, 7, 1912, 1912, "death_imprecise|death_from_list"),
+    # A list year outside the century interval (1901–2000) is not a refinement.
+    (1867, 2000, 7, 1899, 2000, "death_imprecise|implausible_lifespan"),
+    # Decade 1850s is stored as 1859; 1857 lies inside.
+    (1800, 1855, 8, 1857, 1857, "death_imprecise|death_from_list"),
+    # A precise Wikidata year is never replaced by the list.
+    (1867, 1914, 9, 1912, 1914, ""),
+])
+def test_list_year_refines_a_coarse_wikidata_year(birth, death, precision, fallback, expected, flags):
+    ent = entity(births=[time_claim(birth, precision=11)], deaths=[time_claim(death, precision=precision)])
+    years = apply_year_fallbacks(
+        enrich_from_entity(ent), ent["claims"], fallback_birth=birth, fallback_death=fallback, refine_death=True
+    )
+    assert years["death_year"] == expected
+    assert years["qa_flags"] == flags
+    assert years["date_precision"] == ("year" if "death_from_list" in flags else years["date_precision"])
+
+
+def test_coarse_year_is_refined_only_on_request():
+    # A prior dump's 1954 for a 1950s death may be an older reading: keep the conservative 1959.
+    ent = entity(births=[time_claim(1890, precision=11)], deaths=[time_claim(1955, precision=8)])
+    years = apply_year_fallbacks(enrich_from_entity(ent), ent["claims"], fallback_birth=1890, fallback_death=1954)
+    assert (years["death_year"], years["qa_flags"]) == (1959, "death_imprecise")

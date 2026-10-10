@@ -82,6 +82,25 @@ def test_has_files_coverage_cannot_collapse(filled_after, failed):
     assert bool(errors) == failed
 
 
+def test_authority_id_formats():
+    c, w = frames(1, 1)
+    c = pd.concat([c] * 4, ignore_index=True)
+    c["gnd_id"] = ["118551027", "4032009-1", "", "Q123"]
+    c["viaf_id"] = ["30939465", "", "", "0123"]
+    errors, _ = check_release.check_data_quality(c, w, {})
+    assert errors == ["invalid gnd_id values: Q123", "invalid viaf_id values: 0123"]
+
+
+@pytest.mark.parametrize("filled_after,failed", [(85, False), (84, True)])
+def test_authority_coverage_cannot_collapse(filled_after, failed):
+    c, w = frames()
+    pc, pw = frames()
+    pc["gnd_id"] = ["118551027"] * 90 + [""] * 10
+    c["gnd_id"] = ["118551027"] * filled_after + [""] * (100 - filled_after)
+    errors, _ = check_release.check_regressions(c, w, pc, pw)
+    assert bool(errors) == failed
+
+
 def test_cli_against_loads_baseline(tmp_path, monkeypatch, capsys):
     monkeypatch.setattr(common, "DATA_DIR", tmp_path)
     monkeypatch.setattr(common, "CACHE_DIR", tmp_path / "cache")

@@ -12,6 +12,7 @@ import pytest
 
 import build_dump
 import apply_llm_styles
+import authorities
 import common
 import diff_dumps
 import pipeline
@@ -139,7 +140,8 @@ def test_derive_adds_work_evidence_by_default(repository, commands, tmp_path):
                      "imslp_librettists"]
     shared = [c for c in prev["works"].columns if c != "dump_date"]
     pd.testing.assert_frame_equal(prev["works"][shared], nxt["works"][shared])
-    assert [c for c in nxt["composers"] if c not in prev["composers"]] == list(apply_llm_styles.LLM_STYLE_COLUMNS)
+    assert [c for c in nxt["composers"] if c not in prev["composers"]] == [
+        *authorities.AUTHORITY_COLUMNS, *apply_llm_styles.LLM_STYLE_COLUMNS]
     assert nxt["composers"].style_tags_src.tolist() == [""]
     assert nxt["composers"].llm_style_tags.tolist() == ["modern"]
     assert nxt["composers"].dump_date.tolist() == ["r999"]
@@ -157,7 +159,8 @@ def test_refresh_promotes_only_final_and_restores_decisions(repository, commands
     assert calls[0][1] == ["--overrides", str(repo / "data/overrides/composers.tsv")]
     assert calls[1][1] == ["--date", "2026-10-09", "--pageviews-start", "20251001", "--pageviews-end", "20260930"]
     assert [call[0] for call in calls] == ["refetch_override_entities.py", "build_dump.py", "remap_force.py", "carry_forward.py", "remap_composers.py",
-                                          "apply_overrides.py", "refetch_composer_pages.py", "remap_imslp_matches.py",
+                                          "apply_overrides.py", "refetch_authorities.py", "remap_authorities.py",
+                                          "refetch_composer_pages.py", "remap_imslp_matches.py",
                                           "refetch_work_files.py", "remap_work_evidence.py", "apply_llm_styles.py", "check_release.py", "export_viewer_json.py", "check_release.py"]
     override_call = next(call for call in calls if call[0] == "apply_overrides.py")
     assert override_call[1][-2:] == ["--overrides", str(repo / "data/overrides/composers.tsv")]
@@ -169,10 +172,10 @@ def test_refresh_promotes_only_final_and_restores_decisions(repository, commands
     assert meta["derived_from_dump_id"] == "r001"
     assert meta["crawl_date"] == "2026-10-09"
     assert meta["pageviews_range"] == ["20251001", "20260930"]
-    assert len(meta["stages"]) == 8
+    assert len(meta["stages"]) == 9
     assert [stage["enrichment"] for stage in meta["stages"]] == [
         "build_dump", "remap_force_ids_pd", "carry_forward", "remap_composers_wikidata",
-        "apply_composer_overrides", "remap_imslp_identity", "remap_work_evidence", "apply_llm_styles"]
+        "apply_composer_overrides", "remap_authorities", "remap_imslp_identity", "remap_work_evidence", "apply_llm_styles"]
     assert all(stage["row_counts"]["works"] == 1 for stage in meta["stages"])
     nxt = diff_dumps.read_dump("r002")
     assert nxt["works"].force_family_src.tolist() == ["llm"]

@@ -20,10 +20,11 @@ That command copies the base revision into a staging directory (`.pipeline-*`, k
 3. `carry_forward.py`: earlier LLM / GenInfo decisions from the base revision (see below);
 4. `remap_composers.py`: rank-aware Wikidata dates, scope, `qa_flags`;
 5. `apply_overrides.py`: reviewed fixes from `data/overrides/composers.tsv`;
-6. `refetch_composer_pages.py` + `remap_imslp_matches.py`: IMSLP identity check;
-7. `refetch_work_files.py` + `remap_work_evidence.py`: work-level IMSLP style, publication, rights categories and librettists, plus `has_files` and `imslp_file_hosts` from the files each work page links (about 600 more IMSLP requests);
-8. `apply_llm_styles.py`: replays the committed LLM style ledger into the `llm_style_*` columns (no model calls);
-9. release gates in staging, then promotion of **only the final stage** as one new revision, the viewer export, and the gates again against the real `data/`.
+6. `refetch_authorities.py` + `remap_authorities.py`: `gnd_id` / `viaf_id` from Wikidata, a lobid name search for composers without a Wikidata GND id, and the GND death-year check (lobid.org, ≤ 4 requests/s, about 450 requests);
+7. `refetch_composer_pages.py` + `remap_imslp_matches.py`: IMSLP identity check;
+8. `refetch_work_files.py` + `remap_work_evidence.py`: work-level IMSLP style, publication, rights categories and librettists, plus `has_files` and `imslp_file_hosts` from the files each work page links (about 600 more IMSLP requests);
+9. `apply_llm_styles.py`: replays the committed LLM style ledger into the `llm_style_*` columns (no model calls);
+10. release gates in staging, then promotion of **only the final stage** as one new revision, the viewer export, and the gates again against the real `data/`.
 
 On success it writes `data/{composers,works}_rNEXT.tsv`, `data/dump_meta_rNEXT.json`, re-exports `viewer/data/`, and prints `REVISION=rNEXT` as its last stdout line. Any failure exits non-zero and promotes nothing.
 
