@@ -8,9 +8,13 @@ Dump snapshots: revision `dump_id` (`rNNN`) — see [VERSIONING.md](VERSIONING.m
 
 ## [Unreleased]
 
-Schema stays **3** (one added works column, two added composer columns). Dump: **r017**.
+Schema stays **3** (two added works columns, two added composer columns). Dump: **r018**.
 
 ### Added
+- Dump **r018** = r017 + an offline `pipeline.py derive`: the new `imslp_n_players` column; composers unchanged
+- Works column `imslp_n_players` after `genre_form`: IMSLP's `For N players` counts (instrumental soloists, arrangements excluded), pipe-joined when a page holds versions for different forces. Set for 13,873 works (47.8%). `remap_force.py` derives it; `--preserve-schema` keeps it out of dumps that lack it
+- `data/vocab/lc_crosswalk.tsv` and `scripts/lc_crosswalk.py`: every `force_family` and `genre_form` value mapped to LCMPT (medium of performance) or LCGFT (genre/form) URIs with SKOS mapping relations (51 rows; `check` offline, `verify` against id.loc.gov)
+- Release gates: invalid `imslp_n_players` values, and any `force_family` / `genre_form` value missing from the crosswalk, fail
 - Dump **r017**: a full refresh (crawl 2026-10-10) with the authority stage and the identity guard below. 7 works added, no EU PD status flips; Jean Perrin re-keyed to the composer
 - Composer columns `gnd_id` and `viaf_id` (`scripts/remap_authorities.py`, a stage after `apply_overrides`; `scripts/refetch_authorities.py` fills the lobid.org caches on refresh). From Wikidata P227 / P214: GND for 2,889 composers, VIAF for 3,262. Without a Wikidata GND id, a lobid name search supplies one only when exactly one GND person agrees on life dates (8 composers, `gnd_from_lobid`). A GND death year that differs from the dump's flags `gnd_death_conflict` (14; several are GND typos, e.g. Bordewijk-Roepman †1871 for †1971)
 - `list_years_conflict` flag (84 composers): the Wikipedia list row gives a different life year than the dump. `scripts/identity_candidates.py` lists rows whose list years differ by 5+ years, or whose Wikidata item is not a human or has no composing occupation, with candidate items for the same name from Wikidata, fr and de Wikipedia searches. On r016 it found one wrong identity (Jean Perrin) among 34 suspects; the rest are date disputes
