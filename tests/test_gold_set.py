@@ -9,6 +9,7 @@ import pytest
 
 import common
 import gold_set as gs
+from force_family import GENRE_FORMS, map_genre_form
 
 
 def test_allocate_sqrt_floor_cap_and_total():
@@ -44,6 +45,8 @@ def _composers(n=60):
         "wikipedia_url": [f"https://en.wikipedia.org/wiki/C{i}" for i in range(n)],
         "wikidata_url": [f"https://www.wikidata.org/wiki/Q{i}" for i in range(n)],
         "imslp_url": [f"https://imslp.org/wiki/Category:C{i}" if i % 2 else "" for i in range(n)],
+        "gnd_id": [f"1000{i:05d}X" if i % 3 else "" for i in range(n)],
+        "viaf_id": [str(1000 + i) for i in range(n)],
         "imslp_match_status": ["matched" if i % 2 else "not_found" for i in range(n)],
         "imslp_match_method": ["wikidata_p839" if i % 2 else "exact_name" for i in range(n)],
         "qa_flags": ["birth_from_list" if i % 15 == 0 else "" for i in range(n)],
@@ -80,7 +83,9 @@ def test_build_sample_is_deterministic_and_blind():
     assert set(recheck["item"]) == set(design.loc[design["recheck"] == "true", "item"])
     assert sheet["item"].tolist() == [f"C{i:03d}" for i in range(1, 31)]
     works_sheet = first["works"]["sheet"]
+    assert list(works_sheet.columns) == ["item", *gs.SHOWN["works"], *gs.GOLD_FIELDS["works"]]
     assert "force_family" in works_sheet and (works_sheet["force_family"] == "").all()
+    assert "genre_form" in works_sheet and (works_sheet["genre_form"] == "").all()
     assert gs.build_sample(_composers(), _works(), **{**kwargs, "seed": 8})["composers"]["design"][
         "composer_id"].tolist() != design["composer_id"].tolist()
 
@@ -177,13 +182,68 @@ def test_work_metrics_end_to_end():
     assert (m["rights_basis_wrong"]["eligible"], m["rights_basis_wrong"]["errors"]) == (2, 1)
 
 
+def test_genre_form_vocabulary_and_precedence():
+    assert gs.VOCAB["genre_form"] == (set(GENRE_FORMS) - {"arrangement", "other"}) | {"song", "none", "unsure"}
+    assert gs.GOLD_FIELDS["works"] == ("force_family", "genre_form", "has_files", "rights_basis", "notes")
+    cats = {
+        "opera": "Operas", "ballet": "Ballets", "concerto": "Concertos", "symphony": "Symphonies",
+        "sonata": "Sonatas", "suite": "Suites", "variations": "Variations", "etude": "Etudes",
+        "prelude_fugue": "Preludes", "string_quartet": "Quartets", "dance": "Waltzes",
+        "mass_requiem": "Masses", "oratorio_cantata": "Cantatas", "overture_tone_poem": "Overtures",
+        "song": "Songs",
+    }
+    forms = [f for f in gs.GOLD_GENRE_FORMS if f not in {"song_cycle", "none"}]
+    for a, b in zip(forms, forms[1:]):
+        aliased = gs.alias_dump_genre_form(map_genre_form(f"{cats[a]}|{cats[b]}"))
+        assert aliased == a, (a, b, aliased)
+
+
+def test_genre_form_metrics():
+    gold = [
+        {"item": "W1", "work_id": "A", "genre_form": "song"},
+        {"item": "W2", "work_id": "B", "genre_form": "none"},
+        {"item": "W3", "work_id": "C", "genre_form": "sonata"},
+        {"item": "W4", "work_id": "D", "genre_form": "suite"},
+        {"item": "W5", "work_id": "E", "genre_form": "none"},
+        {"item": "W6", "work_id": "F", "genre_form": "unsure"},
+        {"item": "W7", "work_id": "G", "genre_form": "arrangement"},
+    ]
+    dump = [
+        {"work_id": "A", "genre_form": "other", "force_family": "solo_voice", "has_files": "true",
+         "imslp_copyright_flags": ""},
+        {"work_id": "B", "genre_form": "", "force_family": "piano_solo", "has_files": "true",
+         "imslp_copyright_flags": ""},
+        {"work_id": "C", "genre_form": "arrangement", "force_family": "piano_solo", "has_files": "true",
+         "imslp_copyright_flags": ""},
+        {"work_id": "D", "genre_form": "", "force_family": "orchestral", "has_files": "true",
+         "imslp_copyright_flags": ""},
+        {"work_id": "E", "genre_form": "sonata", "force_family": "piano_solo", "has_files": "true",
+         "imslp_copyright_flags": ""},
+        {"work_id": "F", "genre_form": "sonata", "force_family": "piano_solo", "has_files": "true",
+         "imslp_copyright_flags": ""},
+        {"work_id": "G", "genre_form": "sonata", "force_family": "piano_solo", "has_files": "true",
+         "imslp_copyright_flags": ""},
+    ]
+    result = _scored(gold, dump, "works")
+    m = result["metrics"]
+    assert result["invalid_cells"] == ["W7 genre_form='arrangement'"]
+    # W1 song/other→song ok; W2 none/empty→none ok; W3 sonata/arrangement wrong+arrangement;
+    # W4 suite/empty wrong+missed; W5 none/sonata wrong+spurious; W6 unsure ineligible; W7 invalid.
+    assert (m["genre_form_wrong"]["eligible"], m["genre_form_wrong"]["errors"]) == (5, 3)
+    assert (m["genre_form_missed"]["eligible"], m["genre_form_missed"]["errors"]) == (2, 1)
+    assert (m["genre_form_spurious"]["eligible"], m["genre_form_spurious"]["errors"]) == (2, 1)
+    assert (m["genre_form_arrangement"]["eligible"], m["genre_form_arrangement"]["errors"]) == (1, 1)
+
+
 def test_recheck_agreement():
     first = pd.DataFrame({"item": ["W1", "W2", "W3", "W4"], "force_family": ["choral", "organ", "choral", ""],
+                          "genre_form": ["song", "none", "sonata", ""],
                           "has_files": ["yes"] * 4, "rights_basis": ["none"] * 4})
     second = first.assign(force_family=["choral", "choral", "choral", "organ"])
     result = gs.agreement("works", first, second)
     assert result["force_family"]["pairs"] == 3
     assert result["force_family"]["agree"] == pytest.approx(2 / 3)
+    assert result["genre_form"] == {"pairs": 3, "agree": 1.0, "kappa": 1.0}
     assert result["has_files"] == {"pairs": 4, "agree": 1.0, "kappa": 1.0}
 
 
@@ -223,7 +283,8 @@ def test_form_page_carries_shown_columns_only(tmp_path):
     assert [len(data[k]) for k in ("composers", "works", "composers_recheck", "works_recheck")] == [30, 40, 3, 4]
     assert set(data["composers"][0]) == {"item", *gs.SHOWN["composers"]}
     assert data["works"][1]["title"] == "Lied </script><b>"
-    assert "must not leak" not in html and gs.FORM_PLACEHOLDER not in html
+    assert "must not leak" not in html and gs.FORM_PLACEHOLDER not in html and gs.FORM_DUMP_PLACEHOLDER not in html
+    assert "<title>eu-pd-composers Gold Set r900</title>" in html
     assert [i["item"] for i in data["practice"]["works"]] == ["P-W1", "P-W2"]
     assert local.read_text(encoding="utf-8").startswith("<!doctype html>")
 
@@ -231,7 +292,8 @@ def test_form_page_carries_shown_columns_only(tmp_path):
 def test_form_template_matches_scorer_vocabulary():
     template = gs.FORM_TEMPLATE.read_text(encoding="utf-8")
     keys = lambda a, b: re.findall(r'^\s*\["([a-z_]+)", "', template[template.index(a):template.index(b)], re.M)
-    assert keys("const FAMILIES", "const BASES") == [f for f in gs.FORCE_FAMILIES if f != "unclassified"]
+    assert keys("const FAMILIES", "const GENRES") == [f for f in gs.FORCE_FAMILIES if f != "unclassified"]
+    assert keys("const GENRES", "const BASES") == list(gs.GOLD_GENRE_FORMS)
     assert keys("const BASES", "const TABS") == list(gs.BASIS_LABELS)
     columns = lambda a, b: {k: re.findall(r'"([a-z_]+)"', v) for k, v in re.findall(
         r'^\s+([cw]): \[(.*)\],$', template[template.index(a):template.index(b)], re.M)}
@@ -239,6 +301,9 @@ def test_form_template_matches_scorer_vocabulary():
                                                           "w": list(gs.GOLD_FIELDS["works"])}
     assert columns("const SHEET_COLS", "const FAMILIES") == {"c": ["item", *gs.SHOWN["composers"]],
                                                             "w": ["item", *gs.SHOWN["works"]]}
+    # The one-click source fills the form the import keeps unchanged; the GND link is the canonical URI.
+    assert 'const gnd = "GND " + it.gnd_id;' in template and '"https://d-nb.info/gnd/" + enc(it.gnd_id)' in template
+    assert gs._cell("death_source", "GND 118590219") == "GND 118590219"
 
 
 def test_import_form_answers(tmp_path):
@@ -268,7 +333,8 @@ def test_import_form_answers(tmp_path):
     composers_before = (tmp_path / "composers_sheet.tsv").read_bytes()
     summary = gs.import_answers(tmp_path, store)
     works = pd.read_csv(sheet_path, sep="\t", dtype=str, keep_default_na=False).set_index("item")
-    assert works.loc["W001", list(gs.GOLD_FIELDS["works"])].tolist() == ["concerto", "yes", "none", "harp and strings"]
+    assert works.loc["W001", list(gs.GOLD_FIELDS["works"])].tolist() == [
+        "concerto", "", "yes", "none", "harp and strings"]
     assert works.loc["W002", "notes"] == "typed in a spreadsheet"
     assert works.loc["W003", "notes"] == ""
     assert summary["works_sheet.tsv"] == {"imported": 2, "problems": ["W003 force_family='harp_only'"]}
@@ -279,3 +345,33 @@ def test_import_form_answers(tmp_path):
     assert gs._cell("death_source", "LoC n92085993") == "LoC n92085993" and gs._cell("notes", "118776312") == "118776312"
     assert (tmp_path / "composers_sheet.tsv").read_bytes() == composers_before
     assert list(works.reset_index().columns) == ["item", *gs.SHOWN["works"], *gs.GOLD_FIELDS["works"]]
+
+
+def test_missing_genre_form_column_is_empty(tmp_path):
+    """r016-style sheets without genre_form still import and score."""
+    result = gs.build_sample(_composers(), _works(), seed=7, n_composers=30, n_works=40, minimum=3,
+                             recheck_share=0.1)
+    for kind in gs.SETS:
+        for part in ("sheet", "recheck", "design"):
+            frame = result[kind][part]
+            if part != "design" and kind == "works":
+                frame = frame.drop(columns=["genre_form"])
+            frame.to_csv(tmp_path / f"{kind}_{part}.tsv", sep="\t", index=False)
+    store = tmp_path / "store"
+    (store / "answers").mkdir(parents=True)
+    (store / "answers" / "W001.json").write_text(
+        json.dumps({"item": "W001", "force_family": "concerto", "genre_form": "suite",
+                    "has_files": "yes", "rights_basis": "none"}), encoding="utf-8")
+    summary = gs.import_answers(tmp_path, store)
+    works = pd.read_csv(tmp_path / "works_sheet.tsv", sep="\t", dtype=str, keep_default_na=False)
+    assert "genre_form" in works.columns
+    assert works.loc[works["item"] == "W001", "genre_form"].item() == "suite"
+    assert summary["works_sheet.tsv"]["imported"] == 1
+    dump = _works(40)
+    dump["genre_form"] = ""
+    sheet = gs.ensure_gold_columns("works", works)
+    design = pd.read_csv(tmp_path / "works_design.tsv", sep="\t", dtype=str, keep_default_na=False)
+    design["stratum_size"] = design["stratum_size"].astype(int)
+    scored = gs.score_set("works", sheet, design, dump, gs.work_metrics())
+    assert scored["annotated"] >= 1
+    assert "genre_form_wrong" in scored["metrics"]

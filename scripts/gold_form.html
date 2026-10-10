@@ -1,4 +1,4 @@
-<title>eu-pd-composers Gold Set</title>
+<title>eu-pd-composers Gold Set __GOLD_FORM_DUMP__</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,500;8..60,600&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
@@ -116,6 +116,7 @@ details.ref ol { margin: 6px 0 0; padding-left: 20px; display: grid; gap: 2px; m
 .nav { border: 1px solid var(--line); background: var(--surface); border-radius: var(--r); padding: 6px 14px; cursor: pointer; }
 .nav:hover:not(:disabled) { border-color: var(--accent); }
 .nav:disabled { opacity: .45; cursor: default; }
+.nav.fill { align-self: flex-end; }
 .nav.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 600; }
 .save { margin-left: auto; font-size: 13px; color: var(--muted); }
 .save.err { color: var(--err); }
@@ -140,7 +141,7 @@ textarea.dump { width: 100%; box-sizing: border-box; min-height: 120px; font-fam
 
 <header class="top">
   <div class="top-in">
-    <h1 class="brand">Gold set <span class="mono" id="dumpid">r016</span></h1>
+    <h1 class="brand">Gold set <span class="mono" id="dumpid">__GOLD_FORM_DUMP__</span></h1>
     <span class="conn" id="conn">Connecting…</span>
     <nav class="tabs" role="tablist" id="tabs"></nav>
   </div>
@@ -154,10 +155,10 @@ textarea.dump { width: 100%; box-sizing: border-box; min-height: 120px; font-fam
 "use strict";
 const FIELDS = {
   c: ["wikidata_same_person", "imslp_check", "imslp_found_url", "death_status", "death_year", "death_source", "notes"],
-  w: ["force_family", "has_files", "rights_basis", "notes"],
+  w: ["force_family", "genre_form", "has_files", "rights_basis", "notes"],
 };
 const SHEET_COLS = {
-  c: ["item", "composer_id", "name", "wikipedia_url", "wikidata_url", "imslp_url"],
+  c: ["item", "composer_id", "name", "wikipedia_url", "wikidata_url", "imslp_url", "gnd_id", "viaf_id"],
   w: ["item", "work_id", "composer", "title", "imslp_work_url"],
 };
 const FAMILIES = [
@@ -179,6 +180,25 @@ const FAMILIES = [
   ["electronic", "with electronics or tape; no voices, chorus, orchestra, band"],
   ["pedagogical", "methods, exercises, studies as teaching material"],
   ["other", "none of the above, or unspecified"],
+];
+const GENRES = [
+  ["opera", "opera, operetta, singspiel, zarzuela or other staged sung drama"],
+  ["ballet", "ballet or other staged dance work"],
+  ["concerto", "called concerto, concertino, concerto grosso or sinfonia concertante"],
+  ["symphony", "symphony, sinfonietta, or a sinfonia in several movements; a symphonic poem is not"],
+  ["sonata", "sonata, sonatina or trio sonata, any instrumentation"],
+  ["suite", "suite or partita: contrasting movements published as one work"],
+  ["variations", "variations on a theme, under any title"],
+  ["etude", "étude or study, alone or in a set; a method or exercise book is not"],
+  ["prelude_fugue", "prelude, fugue or fughetta, alone or paired; chorale preludes count"],
+  ["string_quartet", "for exactly 2 violins, viola and cello; other quartets are not"],
+  ["dance", "dance or set of dances (waltz, mazurka, polonaise, minuet…); marches count"],
+  ["mass_requiem", "Mass or Requiem, or a single movement or Proper text of one"],
+  ["oratorio_cantata", "oratorio, cantata or Passion: unstaged, voices and instruments, several numbers"],
+  ["overture_tone_poem", "concert overture, symphonic poem or tone poem"],
+  ["song_cycle", "songs the composer published as one connected cycle"],
+  ["song", "a song, Lied, mélodie, part-song or set of songs that is not a cycle"],
+  ["none", "none of these applies (a nocturne, fantasia, motet, caprice…)"],
 ];
 const BASES = [
   ["eu_warning", "WorkNonPD-EU, WorkNonPD-USandEU"],
@@ -225,7 +245,7 @@ function itemsOf(tab) {
   return tab.src === "practice" ? [...d.practice.composers, ...d.practice.works] : d[tab.src];
 }
 function complete(kind, v, it) {
-  if (kind === "w") return !!(v.force_family && v.has_files && v.rights_basis);
+  if (kind === "w") return !!(v.force_family && v.genre_form && v.has_files && v.rights_basis);
   if (!v.wikidata_same_person || !v.imslp_check || !v.death_status) return false;
   if (v.imslp_check === "found" && !(v.imslp_found_url || "").trim()) return false;
   if (v.death_status !== "unknown" && !(v.death_source || "").trim()) return false;
@@ -461,10 +481,15 @@ function renderCard(tab, items, i) {
     head.append(el("h2", { class: "name", text: it.name }));
     const links = el("div", { class: "links" }, ext(it.wikipedia_url, "Wikipedia"), ext(it.wikidata_url, "Wikidata"));
     links.append(it.imslp_url ? ext(it.imslp_url, "IMSLP category") : el("span", { class: "nolink", text: "No IMSLP link in this row: search for one" }));
+    // GND and VIAF ids come from the Wikidata item: check them against the article like the item itself.
+    // d-nb.info is the canonical GND URI and opens the record in the DNB portal; lobid shows the same record.
+    if (it.gnd_id) links.append(ext("https://d-nb.info/gnd/" + enc(it.gnd_id), "GND " + it.gnd_id));
+    if (it.viaf_id) links.append(ext("https://viaf.org/viaf/" + enc(it.viaf_id), "VIAF"));
     const n = enc(it.name);
     const look = el("div", { class: "lookups" }, el("span", { text: "Look up:" }),
+      it.gnd_id ? ext("https://lobid.org/gnd/" + enc(it.gnd_id), "GND on lobid", "") : null,
       ext("https://imslp.org/index.php?title=Special:Search&search=" + n, "IMSLP search", ""),
-      ext("https://lobid.org/gnd/search?q=" + n + "&filter=type:Person", "GND", ""),
+      ext("https://lobid.org/gnd/search?q=" + n + "&filter=type:Person", it.gnd_id ? "GND search" : "GND", ""),
       ext("https://id.loc.gov/search/?q=" + n + "&q=cs:http://id.loc.gov/authorities/names", "LoC", ""),
       ext("https://catalogue.bnf.fr/rechercher.do?motRecherche=" + n, "BnF", ""),
       ext("https://www.oxfordmusiconline.com/search?q=" + n + "&searchBtn=Search&isQuickSearch=true", "Grove", ""));
@@ -519,10 +544,18 @@ function renderCard(tab, items, i) {
     const yr = text("death_year", "Death year", { inputmode: "numeric", maxlength: "4", placeholder: "YYYY", class: "year" });
     yearInp = yr.inp;
     const src = text("death_source", "Source: a GND number, or short name + URL or id", { placeholder: "118776312, or LoC n92085993", grow: "1" });
+    let useGnd = null;
+    if (it.gnd_id) {
+      const gnd = "GND " + it.gnd_id;
+      useGnd = el("button", { class: "nav fill", id: "use-gnd", type: "button", text: "Use " + gnd,
+        title: "Fill the source with this row's GND record. Type the year yourself.",
+        onclick: () => { edit(coll, id, "death_source", gnd); flush(coll, id); sync(); } });
+      groups.push(() => { useGnd.disabled = (v().death_source || "").trim() === gnd; });
+    }
     card.append(q("Death", "death_status",
       el("p", { class: "help", text: "Living needs positive evidence of life after 2020. If you can't tell, use unknown. Leave the year empty if the person died but no source gives it." }),
       seg("death_status", ["dead", "living", "unknown"].map(x => ({ v: x }))),
-      el("div", { class: "row" }, yr.box, src.box),
+      el("div", { class: "row" }, yr.box, src.box, useGnd),
       el("details", { class: "ref" }, el("summary", { text: "Source hierarchy" }),
         el("ol", {},
           el("li", { text: "National authority files: GND, BnF, Library of Congress, or their VIAF cluster." }),
@@ -534,6 +567,9 @@ function renderCard(tab, items, i) {
     card.append(q("Instrumentation of the original version", "force_family",
       el("p", { class: "help", text: "Judge the composer's original scoring and ignore arrangements by others. If the composer made several versions, pick the one later in this list." }),
       seg("force_family", [...FAMILIES.map(([k, h], n) => ({ v: k, hint: h, n: String(n + 1) })), { v: "unsure", hint: "write why in notes" }], "grid")));
+    card.append(q("Form of the original work", "genre_form",
+      el("p", { class: "help", text: "Judge the composer's original; an arrangement takes the original's form. A piece drawn from a larger work (an overture, aria or suite from an opera or ballet) takes the larger work's form. If several apply, pick the first in this list." }),
+      seg("genre_form", [...GENRES.map(([k, h], n) => ({ v: k, hint: h, n: String(n + 1) })), { v: "unsure", hint: "write why in notes" }], "grid")));
     card.append(q("Files on the page?", "has_files",
       el("p", { class: "help", text: "At least one score, part or recording file. Files on IMSLP's other servers count; cover images do not." }),
       seg("has_files", ["yes", "no", "unsure"].map(x => ({ v: x })))));

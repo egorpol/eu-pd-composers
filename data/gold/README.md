@@ -13,7 +13,7 @@ A hand-checked, stratified sample of the dump that turns agreement between sourc
 
 `data/gold/practice.json` holds four practice items outside any sample, with worked answers, for trying the rules and the form.
 
-The sample for r016: 200 composers and 300 works, drawn with `python scripts/gold_set.py sample --dump r016` (seed 20261010). Small strata are oversampled (square-root allocation, at least 8 items each), and the scorer weights them back.
+The current sample is r018: 200 composers and 300 works, drawn with `python scripts/gold_set.py sample --dump r018` (seed 20261010). The r016 sample was the pilot; its few answers score against r016 only. Small strata are oversampled (square-root allocation, at least 8 items each), and the scorer weights them back.
 
 **Composer strata.** Composers with `qa_flags`; rejected or unverified IMSLP matches; then EU PD status (`pd`, `not_pd`, `unknown_death`) × IMSLP link (Wikidata P839, confirmed name match, not found).
 **Work strata.** Force-label source (IMSLP categories, title rule, LLM, unlabelled); IMSLP-labelled works also split by rights basis (EU warning, other rights category, none). Within a stratum, works are spread across instrumentation families in proportion.
@@ -23,15 +23,15 @@ The sample for r016: 200 composers and 300 works, drawn with `python scripts/gol
 1. Fill `composers_sheet.tsv` and `works_sheet.tsv` in a spreadsheet (keep TSV, UTF-8; do not reorder or delete rows), or in the annotation form (below). Budget about 3 minutes per composer and 1 minute per work, so roughly 15 hours.
 2. **Stay blind.** While annotating, do not open the dump, the viewer, the design files or this repo's labels for these items. The sheets deliberately omit death years, PD status, instrumentation and rights labels.
 3. At least **7 days** after finishing an item set, fill its `*_recheck.tsv` without looking at your first answers.
-4. Score: `python scripts/gold_set.py score --dump r016 --out data/gold/r016/report.md --json data/gold/r016/report.json`. Partly filled sheets score fine; blank rows are skipped, and invalid values are listed and ignored. Score only after finishing a pass: with few items filled, the rates show whether single answers matched the dump, which unblinds the rest.
+4. Score: `python scripts/gold_set.py score --dump r018 --out data/gold/r018/report.md --json data/gold/r018/report.json`. Partly filled sheets score fine; blank rows are skipped, and invalid values are listed and ignored. Score only after finishing a pass: with few items filled, the rates show whether single answers matched the dump, which unblinds the rest.
 
 Use `unsure` sparingly; write the reason in `notes`. Leave a cell empty only if you have not checked it yet.
 
 ### Annotation form
 
-`python scripts/gold_set.py form --dump r016` builds the form from the sheets into `build/gold_form/r016/`. The page holds only what the sheets show, plus the practice items. It shows one item at a time with its links and name searches (IMSLP, GND, LoC, BnF, Grove), offers only valid values, and keeps the re-check tabs locked until 7 days after a set's last answer.
+`python scripts/gold_set.py form --dump r018` builds the form from the sheets into `build/gold_form/r018/`. The page holds only what the sheets show, plus the practice items. It shows one item at a time with its links (including the GND record at `d-nb.info` and the VIAF cluster the Wikidata item names) and name searches (IMSLP, GND, LoC, BnF, Grove), offers only valid values, has a *Use GND <id>* button that fills `death_source` from that record (the year stays typed), and keeps the re-check tabs locked until 7 days after a set's last answer.
 
-- `gold_form.html` is the claude.ai Artifact page (r016: [the published form](https://claude.ai/artifact/HKFhFwjLq3mVDvaTfMmbjR), private to its owner). Answers go to the artifact's store (collections `answers`, `recheck`, `practice`, one document per item). To export, Claude saves `answers` and `recheck` with `ArtifactData list` (`out_dir`), then `python scripts/gold_set.py import-form --dump r016 --store <out_dir>` writes them into the sheets; an item in the store replaces all its answer cells, and invalid values are listed.
+- `gold_form.html` is the claude.ai Artifact page (r018: [the published form](https://claude.ai/artifact/KB6qqcJ7fqTGZcirwWyuNw), private to its owner; the r016 pilot form is a separate artifact, because item ids repeat across samples). Answers go to the artifact's store (collections `answers`, `recheck`, `practice`, one document per item). To export, Claude saves `answers` and `recheck` with `ArtifactData list` (`out_dir`), then `python scripts/gold_set.py import-form --dump r018 --store <out_dir>` writes them into the sheets; an item in the store replaces all its answer cells, and invalid values are listed.
 - `gold_form_local.html` opens in any browser. Answers stay in that browser's storage; copy each sheet into `data/gold/<dump>/` from Progress & export.
 
 ## Composers
@@ -48,6 +48,8 @@ Use `unsure` sparingly; write the reason in `notes`. Leave a cell empty only if 
 | `notes` | free text | Conflicts between sources, doubts, page changes |
 
 ### Source hierarchy for life dates
+
+The sheet's `gnd_id` and `viaf_id` come from the Wikidata item (a few GND ids from a lobid.org name match). If the item is the wrong person, so are those records: check their dates and occupation against the article, and search by name when they do not match.
 
 Use the highest level that has the information, and two independent sources where they are quick to find.
 
@@ -67,6 +69,7 @@ Decided cases:
 | Column | Values | Meaning |
 |---|---|---|
 | `force_family` | a family below, or `unsure` | The instrumentation of the composer's **original** version |
+| `genre_form` | a form below, `none`, or `unsure` | The form of the composer's original work |
 | `has_files` | `yes` / `no` / `unsure` | Does the work page list at least one score, part or recording file? Files hosted on IMSLP's other servers count; cover images do not |
 | `rights_basis` | a basis below, or `unsure` | IMSLP's own rights category, from the category list at the bottom of the work page |
 | `notes` | free text | Doubts, several original versions, a page that changed |
@@ -102,6 +105,38 @@ Decided cases:
 - **Files only for an arrangement** still give `has_files` = `yes`; the family still follows the original.
 - **IMSLP's "For …" categories and tags** are a starting point, not the answer. The dataset derives many labels from them, so check them against the work page's Instrumentation line and the score.
 
+### Forms
+
+Judge the composer's original; an arrangement takes the original's form. A piece drawn from a larger work (an overture, aria or suite from an opera or ballet) takes the larger work's form. If several apply, pick the first in this list (the dataset uses the same order).
+
+| Form | Use for |
+|---|---|
+| `opera` | opera, operetta, singspiel, zarzuela or other staged sung drama |
+| `ballet` | ballet or other staged dance work |
+| `concerto` | called concerto, concertino, concerto grosso or sinfonia concertante |
+| `symphony` | symphony, sinfonietta, or a sinfonia in several movements; a symphonic poem is not |
+| `sonata` | sonata, sonatina or trio sonata, any instrumentation |
+| `suite` | suite or partita: contrasting movements published as one work |
+| `variations` | variations on a theme, under any title |
+| `etude` | étude or study, alone or in a set; a method or exercise book is not |
+| `prelude_fugue` | prelude, fugue or fughetta, alone or paired; chorale preludes count |
+| `string_quartet` | for exactly 2 violins, viola and cello; other quartets are not |
+| `dance` | dance or set of dances (waltz, mazurka, polonaise, minuet…); marches count |
+| `mass_requiem` | Mass or Requiem, or a single movement or Proper text of one |
+| `oratorio_cantata` | oratorio, cantata or Passion: unstaged, voices and instruments, several numbers |
+| `overture_tone_poem` | concert overture, symphonic poem or tone poem |
+| `song_cycle` | songs the composer published as one connected cycle |
+| `song` | a song, Lied, mélodie, part-song or set of songs that is not a cycle |
+| `none` | none of these applies (a nocturne, fantasia, motet, caprice…) |
+
+Decided cases:
+
+- **Arrangements**: judge the original; `arrangement` is not an answer (the scorer counts the dataset's `arrangement` label as its own error class).
+- **A piece drawn from a larger work** takes the larger work's form, as in Library of Congress practice ("Operas -- Excerpts"): an opera's overture is `opera`, a ballet suite is `ballet`.
+- **`concerto`** only for works called concerto (concertino, concerto grosso, sinfonia concertante). Other works for soloist and orchestra take their own form or `none`; their family can still be `concerto`.
+- **`string_quartet`** only for 2 violins, viola and cello; IMSLP's Quartets category also holds piano quartets.
+- **`song`** covers what the dataset currently labels `other` (IMSLP Songs/Lieder); the scorer reads the dump's `other` as `song` and an empty cell as `none`.
+
 ### Rights basis
 
 First match in this order, from the categories at the bottom of the work page:
@@ -121,4 +156,4 @@ The **Copyright** line in a file's box ("Public Domain - Non-PD US, Non-PD EU") 
 
 ## What the scores mean
 
-Composers: wrong Wikidata person; wrong IMSLP link; missed IMSLP link; wrong death year (exact, and off by two years or more); missing death year; **false PD** (the dump says PD now, but the composer died too recently or is alive); missed PD. Works: wrong instrumentation family, wrong `has_files`, wrong rights basis. Each rate has a 95% Wilson interval, for the checked items and weighted to the whole dump. The re-check reports agreement and Cohen's κ per field.
+Composers: wrong Wikidata person; wrong IMSLP link; missed IMSLP link; wrong death year (exact, and off by two years or more); missing death year; **false PD** (the dump says PD now, but the composer died too recently or is alive); missed PD. Works: wrong instrumentation family; form differs; no form in the dump although the original has one; dump gives a form but none of the listed forms applies; dump says arrangement while the original has a listed form; wrong `has_files`; wrong rights basis. Each rate has a 95% Wilson interval, for the checked items and weighted to the whole dump. The re-check reports agreement and Cohen's κ per field.
