@@ -187,8 +187,8 @@ Caches: `data/cache/` (gitignored). Complete work categories under `imslp_page_c
 ## Filter viewer
 
 ```bash
-python scripts/export_viewer_json.py --dump r018
-python scripts/check_release.py --dump r018 --viewer-data viewer/data
+python scripts/export_viewer_json.py --dump r019
+python scripts/check_release.py --dump r019 --viewer-data viewer/data
 python -m http.server 8080 --directory viewer
 ```
 

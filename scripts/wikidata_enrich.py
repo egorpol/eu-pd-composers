@@ -14,6 +14,7 @@ from common import (
     cache_get,
     cache_set,
     pipe_join,
+    qa_flags_join,
     request_json,
 )
 
@@ -490,7 +491,7 @@ def enrich_from_entity(ent: dict) -> dict[str, Any]:
         "scope_class": scope_class,
         "scope_class_src": scope_src,
         "is_film_composer": "true" if "film_composer" in occupations else "false",
-        "qa_flags": pipe_join(qa_flags),
+        "qa_flags": qa_flags_join(qa_flags),
         "notable_works_qids": pipe_join(notable_qids),
         "imslp_category_p839": imslp_category,
     }

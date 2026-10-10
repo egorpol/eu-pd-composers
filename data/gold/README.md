@@ -23,7 +23,7 @@ The current sample is r018: 200 composers and 300 works, drawn with `python scri
 1. Fill `composers_sheet.tsv` and `works_sheet.tsv` in a spreadsheet (keep TSV, UTF-8; do not reorder or delete rows), or in the annotation form (below). Budget about 3 minutes per composer and 1 minute per work, so roughly 15 hours.
 2. **Stay blind.** While annotating, do not open the dump, the viewer, the design files or this repo's labels for these items. The sheets deliberately omit death years, PD status, instrumentation and rights labels.
 3. At least **7 days** after finishing an item set, fill its `*_recheck.tsv` without looking at your first answers.
-4. Score: `python scripts/gold_set.py score --dump r018 --out data/gold/r018/report.md --json data/gold/r018/report.json`. Partly filled sheets score fine; blank rows are skipped, and invalid values are listed and ignored. Score only after finishing a pass: with few items filled, the rates show whether single answers matched the dump, which unblinds the rest.
+4. Score: `python scripts/gold_set.py score --dump r018 --out data/gold/r018/report.md --json data/gold/r018/report.json`. Partly filled sheets score fine; blank rows are skipped, and invalid values are listed and ignored. Score only after finishing a pass: with few items filled, the rates show whether single answers matched the dump, which unblinds the rest. The sample stays r018 after later dumps ship: restore it with `git show v3.6.0:data/works_r018.tsv > data/works_r018.tsv` (likewise `composers_r018.tsv`, `dump_meta_r018.json`). To score a later dump's rules on the same items, pass `--dump r019 --gold-dir data/gold/r018`; ids are stable across derives.
 
 Use `unsure` sparingly; write the reason in `notes`. Leave a cell empty only if you have not checked it yet.
 
@@ -135,7 +135,7 @@ Decided cases:
 - **A piece drawn from a larger work** takes the larger work's form, as in Library of Congress practice ("Operas -- Excerpts"): an opera's overture is `opera`, a ballet suite is `ballet`.
 - **`concerto`** only for works called concerto (concertino, concerto grosso, sinfonia concertante). Other works for soloist and orchestra take their own form or `none`; their family can still be `concerto`.
 - **`string_quartet`** only for 2 violins, viola and cello; IMSLP's Quartets category also holds piano quartets.
-- **`song`** covers what the dataset currently labels `other` (IMSLP Songs/Lieder); the scorer reads the dump's `other` as `song` and an empty cell as `none`.
+- **`song`** is the dataset's `song` (IMSLP Songs/Lieder that are not song cycles; dumps before r019 call it `other`, which the scorer reads as `song`). The scorer reads an empty cell as `none`.
 
 ### Rights basis
 

@@ -273,8 +273,9 @@ function warnings(kind, v, it) {
     if (/^\d{4}$/.test(y) && +y > new Date().getFullYear()) w.push("Death year is in the future.");
     if (y && v.death_status && v.death_status !== "dead") w.push("A death year only goes with dead. Clear it or change the status.");
     if (v.death_status === "dead" && !y) w.push("No death year: fine only if no source gives the year (say so in notes).");
-    if (v.death_status && v.death_status !== "unknown" && !(v.death_source || "").trim()) w.push("Name the source you relied on, with its URL.");
-    if (v.death_status === "living") w.push("Living needs positive evidence of life after 2020. Put it in the source field.");
+    if (v.death_status && v.death_status !== "unknown" && !(v.death_source || "").trim()) w.push(v.death_status === "living"
+      ? "Living needs dated evidence of life after 2020 (a recent premiere, staff page, interview). Name it in the source, with its URL."
+      : "Name the source you relied on, with its URL.");
   }
   return w;
 }

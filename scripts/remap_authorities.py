@@ -29,7 +29,7 @@ from authorities import (  # noqa: E402
 )
 from common import (  # noqa: E402
     SCHEMA_VERSION, TOOL_VERSION, cache_get, dump_meta_path, dump_tsv_path,
-    next_revision_id, pipe_join, pipe_split, write_dump_meta, write_tsv_dump,
+    next_revision_id, pipe_split, qa_flags_join, write_dump_meta, write_tsv_dump,
 )
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -115,7 +115,7 @@ def remap_authorities(composers: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, 
             counts["no_gnd_or_viaf"] += 1
         out.at[idx, "gnd_id"] = ids["gnd_id"]
         out.at[idx, "viaf_id"] = ids["viaf_id"]
-        out.at[idx, "qa_flags"] = pipe_join(flags)
+        out.at[idx, "qa_flags"] = qa_flags_join(flags)
     counts["rows"] = len(out)
     counts["gnd_id"] = int(out["gnd_id"].ne("").sum())
     counts["gnd_death_conflict"] = len(conflicts)

@@ -49,4 +49,4 @@ genre_form	concerto	lcgft	exactMatch	Concertos	http://id.loc.gov/authorities/gen
 genre_form	opera	lcgft	exactMatch	Operas	http://id.loc.gov/authorities/genreForms/gf2014026976	
 genre_form	ballet	lcgft	exactMatch	Ballets (Music)	http://id.loc.gov/authorities/genreForms/gf2014026650	
 genre_form	arrangement	lcgft	exactMatch	Arrangements (Music)	http://id.loc.gov/authorities/genreForms/gf2014027203	
-genre_form	other	lcgft	closeMatch	Songs	http://id.loc.gov/authorities/genreForms/gf2014027103	The rules assign other only to IMSLP Songs or Lieder that are not song cycles
+genre_form	song	lcgft	broadMatch	Songs	http://id.loc.gov/authorities/genreForms/gf2014027103	IMSLP Songs or Lieder that are not song cycles; the LCGFT term also covers song cycles

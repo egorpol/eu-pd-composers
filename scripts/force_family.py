@@ -38,6 +38,7 @@ GENRE_FORMS = (
     "dance",
     "string_quartet",
     "song_cycle",
+    "song",
     "mass_requiem",
     "oratorio_cantata",
     "overture_tone_poem",
@@ -45,8 +46,10 @@ GENRE_FORMS = (
     "opera",
     "ballet",
     "arrangement",
-    "other",
 )
+
+# IMSLP "Quartets" holds any work for four players; only these forces make a string quartet.
+_STRING_QUARTET_FORCE = "For 2 violins, viola, cello"
 
 # Higher index = higher priority when several signals fire.
 _PRIORITY = {name: i for i, name in enumerate(FORCE_FAMILIES)}
@@ -516,7 +519,9 @@ def map_genre_form(genre_cell: str, title: str = "") -> str:
         r"\b(prelude|fugue)\b", blob
     ):
         return "prelude_fugue"
-    if "Quartets" in tokens or re.search(r"\bstring quartet\b", blob):
+    if (
+        "Quartets" in tokens and _STRING_QUARTET_FORCE in _original_tokens(genre_cell)
+    ) or re.search(r"\bstring quartet\b", blob):
         return "string_quartet"
     if any(x in tokens for x in {"Waltzes", "Marches", "Mazurkas", "Polonaises", "Dances"}):
         return "dance"
@@ -530,10 +535,11 @@ def map_genre_form(genre_cell: str, title: str = "") -> str:
         return "oratorio_cantata"
     if "Overtures" in tokens or re.search(r"\b(overture|tone poem)\b", blob):
         return "overture_tone_poem"
+    # Songs before arrangement: a song with arranged files is still a song.
+    if any(x in tokens for x in {"Songs", "Lieder"}) or re.search(r"\bsong cycle\b", blob):
+        return "song_cycle" if "cycle" in blob else "song"
     if "(arr)" in (genre_cell or "").lower() or re.search(r"\barr\.?\b", blob):
         return "arrangement"
-    if any(x in tokens for x in {"Songs", "Lieder"}) or re.search(r"\bsong cycle\b", blob):
-        return "song_cycle" if "cycle" in blob else "other"
     return ""
 
 

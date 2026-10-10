@@ -10,7 +10,7 @@ import pandas as pd
 
 import common
 from build_dump import eu_pd_fields
-from common import pipe_join, pipe_split
+from common import pipe_join, pipe_split, qa_flags_join
 from remap_force import rollup_composers
 from wikidata_enrich import apply_year_fallbacks, enrich_from_entity
 
@@ -65,21 +65,15 @@ def _is_qid(value: str) -> bool:
 
 
 def _append_manual_flag(qa_flags: str) -> str:
-    parts = pipe_split(qa_flags)
-    if MANUAL_FLAG not in parts:
-        parts.append(MANUAL_FLAG)
-    return pipe_join(parts)
+    return _append_qa_flag(qa_flags, MANUAL_FLAG)
 
 
 def _drop_qid_flags(qa_flags: str) -> str:
-    return pipe_join(f for f in pipe_split(qa_flags) if f not in QID_FLAGS_TO_CLEAR)
+    return qa_flags_join(f for f in pipe_split(qa_flags) if f not in QID_FLAGS_TO_CLEAR)
 
 
 def _append_qa_flag(qa_flags: str, flag: str) -> str:
-    parts = pipe_split(qa_flags)
-    if flag not in parts:
-        parts.append(flag)
-    return pipe_join(parts)
+    return qa_flags_join([*pipe_split(qa_flags), flag])
 
 
 def citizenship_iso_from_cache(citizenship_qids: str) -> tuple[str, list[str]]:

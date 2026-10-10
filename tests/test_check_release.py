@@ -141,9 +141,17 @@ def test_schema_drift_is_reported_even_for_required_columns(tmp_path, monkeypatc
 def test_n_players_and_lc_crosswalk_coverage():
     c, w = frames(1, 4)
     w["force_family"] = ["piano_solo", "unclassified", "", "kazoo_band"]
-    w["genre_form"] = ["sonata", "", "other", "polka"]
+    w["genre_form"] = ["sonata", "", "song", "polka"]
     w["imslp_n_players"] = ["1", "1|2", "", "0|x"]
     errors, _ = check_release.check_data_quality(c, w, {})
     assert errors == ["invalid imslp_n_players values: 0|x",
                       "force_family values missing from data/vocab/lc_crosswalk.tsv: kazoo_band",
                       "genre_form values missing from data/vocab/lc_crosswalk.tsv: polka"]
+
+
+def test_qa_flags_known_and_in_canonical_order():
+    c, w = frames(1, 1)
+    c = pd.concat([c] * 4, ignore_index=True)
+    c["qa_flags"] = ["", "birth_rank_conflict|manual_override", "manual_override|gnd_death_conflict", "made_up"]
+    errors, _ = check_release.check_data_quality(c, w, {})
+    assert errors == ["unknown qa_flags tokens: made_up", "qa_flags cells not in canonical order: 1"]

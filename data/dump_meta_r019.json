@@ -1,13 +1,13 @@
 {
-  "dump_id": "r018",
+  "dump_id": "r019",
   "tool_version": "3.6.0",
   "schema_version": 3,
-  "created_at_utc": "2026-10-10T20:14:55.092834+00:00",
-  "derived_from_dump_id": "r017",
+  "created_at_utc": "2026-10-10T22:15:36.107053+00:00",
+  "derived_from_dump_id": "r018",
   "enrichment": "pipeline_derive",
   "output_files": {
-    "composers": "composers_r018.tsv",
-    "works": "works_r018.tsv"
+    "composers": "composers_r019.tsv",
+    "works": "works_r019.tsv"
   },
   "row_counts": {
     "composers": 3369,
@@ -1297,7 +1297,7 @@
     }
   },
   "pd_reference_year": 2026,
-  "source_dump_id": "r017",
+  "source_dump_id": "r018",
   "stages": [
     {
       "script": "remap_force.py",
@@ -1379,7 +1379,7 @@
   "crawl_date": null,
   "pageviews_range": null,
   "carry_forward": {
-    "base_dump_id": "r017",
+    "base_dump_id": "r018",
     "carried_forward": {
       "force_family": 0,
       "instrumentation_raw": 0,

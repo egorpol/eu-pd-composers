@@ -135,6 +135,16 @@ def check_data_quality(
             if bad:
                 errors.append(f"invalid {column} values: " + ", ".join(bad[:10]))
 
+    # --- qa_flags: known tokens in canonical order ---
+    if "qa_flags" in composers.columns:
+        cells = composers["qa_flags"].map(_as_str)
+        unknown = sorted({f for cell in cells for f in common.pipe_split(cell)} - set(common.QA_FLAG_ORDER))
+        if unknown:
+            errors.append("unknown qa_flags tokens: " + ", ".join(unknown))
+        unordered = int((cells != cells.map(lambda c: common.qa_flags_join(common.pipe_split(c)))).sum())
+        if unordered:
+            errors.append(f"qa_flags cells not in canonical order: {unordered}")
+
     # --- IMSLP category completeness ---
     if "imslp_genre_categories" in works.columns and len(works):
         empty = works["imslp_genre_categories"].map(_as_str).eq("").sum()

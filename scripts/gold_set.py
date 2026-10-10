@@ -41,7 +41,7 @@ SETS = ("composers", "works")
 ID_COLUMN = {"composers": "composer_id", "works": "work_id"}
 ITEM_PREFIX = {"composers": "C", "works": "W"}
 
-# Dataset map_genre_form order (first match wins), minus arrangement/other, plus song and none.
+# Dataset map_genre_form order (first match wins), minus arrangement, plus none.
 GOLD_GENRE_FORMS = (
     "opera", "ballet", "concerto", "symphony", "sonata", "suite", "variations", "etude",
     "prelude_fugue", "string_quartet", "dance", "mass_requiem", "oratorio_cantata",
@@ -175,7 +175,7 @@ def ensure_gold_columns(kind: str, frame: pd.DataFrame) -> pd.DataFrame:
 
 
 def alias_dump_genre_form(value: str) -> str:
-    """Dump `other` is IMSLP Songs/Lieder → gold `song`; empty → `none`."""
+    """Empty → `none`; dumps before r019 call `song` `other` (IMSLP Songs/Lieder)."""
     if value == "other":
         return "song"
     return value if value else "none"
