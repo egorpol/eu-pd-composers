@@ -8,6 +8,9 @@ Dump snapshots: revision `dump_id` (`rNNN`) — see [VERSIONING.md](VERSIONING.m
 
 ## [Unreleased]
 
+### Fixed
+- `remap_work_evidence.py` no longer clears a work's IMSLP evidence when its page is missing from the local `imslp_page_cats` cache: the prior cells are kept, counted (`missing_cache`, `kept_prior`, `no_pageid` in the report and dump meta) and logged as a warning. An offline `derive` from r015 with an incomplete local cache had wiped 159 cells on 63 works
+
 ### Deferred
 - Louis Barron (1920–1989) missing: the Wikipedia list links both Barrons to the duo article and swaps their years
 - Unresolved identities: John Mitchell (b. 1941, unlinked on the list), Robert Graham Manson (`no_composer_occupation`); 7 `unverified_heuristic` matches

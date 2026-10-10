@@ -242,6 +242,34 @@ def test_remap_redirect_missing_and_uncached_are_empty(source):
     assert out.loc[4, "imslp_style"] == ""
     assert report["redirect_or_missing_page"] == 2
     assert report["missing_cache"] == 1
+    assert report["kept_prior"] == 0
+
+
+def test_uncached_page_keeps_prior_evidence(source):
+    composers, works, calls = source
+    works = pd.concat(
+        [works, pd.DataFrame([{**_work(20, composer_id="Q1", title="No Page"), "imslp_pageid": ""}])],
+        ignore_index=True,
+    )
+    for col in evidence.EVIDENCE_COLUMNS:
+        works[col] = ""
+    works.loc[[0, 1, 4, 5], "imslp_style"] = "Baroque"
+    works.loc[[4, 5], "imslp_first_published"] = "1700"
+    out, report = remap.remap_work_evidence(composers, works)
+    # Cached pages (including redirects) are recomputed; only the uncached page keeps its cells.
+    assert out.loc[0, "imslp_style"] == "Romantic|Early 20th century"
+    assert out.loc[1, "imslp_style"] == ""
+    assert out.loc[4, "imslp_style"] == "Baroque"
+    assert out.loc[4, "imslp_first_published"] == "1700"
+    # A row without a page id has no IMSLP evidence to keep.
+    assert out.loc[5, "imslp_style"] == ""
+    assert out.loc[5, "imslp_first_published"] == ""
+    assert report["missing_cache"] == 1
+    assert report["kept_prior"] == 1
+    assert report["no_pageid"] == 1
+    assert report["style_counts"]["Baroque"] == 1
+    assert report["coverage"]["imslp_first_published"]["count"] == 3
+    assert ("imslp_page_cats", "") not in calls
 
 
 def test_remap_fills_evidence_and_reports(source):
