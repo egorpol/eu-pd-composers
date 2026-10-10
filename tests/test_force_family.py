@@ -6,6 +6,7 @@ from force_family import (
     force_family_from_categories,
     force_family_from_for_category,
     force_family_from_instrumentation,
+    map_genre_form,
     n_players_from_categories,
 )
 
@@ -138,3 +139,28 @@ def test_instrumentation(instrumentation, family):
 )
 def test_n_players(cell, expected):
     assert n_players_from_categories(cell) == expected
+
+
+@pytest.mark.parametrize(
+    "cell, title, form",
+    [
+        # IMSLP Quartets holds any four-player work; only original string-quartet forces count
+        ("For 2 violins, viola, cello|For 4 players|Quartets", "String Quartet No.1", "string_quartet"),
+        ("For 2 violins, viola, cello|For 4 players|Quartets", "Quartet in D major", "string_quartet"),
+        ("For 4 players|For violin, viola, cello, piano|Quartets", "Piano Quartet, Op.16", ""),
+        ("For 4 players|For horn, 2 trumpets, trombone|Quartets", "Brass Quartet, Op.153", ""),
+        ("For 4 voices, organ|For voices with keyboard|Quartets", "O Sacrum Convivium", ""),
+        ("For 2 violins, viola, cello (arr)|For 4 players|For flute, violin, viola, cello|Quartets",
+         "Flute Quartet", "arrangement"),
+        ("For 4 players|For violin, viola, cello, piano|Quartets", "Quartet after a String Quartet",
+         "string_quartet"),
+        # Songs/Lieder beat an arrangement; song cycles stay song_cycle
+        ("For voice, piano|Songs|For guitar (arr)", "Ständchen", "song"),
+        ("For voice, piano|Lieder", "Ständchen", "song"),
+        ("For voice, piano|Songs", "Dichterliebe, a song cycle", "song_cycle"),
+        ("For piano|Pieces|For guitar (arr)", "Romance", "arrangement"),
+        ("For piano|Pieces", "Romance", ""),
+    ],
+)
+def test_genre_form(cell, title, form):
+    assert map_genre_form(cell, title) == form

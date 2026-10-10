@@ -8,11 +8,18 @@ Pipeline diagram: [`docs/PIPELINE.md`](../docs/PIPELINE.md).
 
 | File | Rows | dump_id |
 |---|---|---|
-| `composers_r018.tsv` | 3369 | `r018` |
-| `works_r018.tsv` | 29033 | `r018` |
-| `dump_meta_r018.json` | — | companion meta |
+| `composers_r019.tsv` | 3369 | `r019` |
+| `works_r019.tsv` | 29033 | `r019` |
+| `dump_meta_r019.json` | — | companion meta |
 
-Only the **latest** revision is kept in `data/` in git. Older `rNNN` / calendar dumps are recoverable from **git history** (not from gitignored `data/cache/`). The viewer is exported from `r018` (`scripts/export_viewer_json.py --dump r018`).
+Only the **latest** revision is kept in `data/` in git. Older `rNNN` / calendar dumps are recoverable from **git history** (not from gitignored `data/cache/`). The viewer is exported from `r019` (`scripts/export_viewer_json.py --dump r019`).
+
+### What changed since r018
+
+- **r019 — genre_form rule fixes.** r018 plus an offline `pipeline.py derive` (no crawl). Composers are unchanged; 6,092 works change `genre_form`. The three fixes were decided before the gold set was annotated, so they are not tuned on it.
+  - `other` is renamed `song`: IMSLP *Songs* / *Lieder* that are not song cycles. Songs now win over an arrangement, so 744 songs with arranged files move from `arrangement` to `song` (5,947 in all). `arrangement` (2,496) is left for works with arranged files and no listed form.
+  - `string_quartet` needs IMSLP *Quartets* together with the original forces 2 violins, viola, cello, or "string quartet" in the title. IMSLP files every four-player work under *Quartets*, so 147 piano, wind, brass and vocal quartets lose the label (785 → 638).
+  - `qa_flags` tokens are written in one canonical order whichever stage touched the cell last: Wikidata flags, `*_from_list`, `list_years_conflict`, IMSLP identity, GND, `manual_override`. r018 already followed it, so no cell changed; a release gate now fails on unknown tokens or another order.
 
 ### What changed since r017
 
@@ -141,7 +148,7 @@ New `qa_flags` values: `list_years_conflict` (the Wikipedia list row gives a dif
 
 [`vocab/lc_crosswalk.tsv`](vocab/lc_crosswalk.tsv) maps each `force_family` and `genre_form` value to the Library of Congress Medium of Performance Thesaurus for Music (LCMPT, `scheme=lcmpt`) or Genre/Form Terms (LCGFT, `scheme=lcgft`). Columns: `facet`, `value`, `scheme`, `relation`, `label`, `uri`, `note`; a value with several LC terms has several rows. `relation` is a SKOS mapping property read as *value relation term*: `exactMatch` and `closeMatch` (same concept), `broadMatch` (the LC term is broader: `keyboard_other` → keyboard instrument), `narrowMatch` (the LC term is narrower: `mass_requiem` → Masses, Requiems). `solo_instrument` and `force_family=other` have no LC equivalent (empty scheme).
 
-LCGFT has no medium-based terms (no *Orchestral music*, *Choral music* or *String quartets*), so those families map to LCMPT and `string_quartet` to LCGFT *Chamber music* (`broadMatch`). Two quirks of the rules show here: `string_quartet` also fires on IMSLP *Quartets* (any quartet), and `genre_form=other` is set only for IMSLP *Songs* / *Lieder* that are not song cycles, so it maps to LCGFT *Songs*. Labels and URIs were checked against id.loc.gov on 2026-10-10 (`python scripts/lc_crosswalk.py verify`).
+LCGFT has no medium-based terms (no *Orchestral music*, *Choral music* or *String quartets*), so those families map to LCMPT and `string_quartet` to LCGFT *Chamber music* (`broadMatch`). `genre_form=song` (IMSLP *Songs* / *Lieder* that are not song cycles) maps to LCGFT *Songs* as `broadMatch`, because the LC term also covers song cycles; up to r018 this value was called `other`. Labels and URIs were checked against id.loc.gov on 2026-10-10 (`python scripts/lc_crosswalk.py verify`).
 
 ## Gold set
 
@@ -164,11 +171,11 @@ The whole chain is one command ([`docs/PIPELINE.md`](../docs/PIPELINE.md), [`doc
 
 ```bash
 pip install -r requirements.txt
-python scripts/pipeline.py refresh --base r018                  # crawl + all stages → next revision
-python scripts/pipeline.py derive --from-dump r018 --to r019    # offline stages only
+python scripts/pipeline.py refresh --base r019                  # crawl + all stages → next revision
+python scripts/pipeline.py derive --from-dump r019 --to r020    # offline stages only
 
-python scripts/export_viewer_json.py --dump r018
-python scripts/check_release.py --dump r018 --viewer-data viewer/data
+python scripts/export_viewer_json.py --dump r019
+python scripts/check_release.py --dump r019 --viewer-data viewer/data
 ```
 
 The stages it runs, in order, each as `--from-dump rX --to rY`: `remap_force.py` → `carry_forward.py --base rPREV` → `remap_composers.py` → `apply_overrides.py` → `remap_imslp_matches.py` (after `refetch_composer_pages.py --dump rX`, network, ~1 min) → `remap_work_evidence.py` (after `refetch_work_files.py --dump rX` on refresh, network, ~10 min) → `apply_llm_styles.py` (replays the committed ledger; never calls a model).

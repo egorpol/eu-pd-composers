@@ -38,6 +38,7 @@ from common import (  # noqa: E402
     make_session,
     pipe_join,
     pipe_split,
+    qa_flags_join,
     wikipedia_title_from_url,
 )
 from cohort import cohort_exclusion_reason  # noqa: E402
@@ -352,7 +353,7 @@ def build(args: argparse.Namespace) -> None:
                 fallback_death=list_death_i,
                 refine_birth=True,
             )
-            years["qa_flags"] = pipe_join([
+            years["qa_flags"] = qa_flags_join([
                 *pipe_split(years["qa_flags"]),
                 *list_years_flags(years, list_birth_i, list_death_i),
             ])

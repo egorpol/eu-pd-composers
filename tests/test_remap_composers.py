@@ -136,7 +136,7 @@ def test_preserves_qa_flags_from_later_pipeline_stages(source):
     composers["qa_flags"] = ["death_rank_conflict|manual_override|imslp_dates_conflict",
                               "imslp_p839_wrong", "manual_override"]
     out, _ = remap_composers.remap_composers(composers, 2026)
-    assert out.qa_flags.tolist() == ["manual_override|imslp_dates_conflict",
+    assert out.qa_flags.tolist() == ["imslp_dates_conflict|manual_override",
                                     "death_imprecise|imslp_p839_wrong", "manual_override"]
 
 

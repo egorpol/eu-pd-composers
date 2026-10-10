@@ -28,7 +28,7 @@ from common import (  # noqa: E402
     dump_tsv_path,
     next_revision_id,
     pipe_split,
-    pipe_join,
+    qa_flags_join,
     write_dump_meta,
     write_tsv_dump,
 )
@@ -119,7 +119,7 @@ def remap_composers(
             )
         )
         fields = {field: enriched[field] for field in ENRICH_FIELDS}
-        fields["qa_flags"] = pipe_join([
+        fields["qa_flags"] = qa_flags_join([
             *pipe_split(fields["qa_flags"]),
             *(flag for flag in pipe_split(row.get("qa_flags")) if flag not in QA_FLAGS),
         ])

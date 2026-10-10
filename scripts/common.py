@@ -133,6 +133,37 @@ def pipe_join(values: Iterable[Any]) -> str:
     return "|".join(out)
 
 
+# Canonical qa_flags order: Wikidata dates and identity (wikidata_enrich.QA_FLAGS), the
+# Wikipedia list, IMSLP identity, GND, manual curation. Writers join through qa_flags_join,
+# so a cell's order never depends on which stage touched it last.
+QA_FLAG_ORDER = (
+    "birth_rank_conflict",
+    "death_rank_conflict",
+    "birth_imprecise",
+    "death_imprecise",
+    "implausible_lifespan",
+    "death_before_birth",
+    "not_human",
+    "no_composer_occupation",
+    "birth_from_list",
+    "death_from_list",
+    "list_years_conflict",
+    "imslp_dates_conflict",
+    "imslp_p839_wrong",
+    "imslp_needs_recheck",
+    "gnd_death_conflict",
+    "gnd_from_lobid",
+    "manual_override",
+)
+_QA_FLAG_RANK = {flag: i for i, flag in enumerate(QA_FLAG_ORDER)}
+
+
+def qa_flags_join(flags: Iterable[Any]) -> str:
+    """pipe_join in QA_FLAG_ORDER; flags outside it keep their order at the end."""
+    parts = pipe_split(pipe_join(flags))
+    return "|".join(sorted(parts, key=lambda f: _QA_FLAG_RANK.get(f, len(_QA_FLAG_RANK))))
+
+
 def pipe_split(value: Any) -> list[str]:
     if value is None or (isinstance(value, float) and str(value) == "nan"):
         return []

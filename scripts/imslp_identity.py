@@ -163,12 +163,12 @@ def load_cached_pages(composers: pd.DataFrame) -> dict[str, Any]:
 
 
 def _append_qa_flag(out: pd.DataFrame, idx: Any, flag: str) -> None:
-    """Append once while keeping existing flag spelling and order."""
+    """Add once, in canonical order."""
     if "qa_flags" not in out:
         out["qa_flags"] = ""
-    flags = _as_str(out.at[idx, "qa_flags"])
-    if flag not in common.pipe_split(flags):
-        out.at[idx, "qa_flags"] = flags + ("|" if flags else "") + flag
+    flags = common.pipe_split(_as_str(out.at[idx, "qa_flags"]))
+    if flag not in flags:
+        out.at[idx, "qa_flags"] = common.qa_flags_join([*flags, flag])
 
 
 def resolve_matches(

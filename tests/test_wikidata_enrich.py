@@ -1,5 +1,7 @@
 import pytest
 
+import common
+import wikidata_enrich
 from wikidata_enrich import apply_year_fallbacks, enrich_from_entity, infer_scope_class
 
 
@@ -256,3 +258,10 @@ def test_coarse_birth_is_refined_only_on_request():
     ent = entity(births=[time_claim(1855, precision=8)], deaths=[time_claim(1920, precision=11)])
     years = apply_year_fallbacks(enrich_from_entity(ent), ent["claims"], fallback_birth=1854, fallback_death=1920)
     assert (years["birth_year"], years["qa_flags"]) == (1859, "birth_imprecise")
+
+
+def test_qa_flags_canonical_order():
+    # Wikidata's own flags lead the canonical order; unknown flags go last in their order.
+    assert common.QA_FLAG_ORDER[:len(wikidata_enrich.QA_FLAGS)] == wikidata_enrich.QA_FLAGS
+    assert common.qa_flags_join(["zz", "manual_override", "gnd_from_lobid", "aa", "birth_imprecise", "gnd_from_lobid"]) \
+        == "birth_imprecise|gnd_from_lobid|manual_override|zz|aa"

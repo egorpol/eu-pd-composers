@@ -183,12 +183,12 @@ def test_work_metrics_end_to_end():
 
 
 def test_genre_form_vocabulary_and_precedence():
-    assert gs.VOCAB["genre_form"] == (set(GENRE_FORMS) - {"arrangement", "other"}) | {"song", "none", "unsure"}
+    assert gs.VOCAB["genre_form"] == (set(GENRE_FORMS) - {"arrangement"}) | {"none", "unsure"}
     assert gs.GOLD_FIELDS["works"] == ("force_family", "genre_form", "has_files", "rights_basis", "notes")
     cats = {
         "opera": "Operas", "ballet": "Ballets", "concerto": "Concertos", "symphony": "Symphonies",
         "sonata": "Sonatas", "suite": "Suites", "variations": "Variations", "etude": "Etudes",
-        "prelude_fugue": "Preludes", "string_quartet": "Quartets", "dance": "Waltzes",
+        "prelude_fugue": "Preludes", "string_quartet": "Quartets|For 2 violins, viola, cello", "dance": "Waltzes",
         "mass_requiem": "Masses", "oratorio_cantata": "Cantatas", "overture_tone_poem": "Overtures",
         "song": "Songs",
     }
