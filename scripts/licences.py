@@ -12,10 +12,10 @@ import re
 from typing import Optional
 
 _CC_URL_RE = re.compile(
-    r"creativecommons\.org/(?:"
-    r"licenses/(?P<code>by-nd-nc|by(?:-nc)?(?:-nd|-sa)?)(?=[/\"'\s?#]|$)"
+    r"(?:"
+    r"(?:creativecommons\.org/licenses/|(?:i\.creativecommons\.org|licensebuttons\.net)/l/)(?P<code>by-nd-nc|by(?:-nc)?(?:-nd|-sa)?)(?=[/\"'\s?#]|$)"
     r"(?:/(?P<ver>\d\.\d)(?:/(?P<port>[a-z]{2}(?:-[a-z]{2})?)(?=[/\"'\s?#]|$))?)?"
-    r"|publicdomain/(?P<pd>zero|mark)(?:/(?P<pdver>\d\.\d))?"
+    r"|(?:creativecommons\.org/publicdomain/|(?:i\.creativecommons\.org|licensebuttons\.net)/p/)(?P<pd>zero|mark)(?:/(?P<pdver>\d\.\d))?"
     r")",
     re.I,
 )
@@ -33,7 +33,8 @@ def _spdx(elements: list[str], version: str, port: str = "") -> str:
 
 
 def spdx_from_cc_url(url: str) -> Optional[str]:
-    """SPDX id for a creativecommons.org licence or public-domain tool URL, else None.
+    """SPDX id for a creativecommons.org licence or public-domain tool URL, or for a CC badge
+    image URL (`i.creativecommons.org/l/…`, `/p/…`, or the licensebuttons.net mirror), else None.
 
     `by-nd-nc` is the CC 1.0 spelling of BY-NC-ND.
     """
