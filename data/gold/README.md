@@ -58,6 +58,10 @@ Use the highest level that has the information, and two independent sources wher
 
 When sources disagree, take the year most independent authorities give, and write the conflict in `notes`.
 
+Decided cases:
+
+- **The list row links the wrong article** (a namesake's page, such as a physicist's): `wikidata_same_person` = `no`. Answer the IMSLP and death columns for the composer the list row means (its nationality and dates identify him), and write the mix-up in `notes`. The scorer then counts the identity error and the death-year or PD errors it causes.
+
 ## Works
 
 | Column | Values | Meaning |
