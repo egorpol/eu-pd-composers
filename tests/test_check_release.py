@@ -44,6 +44,23 @@ def test_empty_pageids_do_not_count_as_a_shared_imslp_page():
     assert not any("more than one composer" in warning for warning in warnings)
 
 
+def test_llm_style_sanity_and_legacy_revision_compatibility():
+    c, w = frames(2, 2)
+    c["style_tags_src"] = ["llm_luna_xhigh", "wikidata"]
+    assert not check_release.check_data_quality(c, w, {})[0]
+    c["llm_style_tags"] = ["modern|invented", "impressionism"]
+    c["llm_style_period"] = ["unknown", "romantic"]
+    errors, _ = check_release.check_data_quality(c, w, {})
+    assert len(errors) == 3
+    assert any("invented" in error for error in errors)
+    assert any("unknown" in error for error in errors)
+    assert any("legacy LLM" in error for error in errors)
+    c["style_tags_src"] = ["", "wikidata"]
+    c["llm_style_tags"] = ["modern", "impressionism"]
+    c["llm_style_period"] = ["", "romantic"]
+    assert not check_release.check_data_quality(c, w, {})[0]
+
+
 def test_cli_against_loads_baseline(tmp_path, monkeypatch, capsys):
     monkeypatch.setattr(common, "DATA_DIR", tmp_path)
     monkeypatch.setattr(common, "CACHE_DIR", tmp_path / "cache")

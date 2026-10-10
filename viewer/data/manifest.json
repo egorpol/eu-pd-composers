@@ -1,9 +1,9 @@
 {
-  "dump_id": "r014",
-  "dump_label": "dump r014 \u00b7 built 2026-10-09",
-  "created_at_utc": "2026-10-09T23:28:40.359622+00:00",
+  "dump_id": "r015",
+  "dump_label": "dump r015 \u00b7 built 2026-10-10",
+  "created_at_utc": "2026-10-10T12:08:53.187840+00:00",
   "schema_version": 3,
-  "generated_at_utc": "2026-10-09T23:28:44.781453+00:00",
+  "generated_at_utc": "2026-10-10T12:08:54.913739+00:00",
   "counts": {
     "composers": 3369,
     "works": 29026,
@@ -49,13 +49,11 @@
       "atonal_modernism",
       "avant_garde",
       "electroacoustic",
-      "expressionism",
       "impressionism",
       "late_romantic",
       "minimalism",
       "national_folk",
       "neoclassicism",
-      "polystylism",
       "postminimalism",
       "serialism",
       "spectralism"
@@ -185,10 +183,31 @@
     ]
   },
   "style_tags_coverage": {
-    "tagged": 227,
+    "tagged": 2853,
     "total": 3369,
     "wikidata": 153,
-    "llm": 74
+    "llm": 2842
+  },
+  "llm_style_policy": {
+    "id": "llm_consensus_grounded_v2",
+    "condition": "grounded",
+    "prompt_version": "style-v2",
+    "labellers": [
+      {
+        "backend": "codex",
+        "model": "gpt-6.1-sol",
+        "effort": "low",
+        "key": "gpt-6.1-sol@low",
+        "name": "GPT-6.1 Sol"
+      },
+      {
+        "backend": "cursor",
+        "model": "grok-4.7-low",
+        "effort": "",
+        "key": "grok-4.7-low",
+        "name": "Grok 4.7"
+      }
+    ]
   },
   "disclaimer": "EU public-domain status is a live death-year + 70 years heuristic (counted from 1 January), not legal advice; composers without a death date are shown as having no death date. Linked IMSLP entries are work pages, not a verified score-file inventory. Force and style tags are research aids and often wrong (incomplete IMSLP/Wikidata data, heuristics, or LLM guesses)\u2014verify before relying on them.",
   "pageviews_window_label": "2025-10..2026-09"

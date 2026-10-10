@@ -46,15 +46,17 @@ def test_precedence_fills_rollups_and_lost_decisions():
     assert out_w.composition_year.tolist() == ["001900"] * 6
     assert out_w.piece_style_raw.tolist() == [" NA "] * 6
     assert out_w.raw.tolist() == w.raw.tolist()
-    assert out_c.style_tags.tolist() == ["serialism", "modern"]
+    assert out_c.style_tags.tolist() == ["", "modern"]
+    assert out_c.style_tags_src.tolist() == ["", "wikidata"]
     assert out_c.raw.tolist() == c.raw.tolist()
     assert out_c.works_count_total.tolist() == [6, 0]
     assert json.loads(out_c.works_count_by_category[0])["choral"] == 3
     assert report["carried_forward"] == {"force_family": 3, "instrumentation_raw": 5,
-                                           "piece_style_raw": 6, "composition_year": 6, "style_tags": 1}
+                                           "piece_style_raw": 6, "composition_year": 6}
     assert report["lost_rows"] == {"works": [["Q1", "99"]], "composers": ["lost"]}
     assert report["lost_decision_counts"]["force_family"] == 1
-    assert report["lost_decisions"]["style_tags"] == ["lost"]
+    assert "style_tags" not in report["lost_decisions"]
+    assert "style_tags" not in report["lost_decision_counts"]
     assert list(out_w.columns) == [*w.columns, "piece_style_raw", "composition_year"]
 
 

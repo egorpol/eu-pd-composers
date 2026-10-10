@@ -57,6 +57,27 @@ Each `dump_meta_rNNN.json` records counts and before/after transitions for its s
 
 Hand-reviewed fixes live in [`overrides/composers.tsv`](overrides/composers.tsv) (see [`overrides/README.md`](overrides/README.md)) and are applied last with `scripts/apply_overrides.py`, so they survive rebuilds. Touched rows carry `manual_override` in `qa_flags`.
 
+## Composer styles
+
+`style_tags` (pipe-joined slugs) and `style_tags_src` are Wikidata-only after
+`scripts/apply_llm_styles.py`. Legacy `llm*` styles are cleared, and carry-forward
+no longer restores them. The committed [style ledger](llm_ledger/README.md) is
+replayed after overrides and identity/work evidence stages, without calling models.
+Schema version stays 3; these four columns are inserted after `style_tags_src`:
+
+| Column | Values |
+|---|---|
+| `llm_style_tags` | Slugs shared by both policy labellers, in Codex order, pipe-joined; empty for disagreement, abstention or missing labels |
+| `llm_style_period` | Agreed `primary_period` slug; empty for disagreement, `unknown` or missing labels |
+| `llm_style_votes` | Each present labeller's ordered styles: `gpt-6.1-sol@low=impressionism\|neoclassicism;grok-4.7-low=impressionism`; abstention is `model=`, missing labellers are omitted |
+| `llm_style_src` | `llm_consensus_grounded_v2` when both rows exist, even with no consensus; otherwise empty |
+
+The policy selects only `grounded` / `style-v2`, Codex `gpt-6.1-sol` at `low`
+and Cursor `grok-4.7-low` at empty effort. For each composer/labeller the latest
+`created_at` wins, with later ledger lines breaking ties across input hashes.
+The output meta's `llm_styles` records the policy, ledger SHA-256 and coverage counts.
+Dump cells retain ledger slugs; viewer export maps period slugs to IMSLP facet names.
+
 ## Columns added in r010
 
 | Column | Values |
@@ -68,7 +89,7 @@ Hand-reviewed fixes live in [`overrides/composers.tsv`](overrides/composers.tsv)
 
 - **Not legal advice.** `eu_pd_*` is a death-year + 71 calendar heuristic against the dump snapshot year, for the composer only. It ignores lyricists/librettists of vocal and stage works, editions, and national deviations. Missing death → `unknown_death` (not `living`).
 - **Work pages, not score files.** IMSLP links are work pages; `has_files` is not a verified inventory.
-- **Tags are research aids and often wrong.** `force_family` and `style_tags` come from IMSLP categories, scraped General Information, Wikidata QIDs, title heuristics, and LLMs. Prefer `force_family_src` / `style_tags_src` and verify on IMSLP/Wikidata.
+- **Tags are research aids and often wrong.** `force_family` comes from IMSLP categories, scraped General Information, title heuristics and earlier LLM passes. `style_tags` comes from Wikidata; `llm_style_tags` is model consensus from the ledger. Check the source/vote columns and verify on IMSLP/Wikidata.
 - Trust order for force: `imslp_tags` > `imslp_geninfo` > `title` > `llm` / `llm_luna_xhigh` / `llm_grok`. The remaining ~370 LLM labels come from title-only passes (`llm`: gpt-6-luna at low reasoning) and residual passes; no accuracy evaluation exists yet.
 - Rows with `qa_flags` deserve a manual look before you rely on their dates or identity.
 - IMSLP match / hosted scores ≠ public domain in your jurisdiction.
@@ -100,6 +121,9 @@ python scripts/refetch_composer_pages.py --dump r011
 python scripts/remap_imslp_matches.py --from-dump r011 --to r012
 
 python scripts/remap_work_evidence.py --from-dump r012 --to r013
+
+# Replay committed grounded consensus (offline; never calls a model)
+python scripts/apply_llm_styles.py --from-dump r014 --to r015
 
 python scripts/export_viewer_json.py --dump r013
 python scripts/check_release.py --dump r013 --viewer-data viewer/data

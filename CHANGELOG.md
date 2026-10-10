@@ -8,16 +8,23 @@ Dump snapshots: revision `dump_id` (`rNNN`) — see [VERSIONING.md](VERSIONING.m
 
 ## [Unreleased]
 
+### Added
+- All-composer LLM style labelling pass (`llm_style_pass.py`) with a committed, append-only decision ledger (`data/llm_ledger/`): `gpt-6.1-sol` @low (Codex) and `grok-4.7-low` (Cursor), closed-book (`style-v1`) and Wikipedia-grounded (`style-v2`: lead + own knowledge) conditions, 3,369 composers, 0 failures. Agreement report vs Wikidata and IMSLP periods (`style_agreement.py`)
+- Dump **r015** = r014 + the replay below (2,842 composers with consensus styles; 74 legacy LLM `style_tags` retired)
+- Offline grounded style consensus replay from the committed ledger (`apply_llm_styles.py`, last pipeline stage): four `llm_style_*` composer columns, policy/hash/count provenance, and latest-row selection. Schema stays 3
+- Viewer consensus facet matching, agreed period and per-model votes; LLM period slugs share IMSLP facet names. Policy and model names are stored once in the manifest
+
+### Changed
+- `style_tags` / `style_tags_src` are Wikidata-only: legacy `llm*` tags are cleared and carry-forward no longer restores or reports them. Dump diffs count LLM consensus, and release checks validate its vocabulary and legacy retirement
+
 ### Deferred
 - Louis Barron (1920–1989) missing: the Wikipedia list links both Barrons to the duo article and swaps their years
 - Unresolved identities: John Mitchell (b. 1941, unlinked on the list), Robert Graham Manson (`no_composer_occupation`); 7 `unverified_heuristic` matches
 - Upstream fixes on Wikipedia (list links) and Wikidata (4 wrong P839 values)
 - Enable the monthly refresh schedule once IMSLP has been notified (`refresh.yml`, commented out)
-- All-composer LLM style pass: two conditions (closed-book, Wikipedia-grounded) × two models (Codex Sol, Cursor auto) with a committed decision ledger, to measure agreement between Wikidata, IMSLP and LLMs
 - Lyricist-aware PD flags: librettist life dates (names are now in `imslp_librettists`)
-- LLM decision ledger (today: carry-forward from the previous revision)
+- LLM force decision ledger (today: force labels carry forward from the previous revision)
 - Dataset licence + `CITATION.cff`; gold set and error rates
-- LLM style fill-ins
 - `--work-files` for `has_files`
 
 ## [3.4.2] - 2026-10-09
