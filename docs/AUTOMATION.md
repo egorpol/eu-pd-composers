@@ -22,7 +22,8 @@ That command copies the base revision into a staging directory (`.pipeline-*`, k
 5. `apply_overrides.py`: reviewed fixes from `data/overrides/composers.tsv`;
 6. `refetch_composer_pages.py` + `remap_imslp_matches.py`: IMSLP identity check;
 7. `remap_work_evidence.py`: work-level IMSLP style, publication, copyright and librettist columns;
-8. release gates in staging, then promotion of **only the final stage** as one new revision, the viewer export, and the gates again against the real `data/`.
+8. `apply_llm_styles.py`: replays the committed LLM style ledger into the `llm_style_*` columns (no model calls);
+9. release gates in staging, then promotion of **only the final stage** as one new revision, the viewer export, and the gates again against the real `data/`.
 
 On success it writes `data/{composers,works}_rNEXT.tsv`, `data/dump_meta_rNEXT.json`, re-exports `viewer/data/`, and prints `REVISION=rNEXT` as its last stdout line. Any failure exits non-zero and promotes nothing.
 

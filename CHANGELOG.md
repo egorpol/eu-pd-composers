@@ -8,6 +8,11 @@ Dump snapshots: revision `dump_id` (`rNNN`) — see [VERSIONING.md](VERSIONING.m
 
 ## [Unreleased]
 
+### Changed
+- One-off passes the pipeline no longer runs (`enrich_dump`, `enrich_geninfo`, `remap_styles`, `llm_force_family`, `prepare_llm_residual`, `llm_residual`, `filter_cohort`, `inventory_style_gaps`, `promote_revision` and two LLM schemas) moved to `scripts/legacy/`, with a README saying which labels in the dump each produced
+- README rewritten around current figures (r015), use cases and maintainer tasks; `data/README.md`, `docs/PIPELINE.md`, `docs/AUTOMATION.md` and `viewer/README.md` updated to r015 and the `apply_llm_styles` stage
+- Dump meta records the style ledger path relative to the repository rather than as an absolute local path
+
 ### Fixed
 - `remap_work_evidence.py` no longer clears a work's IMSLP evidence when its page is missing from the local `imslp_page_cats` cache: the prior cells are kept, counted (`missing_cache`, `kept_prior`, `no_pageid` in the report and dump meta) and logged as a warning. An offline `derive` from r015 with an incomplete local cache had wiped 159 cells on 63 works
 

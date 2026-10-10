@@ -30,3 +30,6 @@ assessments/
 
 # Pipeline staging dirs (kept on failure)
 .pipeline-*/
+
+# Paper drafts and notes (local only)
+paper/

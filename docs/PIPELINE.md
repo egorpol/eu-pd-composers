@@ -4,6 +4,8 @@ How `eu-pd-composers` builds composer + works dumps. Heuristic PD only — not l
 
 ## End-to-end flow
 
+Nodes under `scripts/legacy/` show how older labels were made. The pipeline no longer runs them; their labels survive through `carry_forward.py`.
+
 ```mermaid
 flowchart TB
   subgraph sources [Sources]
@@ -28,15 +30,15 @@ flowchart TB
   end
 
   subgraph offline [Offline enrich — no scrape]
-    ENR[scripts/enrich_dump.py<br/>IMSLP tags + title → force_family]
-    GI[scripts/enrich_geninfo.py<br/>IMSLP General Information → imslp_geninfo]
-    STY[STYLE_QID remap + prepare_llm_residual]
+    ENR[scripts/legacy/enrich_dump.py<br/>IMSLP tags + title → force_family]
+    GI[scripts/legacy/enrich_geninfo.py<br/>IMSLP General Information → imslp_geninfo]
+    STY[legacy/remap_styles.py + prepare_llm_residual.py]
     REFRESH["scripts/refetch_work_categories.py<br/>+ remap_force.py --refresh-categories"]
     WDREMAP[scripts/remap_composers.py<br/>rank-aware dates, scope, qa_flags]
     OVR[scripts/apply_overrides.py<br/>data/overrides/composers.tsv]
     IDENT[scripts/remap_imslp_matches.py<br/>IMSLP life dates + Wikipedia link vs. match]
     STYLEREPLAY[scripts/apply_llm_styles.py<br/>grounded consensus, no model calls]
-    LLM[scripts/llm_force_family.py / llm_residual.py<br/>Codex CLI — residual only, run when approved]
+    LLM[scripts/legacy/llm_force_family.py / llm_residual.py<br/>Codex CLI — historical residual passes]
     ROLL[Composer rollups]
   end
 
@@ -145,7 +147,7 @@ Identity rule (`scripts/imslp_identity.py`): compare dump birth/death years with
 python scripts/build_dump.py --date YYYY-MM-DD
 
 # Promote into revision series
-python scripts/promote_revision.py --from-dump YYYY-MM-DD --to rNNN
+python scripts/legacy/promote_revision.py --from-dump YYYY-MM-DD --to rNNN
 
 # Complete IMSLP work categories for a dump (network, resumable, ~1 req/s)
 python scripts/refetch_work_categories.py --dump r008
@@ -166,14 +168,10 @@ python scripts/apply_overrides.py --from-dump r010 --to r011
 python scripts/refetch_composer_pages.py --dump r011
 python scripts/remap_imslp_matches.py --from-dump r011 --to r012
 
-# GenInfo pilot + Wikidata style remap → next revision
-python scripts/enrich_geninfo.py --from-dump rNNN --to rNNN+1 --limit 200 --remap-styles
-
-# Prepare residual LLM queue (does not call Codex)
-python scripts/prepare_llm_residual.py --dump rNNN
-
-# LLM fill when approved (Codex + gpt-6-luna, reasoning xhigh)
-python scripts/llm_residual.py --from-dump rNNN --to rNNN+1 --reasoning xhigh
+# Legacy one-off passes (scripts/legacy/; not run by the pipeline)
+python scripts/legacy/enrich_geninfo.py --from-dump rNNN --to rNNN+1 --limit 200 --remap-styles
+python scripts/legacy/prepare_llm_residual.py --dump rNNN
+python scripts/legacy/llm_residual.py --from-dump rNNN --to rNNN+1 --reasoning xhigh
 ```
 
 Caches: `data/cache/` (gitignored). Complete work categories under `imslp_page_cats/`; composer pages under `imslp_cat_page/` (by page id; the old title-keyed `imslp_work_cats/` is truncated — do not use). GenInfo under `imslp_geninfo/`; LLM batches under hashed cache keys. Older dumps: git history only.
@@ -181,8 +179,8 @@ Caches: `data/cache/` (gitignored). Complete work categories under `imslp_page_c
 ## Filter viewer
 
 ```bash
-python scripts/export_viewer_json.py --dump r013
-python scripts/check_release.py --dump r013 --viewer-data viewer/data
+python scripts/export_viewer_json.py --dump r015
+python scripts/check_release.py --dump r015 --viewer-data viewer/data
 python -m http.server 8080 --directory viewer
 ```
 

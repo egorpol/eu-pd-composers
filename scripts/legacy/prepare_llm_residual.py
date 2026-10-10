@@ -13,6 +13,8 @@ from pathlib import Path
 
 import pandas as pd
 
+# Legacy scripts import shared modules from scripts/ and each other from scripts/legacy/.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from common import CACHE_DIR, dump_tsv_path  # noqa: E402
