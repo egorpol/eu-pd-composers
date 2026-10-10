@@ -1,4 +1,4 @@
-<title>eu-pd-composers Gold Set</title>
+<title>eu-pd-composers Gold Set __GOLD_FORM_DUMP__</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,500;8..60,600&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
@@ -140,7 +140,7 @@ textarea.dump { width: 100%; box-sizing: border-box; min-height: 120px; font-fam
 
 <header class="top">
   <div class="top-in">
-    <h1 class="brand">Gold set <span class="mono" id="dumpid">r016</span></h1>
+    <h1 class="brand">Gold set <span class="mono" id="dumpid">__GOLD_FORM_DUMP__</span></h1>
     <span class="conn" id="conn">Connecting…</span>
     <nav class="tabs" role="tablist" id="tabs"></nav>
   </div>
@@ -157,7 +157,7 @@ const FIELDS = {
   w: ["force_family", "has_files", "rights_basis", "notes"],
 };
 const SHEET_COLS = {
-  c: ["item", "composer_id", "name", "wikipedia_url", "wikidata_url", "imslp_url"],
+  c: ["item", "composer_id", "name", "wikipedia_url", "wikidata_url", "imslp_url", "gnd_id", "viaf_id"],
   w: ["item", "work_id", "composer", "title", "imslp_work_url"],
 };
 const FAMILIES = [
@@ -461,10 +461,13 @@ function renderCard(tab, items, i) {
     head.append(el("h2", { class: "name", text: it.name }));
     const links = el("div", { class: "links" }, ext(it.wikipedia_url, "Wikipedia"), ext(it.wikidata_url, "Wikidata"));
     links.append(it.imslp_url ? ext(it.imslp_url, "IMSLP category") : el("span", { class: "nolink", text: "No IMSLP link in this row: search for one" }));
+    // GND and VIAF ids come from the Wikidata item: check them against the article like the item itself.
+    if (it.gnd_id) links.append(ext("https://lobid.org/gnd/" + enc(it.gnd_id), "GND " + it.gnd_id));
+    if (it.viaf_id) links.append(ext("https://viaf.org/viaf/" + enc(it.viaf_id), "VIAF"));
     const n = enc(it.name);
     const look = el("div", { class: "lookups" }, el("span", { text: "Look up:" }),
       ext("https://imslp.org/index.php?title=Special:Search&search=" + n, "IMSLP search", ""),
-      ext("https://lobid.org/gnd/search?q=" + n + "&filter=type:Person", "GND", ""),
+      ext("https://lobid.org/gnd/search?q=" + n + "&filter=type:Person", it.gnd_id ? "GND search" : "GND", ""),
       ext("https://id.loc.gov/search/?q=" + n + "&q=cs:http://id.loc.gov/authorities/names", "LoC", ""),
       ext("https://catalogue.bnf.fr/rechercher.do?motRecherche=" + n, "BnF", ""),
       ext("https://www.oxfordmusiconline.com/search?q=" + n + "&searchBtn=Search&isQuickSearch=true", "Grove", ""));

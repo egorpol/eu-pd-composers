@@ -44,6 +44,8 @@ def _composers(n=60):
         "wikipedia_url": [f"https://en.wikipedia.org/wiki/C{i}" for i in range(n)],
         "wikidata_url": [f"https://www.wikidata.org/wiki/Q{i}" for i in range(n)],
         "imslp_url": [f"https://imslp.org/wiki/Category:C{i}" if i % 2 else "" for i in range(n)],
+        "gnd_id": [f"1000{i:05d}X" if i % 3 else "" for i in range(n)],
+        "viaf_id": [str(1000 + i) for i in range(n)],
         "imslp_match_status": ["matched" if i % 2 else "not_found" for i in range(n)],
         "imslp_match_method": ["wikidata_p839" if i % 2 else "exact_name" for i in range(n)],
         "qa_flags": ["birth_from_list" if i % 15 == 0 else "" for i in range(n)],
@@ -223,7 +225,8 @@ def test_form_page_carries_shown_columns_only(tmp_path):
     assert [len(data[k]) for k in ("composers", "works", "composers_recheck", "works_recheck")] == [30, 40, 3, 4]
     assert set(data["composers"][0]) == {"item", *gs.SHOWN["composers"]}
     assert data["works"][1]["title"] == "Lied </script><b>"
-    assert "must not leak" not in html and gs.FORM_PLACEHOLDER not in html
+    assert "must not leak" not in html and gs.FORM_PLACEHOLDER not in html and gs.FORM_DUMP_PLACEHOLDER not in html
+    assert "<title>eu-pd-composers Gold Set r900</title>" in html
     assert [i["item"] for i in data["practice"]["works"]] == ["P-W1", "P-W2"]
     assert local.read_text(encoding="utf-8").startswith("<!doctype html>")
 

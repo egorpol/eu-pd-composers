@@ -17,6 +17,7 @@ Annotation rules: data/gold/README.md.
 from __future__ import annotations
 
 import argparse
+import html
 import json
 import math
 import re
@@ -42,7 +43,7 @@ ITEM_PREFIX = {"composers": "C", "works": "W"}
 
 # Sheet columns: what the annotator sees, then what they fill in.
 SHOWN = {
-    "composers": ("composer_id", "name", "wikipedia_url", "wikidata_url", "imslp_url"),
+    "composers": ("composer_id", "name", "wikipedia_url", "wikidata_url", "imslp_url", "gnd_id", "viaf_id"),
     "works": ("work_id", "composer", "title", "imslp_work_url"),
 }
 GOLD_FIELDS = {
@@ -142,7 +143,7 @@ def _sheet_rows(kind: str, sample: pd.DataFrame, composers: pd.DataFrame) -> pd.
         shown = pd.DataFrame({
             "composer_id": sample["composer_id"], "name": sample["name_display"],
             "wikipedia_url": sample["wikipedia_url"], "wikidata_url": sample["wikidata_url"],
-            "imslp_url": sample["imslp_url"],
+            "imslp_url": sample["imslp_url"], "gnd_id": sample["gnd_id"], "viaf_id": sample["viaf_id"],
         })
     else:
         names = dict(zip(composers["composer_id"], composers["name_display"]))
@@ -229,6 +230,8 @@ def run_sample(args: argparse.Namespace) -> None:
 
 FORM_TEMPLATE = Path(__file__).resolve().parent / "gold_form.html"
 FORM_PLACEHOLDER = "__GOLD_FORM_DATA__"
+# The dump id in the title and heading keeps each dump's form apart in the artifact gallery.
+FORM_DUMP_PLACEHOLDER = "__GOLD_FORM_DUMP__"
 # The claude.ai artifact skeleton wraps the page; the local copy brings its own.
 LOCAL_PAGE = ('<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n'
               '<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">\n'
@@ -242,7 +245,9 @@ def form_data(directory: Path, dump_id: str) -> dict[str, Any]:
     for kind in SETS:
         for part, key in (("sheet", kind), ("recheck", f"{kind}_recheck")):
             frame = pd.read_csv(directory / f"{kind}_{part}.tsv", **read)
-            data[key] = frame[["item", *SHOWN[kind]]].to_dict(orient="records")
+            # Sheets drawn before a column joined SHOWN (r016 has no gnd_id) get it empty.
+            columns = ["item", *SHOWN[kind]]
+            data[key] = frame.reindex(columns=columns, fill_value="").to_dict(orient="records")
     practice = json.loads((DATA_DIR / "gold" / "practice.json").read_text(encoding="utf-8"))
     data["practice"] = {kind: practice[kind] for kind in SETS}
     return data
@@ -253,7 +258,7 @@ def render_form(data: dict[str, Any], template: str) -> str:
         raise ValueError(f"Form template must hold {FORM_PLACEHOLDER} exactly once")
     # "<\/" keeps a title containing "</script>" from closing the data block early.
     payload = json.dumps(data, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
-    return template.replace(FORM_PLACEHOLDER, payload)
+    return template.replace(FORM_DUMP_PLACEHOLDER, html.escape(data["dump"])).replace(FORM_PLACEHOLDER, payload)
 
 
 def run_form(args: argparse.Namespace) -> list[Path]:
