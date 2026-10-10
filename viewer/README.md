@@ -32,7 +32,29 @@ Filters are grouped:
 
 **EU public domain** has five mutually exclusive buckets computed in the browser from `eu_year` and the current calendar year (`PD now` / enters next 1 January / enters within Y+2–Y+5 / later / no death date). Multi-select is a union; default is `PD now`. The results “EU” column and detail pane show this live state (not the dump-frozen `eu` status). The “as of YEAR” note lives in the ⓘ hint.
 
-**Style** is one composer-level facet: the union of Wikidata/LLM composer tags (`styles` / `style_src`) and IMSLP work periods (`st` on works). Options are ordered era-first; each option shows a live composer count for the currently selected style sources. **Style source** (Wikidata · IMSLP works · LLM, all on by default) chooses which sources count toward matching and toward those live counts. A composer matches when any selected style is present under any selected source. Per-work IMSLP periods remain visible as chips in the work list; the detail pane shows `Style — Wikidata: … · IMSLP works: … · LLM: …` (empty sources omitted).
+**Style** is one composer-level facet: the union of Wikidata composer tags
+(`styles` / `style_src`), grounded LLM consensus (`ls`) and IMSLP work periods
+(`st` on works). Export maps LLM period slugs to the same IMSLP names
+(`romantic` → `Romantic`, `early_20th_century` → `Early 20th century`), so a
+single option matches across sources. Options are ordered era-first; each option
+shows a live composer count for the selected sources. **Style source** (Wikidata ·
+IMSLP works · LLM, all on by default) chooses which sources count toward matching
+and those counts. A composer matches when any selected style is present under
+any selected source; individual model votes do not count as consensus.
+
+The optional composer fields `ls` (consensus list), `lp` (agreed period) and `lv`
+(votes in manifest labeller order) are omitted when absent. In `lv`, `[]` means
+abstention and `null` means a missing row. Policy, labeller identities and display
+names live once in `manifest.llm_style_policy`; `style_tags_coverage.llm` counts
+composers with non-empty consensus. Coverage `tagged` is the union of composers
+with Wikidata tags or LLM consensus.
+
+Per-work IMSLP periods remain visible as chips. The compact detail style line shows
+`Style — Wikidata: … · IMSLP works: … · LLM: Impressionism (GPT-6.1 Sol:
+Impressionism, Neoclassicism · Grok 4.7: Impressionism); period: Early 20th century`.
+Both rows with no shared styles show `LLM: no consensus` and the votes (`—` for
+abstention); one missing row shows `incomplete labelling`. Never-labelled composers
+omit the LLM part.
 
 Filters, sort, and selected composer id are mirrored into the query string (`history.replaceState`) for shareable links (`style`, `styleSrc=wikidata,imslp,llm`). Legacy URLs keep working: `eu=pd` → `pd=now`; `eu=not_pd` → `pd=next,soon,later`; `eu=unknown_death` → `pd=unknown`; `pd=within5` → `pd=next,soon`; `ist=X` / `imslpStyle=X` → `style=X` with `styleSrc=imslp`; bare `style=Y` still applies with all sources on.
 

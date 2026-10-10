@@ -1,13 +1,13 @@
 {
-  "dump_id": "r014",
-  "tool_version": "3.4.2",
+  "dump_id": "r015",
+  "tool_version": "3.5.0",
   "schema_version": 3,
-  "created_at_utc": "2026-10-09T23:28:40.359622+00:00",
-  "derived_from_dump_id": "r013",
-  "enrichment": "pipeline_refresh",
+  "created_at_utc": "2026-10-10T12:08:53.187840+00:00",
+  "derived_from_dump_id": "r014",
+  "enrichment": "apply_llm_styles",
   "output_files": {
-    "composers": "composers_r014.tsv",
-    "works": "works_r014.tsv"
+    "composers": "composers_r015.tsv",
+    "works": "works_r015.tsv"
   },
   "row_counts": {
     "composers": 3369,
@@ -282,6 +282,10 @@
     "years_until_eu_pd",
     "style_tags",
     "style_tags_src",
+    "llm_style_tags",
+    "llm_style_period",
+    "llm_style_votes",
+    "llm_style_src",
     "notable_works",
     "notable_works_qids",
     "imslp_category",
@@ -543,6 +547,39 @@
       "piece_style_raw": 0,
       "composition_year": 0,
       "style_tags": 0
+    }
+  },
+  "llm_styles": {
+    "policy": {
+      "id": "llm_consensus_grounded_v2",
+      "condition": "grounded",
+      "prompt_version": "style-v2",
+      "labellers": [
+        {
+          "backend": "codex",
+          "model": "gpt-6.1-sol",
+          "effort": "low",
+          "key": "gpt-6.1-sol@low",
+          "name": "GPT-6.1 Sol"
+        },
+        {
+          "backend": "cursor",
+          "model": "grok-4.7-low",
+          "effort": "",
+          "key": "grok-4.7-low",
+          "name": "Grok 4.7"
+        }
+      ]
+    },
+    "ledger_path": "/home/egor/Nextcloud/code/public_repos/PublicDomainSheetMusicFinder/data/llm_ledger/style_labels.jsonl",
+    "ledger_sha256": "f912321077d71697768a10aeb1ef97193070d7e68d1d2f11574cbcb237c6c4ab",
+    "counts": {
+      "consensus_nonempty": 2842,
+      "both_labelled_no_consensus": 518,
+      "missing_labellers": 9,
+      "period_nonempty": 2748,
+      "both_labelled": 3360,
+      "legacy_retired": 74
     }
   }
 }

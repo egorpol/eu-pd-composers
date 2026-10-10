@@ -153,7 +153,7 @@ def compare_dumps(
         count = sum(row.get("force_family_src", "").startswith("llm") for row in rows.values())
         lines.append(f"- {label} force labels: {count}/{len(rows)} ({count / max(len(rows), 1):.2%}).")
     for label, rows in ((prev_id, prev_c), (next_id, next_c)):
-        count = sum(row.get("style_tags_src", "").startswith("llm") for row in rows.values())
+        count = sum(bool(row.get("llm_style_tags", "")) for row in rows.values())
         lines.append(f"- {label} composer styles: {count}/{len(rows)} ({count / max(len(rows), 1):.2%}).")
     added_flags: Counter[str] = Counter()
     removed_flags: Counter[str] = Counter()

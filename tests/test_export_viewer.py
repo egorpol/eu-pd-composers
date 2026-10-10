@@ -218,6 +218,9 @@ def test_imslp_style_alias_merge_and_style_tags_coverage(patched_paths):
                 name_sort="Bob",
                 style_tags="minimalism",
                 style_tags_src="llm_luna_xhigh",
+                llm_style_tags="minimalism|romantic",
+                llm_style_period="romantic",
+                llm_style_votes="gpt-6.1-sol@low=minimalism|romantic;grok-4.7-low=romantic|minimalism",
                 works_count_total="1",
             ),
             _base_composer(
@@ -277,6 +280,42 @@ def test_imslp_style_alias_merge_and_style_tags_coverage(patched_paths):
         "wikidata": 1,
         "llm": 1,
     }
+    c_rows = json.loads((out / "composers.json").read_text())
+    assert c_rows[1]["styles"] == [] and c_rows[1]["style_src"] == ""
+    assert c_rows[1]["ls"] == ["minimalism", "Romantic"]
+    assert c_rows[1]["lp"] == "Romantic"
+    assert c_rows[1]["lv"] == [["minimalism", "Romantic"], ["Romantic", "minimalism"]]
+    assert all(field not in c_rows[2] for field in ("ls", "lp", "lv"))
+    assert manifest["llm_style_policy"]["condition"] == "grounded"
+    assert [m["name"] for m in manifest["llm_style_policy"]["labellers"]] == ["GPT-6.1 Sol", "Grok 4.7"]
+
+
+def test_votes_keep_abstention_missing_models_and_consensus_coverage(patched_paths):
+    data, out = patched_paths
+    composers = pd.DataFrame([
+        _base_composer(composer_id="Q1", llm_style_tags="impressionism", llm_style_period="",
+                       llm_style_votes="gpt-6.1-sol@low=impressionism;grok-4.7-low=impressionism"),
+        _base_composer(composer_id="Q2", style_tags="", style_tags_src="", llm_style_tags="",
+                       llm_style_votes="gpt-6.1-sol@low=romantic;grok-4.7-low="),
+        _base_composer(composer_id="Q3", style_tags="", style_tags_src="", llm_style_tags="",
+                       llm_style_votes="grok-4.7-low="),
+    ])
+    _write_dump(data, "r902", composers, pd.DataFrame([_base_work()]))
+    exporter.export("r902", out)
+    rows = json.loads((out / "composers.json").read_text())
+    assert rows[1]["lv"] == [["Romantic"], []]
+    assert rows[2]["lv"] == [None, []]
+    assert "ls" not in rows[1] and "lp" not in rows[0]
+    manifest = json.loads((out / "manifest.json").read_text())
+    assert manifest["style_tags_coverage"] == {"tagged": 1, "total": 3, "wikidata": 1, "llm": 1}
+
+
+def test_llm_period_vocabulary_uses_canonical_imslp_spellings():
+    assert exporter._llm_facet_value("romantic") == "Romantic"
+    assert exporter._llm_facet_value("early_20th_century") == "Early 20th century"
+    assert exporter._llm_facet_value("traditional_folk") == "Traditional (folk)"
+    assert exporter._llm_facet_value("modern") == "Modern"
+    assert exporter._llm_facet_value("late_romantic") == "late_romantic"
 
 
 def test_normalize_imslp_style_helper():

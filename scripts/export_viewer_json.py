@@ -22,6 +22,8 @@ OUT = REPO / "viewer" / "data"
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from common import DATA_DIR, dump_meta_path, format_viewer_dump_label  # noqa: E402
+from apply_llm_styles import policy_metadata  # noqa: E402
+from style_vocab import IMSLP_PERIOD_TO_SLUG  # noqa: E402
 
 # Follows EU_PD_DATA_DIR, so staged pipeline runs export the dump they just built.
 DATA = DATA_DIR
@@ -31,10 +33,27 @@ IMSLP_STYLE_ALIASES = {
     "Romántico": "Romantic",
     "Traditional": "Traditional (folk)",
 }
+# Keep the first canonical spelling, rather than the later aliases in the map.
+LLM_STYLE_TO_FACET = {}
+for _period, _slug in IMSLP_PERIOD_TO_SLUG.items():
+    LLM_STYLE_TO_FACET.setdefault(_slug, IMSLP_STYLE_ALIASES.get(_period, _period))
 
 
 def _normalize_imslp_style(name: str) -> str:
     return IMSLP_STYLE_ALIASES.get(name, name)
+
+
+def _llm_facet_value(slug: str) -> str:
+    return LLM_STYLE_TO_FACET.get(slug, slug)
+
+
+def _llm_votes(value, labellers: list[dict]) -> list[list[str] | None]:
+    text = str(_clean(value) or "")
+    if not text:
+        return []
+    votes = dict(part.split("=", 1) for part in text.split(";") if "=" in part)
+    return [[_llm_facet_value(s) for s in _pipe_list(votes[labeller["key"]])]
+            if labeller["key"] in votes else None for labeller in labellers]
 
 
 def _clean(v):
@@ -100,15 +119,15 @@ def export(dump_id: str, out_dir: Path) -> None:
     has_imslp_fp = "imslp_first_published" in works.columns
     has_imslp_cf = "imslp_copyright_flags" in works.columns
 
-    created_at = None
+    meta = {}
     meta_path = dump_meta_path(dump_id)
     if meta_path.exists():
         try:
-            created_at = json.loads(meta_path.read_text(encoding="utf-8")).get(
-                "created_at_utc"
-            )
+            meta = json.loads(meta_path.read_text(encoding="utf-8"))
         except json.JSONDecodeError:
-            created_at = None
+            pass
+    created_at = meta.get("created_at_utc")
+    llm_policy = (meta.get("llm_styles") or {}).get("policy") or policy_metadata()
 
     composer_rows = []
     for _, row in composers.iterrows():
@@ -135,8 +154,20 @@ def export(dump_id: str, out_dir: Path) -> None:
             "views": views,
             "views_window": str(_clean(row.get("pageviews_window"))),
         }
+        if entry["style_src"].startswith("llm"):
+            entry["styles"] = []
+            entry["style_src"] = ""
         if str(_clean(row.get("is_film_composer"))).lower() == "true":
             entry["film"] = True
+        llm_styles = [_llm_facet_value(s) for s in _pipe_list(row.get("llm_style_tags"))]
+        llm_period = _llm_facet_value(str(_clean(row.get("llm_style_period")) or ""))
+        llm_votes = _llm_votes(row.get("llm_style_votes"), llm_policy["labellers"])
+        if llm_styles:
+            entry["ls"] = llm_styles
+        if llm_period:
+            entry["lp"] = llm_period
+        if llm_votes:
+            entry["lv"] = llm_votes
         composer_rows.append(entry)
 
     by_composer: dict[str, list] = defaultdict(list)
@@ -194,11 +225,9 @@ def export(dump_id: str, out_dir: Path) -> None:
         sorted(imslp_style_counts.items(), key=lambda kv: (-kv[1], kv[0]))
     )
 
-    tagged_composers = [c for c in composer_rows if c["styles"]]
-    wikidata_tagged = sum(1 for c in tagged_composers if c["style_src"] == "wikidata")
-    llm_tagged = sum(
-        1 for c in tagged_composers if str(c["style_src"]).startswith("llm")
-    )
+    tagged_composers = [c for c in composer_rows if c["styles"] or c.get("ls")]
+    wikidata_tagged = sum(1 for c in composer_rows if c["styles"] and c["style_src"] == "wikidata")
+    llm_tagged = sum(1 for c in composer_rows if c.get("ls"))
     style_tags_coverage = {
         "tagged": len(tagged_composers),
         "total": len(composer_rows),
@@ -232,6 +261,7 @@ def export(dump_id: str, out_dir: Path) -> None:
             "force_family_src": sorted(force_src_tiers),
         },
         "style_tags_coverage": style_tags_coverage,
+        "llm_style_policy": llm_policy,
         "disclaimer": (
             "EU public-domain status is a live death-year + 70 years heuristic "
             "(counted from 1 January), not legal advice; composers without a death "

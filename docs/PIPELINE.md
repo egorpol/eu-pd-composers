@@ -11,6 +11,7 @@ flowchart TB
     WD[Wikidata API]
     PV[Wikimedia Pageviews API]
     IMSLP[IMSLP MediaWiki API]
+    LEDGER[Committed style_labels.jsonl]
   end
 
   subgraph scrape [scripts/build_dump.py — network]
@@ -34,6 +35,7 @@ flowchart TB
     WDREMAP[scripts/remap_composers.py<br/>rank-aware dates, scope, qa_flags]
     OVR[scripts/apply_overrides.py<br/>data/overrides/composers.tsv]
     IDENT[scripts/remap_imslp_matches.py<br/>IMSLP life dates + Wikipedia link vs. match]
+    STYLEREPLAY[scripts/apply_llm_styles.py<br/>grounded consensus, no model calls]
     LLM[scripts/llm_force_family.py / llm_residual.py<br/>Codex CLI — residual only, run when approved]
     ROLL[Composer rollups]
   end
@@ -66,6 +68,8 @@ flowchart TB
   LLM --> ROLL --> C
   LLM --> WK
   GI --> ROLL
+  LEDGER --> STYLEREPLAY
+  ROLL --> STYLEREPLAY --> C
   C --> META
   WK --> META
 ```
@@ -126,9 +130,10 @@ Identity rule (`scripts/imslp_identity.py`): compare dump birth/death years with
 ## One command: `scripts/pipeline.py`
 
 - `pipeline.py refresh --base rPREV`: cold crawl (`build_dump.py`) plus every stage below in a staging dir; promotes **one** new revision whose meta lists the stages; re-exports the viewer; runs `check_release.py --against rPREV`. Used by the monthly workflow ([AUTOMATION.md](AUTOMATION.md)).
-- `pipeline.py derive --from-dump rX --to rY`: the offline stages only (rules or overrides changed). `--preserve-schema` fails on any column change; `derive` on an already-derived dump reproduces it exactly.
+- `pipeline.py derive --from-dump rX --to rY`: the offline stages only (rules or overrides changed). By default it may add work-evidence and composer `llm_style_*` columns; `--preserve-schema` fails on any column change. Every output stamps `dump_date` with its revision id when the column exists; `derive` on an already-derived dump reproduces its TSVs modulo `dump_date`.
 - `refresh` first runs `refetch_override_entities.py` (preflight: override re-key targets into the cache), then `build_dump.py`.
-- Stage order: `remap_force` → `carry_forward` (earlier LLM / GenInfo decisions, joined on composer + IMSLP page id; never over a category-derived label) → `remap_composers` → `apply_overrides` → (`refetch_composer_pages`) `remap_imslp_matches` → `remap_work_evidence`.
+- Stage order: `remap_force` → `carry_forward` (earlier LLM force / GenInfo decisions, joined on composer + IMSLP page id; never over a category-derived label) → `remap_composers` → `apply_overrides` → (`refetch_composer_pages`) `remap_imslp_matches` → `remap_work_evidence` → `apply_llm_styles`.
+- `apply_llm_styles` reads the committed ledger after composer re-keys, selects grounded `style-v2` rows from the two pinned labellers, writes consensus/votes/period/provenance, and retires legacy `llm*` composer tags. The meta records policy, ledger SHA-256 and counts. Carry-forward retains no LLM composer styles; replay is their only source. See [ledger policy](../data/llm_ledger/README.md).
 - `diff_dumps.py rPREV rNEXT --out diff.md --summary-json summary.json` writes the review report (PD flips, identity changes, works added or removed, label transitions, schema changes).
 - `check_release.py --against rPREV` fails if composers change by more than 3%, works drop by more than 5%, or a column disappears.
 - `EU_PD_DATA_DIR` / `EU_PD_CACHE_DIR` move the data and cache dirs (staging uses them).
@@ -150,6 +155,9 @@ python scripts/remap_force.py --from-dump r008 --to r009 --refresh-categories
 
 # Rank-aware Wikidata dates, scope, qa_flags from cached entities → next revision
 python scripts/remap_composers.py --from-dump r009 --to r010
+
+# Replay committed grounded style consensus (offline; no model calls)
+python scripts/apply_llm_styles.py --from-dump r014 --to r015
 
 # Hand-reviewed overrides (data/overrides/composers.tsv) → next revision
 python scripts/apply_overrides.py --from-dump r010 --to r011

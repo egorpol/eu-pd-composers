@@ -18,6 +18,7 @@ from typing import Any
 import pandas as pd
 
 import common
+from apply_llm_styles import LLM_STYLE_COLUMNS, default_ledger_path
 from imslp_work_evidence import EVIDENCE_COLUMNS
 
 log = logging.getLogger("pipeline")
@@ -82,6 +83,7 @@ def offline_stages(
         ("apply_overrides.py", ["--overrides", str(overrides_path())]),
         ("remap_imslp_matches.py", []),
         ("remap_work_evidence.py", ["--preserve-schema"] if preserve_schema else []),
+        ("apply_llm_styles.py", ["--ledger", str(default_ledger_path())]),
     ]
     for number, (script, extra) in enumerate(steps, start=1):
         if script == "remap_imslp_matches.py" and refresh:
@@ -107,8 +109,8 @@ def prepare_result(
             original = pd.read_csv(staging / f"{stem}_{source}.tsv", sep="\t", dtype=str, keep_default_na=False, nrows=0)
             added = [c for c in frame.columns if c not in original.columns]
             removed = [c for c in original.columns if c not in frame.columns]
-            # derive may only add the work-evidence columns; --preserve-schema forbids any change.
-            allowed = () if preserve_schema or stem != "works" else EVIDENCE_COLUMNS
+            # derive adds only supported evidence columns; --preserve-schema forbids any change.
+            allowed = () if preserve_schema else (EVIDENCE_COLUMNS if stem == "works" else LLM_STYLE_COLUMNS)
             if removed or any(c not in allowed for c in added):
                 raise ValueError(f"derive changed {stem} schema: added {added}, removed {removed}")
             if preserve_schema:
@@ -257,7 +259,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     derive.add_argument("--no-promote", action="store_true")
     derive.add_argument("--staging", type=Path)
     derive.add_argument("--preserve-schema", action="store_true",
-                        help="Fail on any schema change (idempotency checks); default allows adding work-evidence columns")
+                        help="Fail on any schema change (idempotency checks); default allows adding evidence columns")
     return parser.parse_args(argv)
 
 

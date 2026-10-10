@@ -11,6 +11,7 @@ import pandas as pd
 import pytest
 
 import build_dump
+import apply_llm_styles
 import common
 import diff_dumps
 import pipeline
@@ -31,6 +32,13 @@ def repository(tmp_path, monkeypatch):
     overrides = data / "overrides"
     overrides.mkdir()
     (overrides / "composers.tsv").write_text("composer_id\tfield\tvalue\treason\tsource\treviewer\tdate\n")
+    ledger = data / "llm_ledger"
+    ledger.mkdir()
+    (ledger / "style_labels.jsonl").write_text("".join(json.dumps({
+        "composer_id": "wiki:One", "backend": backend, "model": model, "effort": effort,
+        "condition": "grounded", "prompt_version": "style-v2", "styles": ["modern"],
+        "primary_period": "modern", "created_at": "2026-10-10T00:00:00Z",
+    }) + "\n" for backend, model, effort, _ in apply_llm_styles.POLICY_LABELLERS))
     c = pd.DataFrame([{col: "" for col in build_dump.COMPOSER_COLUMNS}])
     c.loc[0, ["composer_id", "name_display", "name_sort", "scope_class", "scope_class_src", "is_film_composer",
               "birth_year", "death_year", "eu_pd_year", "eu_pd_status", "years_until_eu_pd", "imslp_match_status",
@@ -98,7 +106,9 @@ def test_pageview_calendar_windows():
 
 
 def test_offline_derive_no_promote(repository, commands, tmp_path, capsys):
-    _, data, cache, _, _ = repository
+    _, data, cache, c, _ = repository
+    c, _ = apply_llm_styles.apply_llm_styles(c, apply_llm_styles.load_ledger(apply_llm_styles.default_ledger_path()))
+    c.to_csv(data / "composers_r001.tsv", sep="\t", index=False)
     before = {p.name: p.read_bytes() for p in data.glob("*") if p.is_file()}
     args = pipeline.parse_args(["derive", "--from-dump", "r001", "--to", "r999", "--no-promote",
                                 "--staging", str(tmp_path / "staging"), "--preserve-schema"])
@@ -115,6 +125,7 @@ def test_offline_derive_no_promote(repository, commands, tmp_path, capsys):
     for stem in ("composers", "works"):
         pd.testing.assert_frame_equal(prev[stem].drop(columns="dump_date", errors="ignore"),
                                       nxt[stem].drop(columns="dump_date", errors="ignore"))
+    assert nxt["composers"].dump_date.tolist() == ["r999"]
     assert "imslp_style" not in nxt["works"]
     assert pipeline.read_meta(staging, "r999")["derived_from_dump_id"] == "r001"
 
@@ -127,6 +138,10 @@ def test_derive_adds_work_evidence_by_default(repository, commands, tmp_path):
     assert added == ["imslp_style", "imslp_first_published", "imslp_copyright_flags", "imslp_librettists"]
     shared = [c for c in prev["works"].columns if c != "dump_date"]
     pd.testing.assert_frame_equal(prev["works"][shared], nxt["works"][shared])
+    assert [c for c in nxt["composers"] if c not in prev["composers"]] == list(apply_llm_styles.LLM_STYLE_COLUMNS)
+    assert nxt["composers"].style_tags_src.tolist() == [""]
+    assert nxt["composers"].llm_style_tags.tolist() == ["modern"]
+    assert nxt["composers"].dump_date.tolist() == ["r999"]
 
 
 def test_refresh_promotes_only_final_and_restores_decisions(repository, commands, capsys):
@@ -142,7 +157,7 @@ def test_refresh_promotes_only_final_and_restores_decisions(repository, commands
     assert calls[1][1] == ["--date", "2026-10-09", "--pageviews-start", "20251001", "--pageviews-end", "20260930"]
     assert [call[0] for call in calls] == ["refetch_override_entities.py", "build_dump.py", "remap_force.py", "carry_forward.py", "remap_composers.py",
                                           "apply_overrides.py", "refetch_composer_pages.py", "remap_imslp_matches.py",
-                                          "remap_work_evidence.py", "check_release.py", "export_viewer_json.py", "check_release.py"]
+                                          "remap_work_evidence.py", "apply_llm_styles.py", "check_release.py", "export_viewer_json.py", "check_release.py"]
     override_call = next(call for call in calls if call[0] == "apply_overrides.py")
     assert override_call[1][-2:] == ["--overrides", str(repo / "data/overrides/composers.tsv")]
     for script, args, directory, used_cache in calls:
@@ -153,16 +168,18 @@ def test_refresh_promotes_only_final_and_restores_decisions(repository, commands
     assert meta["derived_from_dump_id"] == "r001"
     assert meta["crawl_date"] == "2026-10-09"
     assert meta["pageviews_range"] == ["20251001", "20260930"]
-    assert len(meta["stages"]) == 7
+    assert len(meta["stages"]) == 8
     assert [stage["enrichment"] for stage in meta["stages"]] == [
         "build_dump", "remap_force_ids_pd", "carry_forward", "remap_composers_wikidata",
-        "apply_composer_overrides", "remap_imslp_identity", "remap_work_evidence"]
+        "apply_composer_overrides", "remap_imslp_identity", "remap_work_evidence", "apply_llm_styles"]
     assert all(stage["row_counts"]["works"] == 1 for stage in meta["stages"])
     nxt = diff_dumps.read_dump("r002")
     assert nxt["works"].force_family_src.tolist() == ["llm"]
     assert nxt["works"].composition_year.tolist() == ["001923"]
     assert nxt["works"].piece_style_raw.tolist() == [" NA "]
-    assert nxt["composers"].style_tags_src.tolist() == ["llm_grok"]
+    assert nxt["composers"].style_tags_src.tolist() == [""]
+    assert nxt["composers"].llm_style_tags.tolist() == ["modern"]
+    assert meta["llm_styles"]["counts"]["consensus_nonempty"] == 1
     assert set(nxt["works"].columns) >= set(diff_dumps.read_dump("r001")["works"].columns)
     assert "imslp_style" in nxt["works"]
     assert "dump_date" not in nxt["works"]
@@ -186,7 +203,7 @@ def test_explicit_window_cache_and_keep_staging(repository, commands, tmp_path):
 
 
 @pytest.mark.parametrize("fail_at", ["build_dump.py", "refetch_composer_pages.py", "remap_work_evidence.py",
-                                    "check_release.py", "export_viewer_json.py", "post_check"])
+                                    "apply_llm_styles.py", "check_release.py", "export_viewer_json.py", "post_check"])
 def test_failure_keeps_staging_and_promotes_nothing(repository, commands, monkeypatch, fail_at):
     repo, data, _, _, _ = repository
     _, normal_run = commands
@@ -260,7 +277,7 @@ def test_derive_with_separate_base(repository, commands, tmp_path):
                                               "--no-promote", "--staging", str(tmp_path / "stage")]))
     nxt = diff_dumps.read_dump("r999", staged)
     assert nxt["works"].force_family_src.tolist() == ["llm"]
-    assert nxt["composers"].style_tags_src.tolist() == ["llm_grok"]
+    assert nxt["composers"].style_tags_src.tolist() == [""]
     assert pipeline.read_meta(staged, "r999")["derived_from_dump_id"] == "r001"
 
 
@@ -331,6 +348,35 @@ def test_pd_reference_year_survives_all_stages(repository, commands, tmp_path):
     assert nxt["composers"].eu_pd_status.tolist() == ["not_pd"]
     assert nxt["composers"].years_until_eu_pd.tolist() == ["1"]
     assert pipeline.read_meta(staging, "r999")["pd_reference_year"] == 2024
+
+
+def test_derive_twice_reproduces_tsvs_modulo_dump_date(repository, commands, tmp_path):
+    pipeline.run(pipeline.parse_args(["derive", "--from-dump", "r001", "--to", "r002"]))
+    staged = pipeline.run(pipeline.parse_args(["derive", "--from-dump", "r002", "--to", "r999",
+                                              "--no-promote", "--preserve-schema", "--staging", str(tmp_path / "stage")]))
+    previous = diff_dumps.read_dump("r002")
+    following = diff_dumps.read_dump("r999", staged)
+    for stem in pipeline.STEMS:
+        pd.testing.assert_frame_equal(previous[stem].drop(columns="dump_date", errors="ignore"),
+                                      following[stem].drop(columns="dump_date", errors="ignore"))
+        if "dump_date" in following[stem]:
+            assert set(previous[stem].dump_date) == {"r002"}
+            assert set(following[stem].dump_date) == {"r999"}
+
+
+def test_derive_stamps_work_dump_dates(repository, commands, tmp_path):
+    _, data, _, c, w = repository
+    second = w.copy()
+    second["imslp_pageid"] = "002"
+    w = pd.concat([w, second], ignore_index=True)
+    w["dump_date"] = ["first snapshot", "second snapshot"]
+    w.to_csv(data / "works_r001.tsv", sep="\t", index=False)
+    rollup_composers(c, w).to_csv(data / "composers_r001.tsv", sep="\t", index=False)
+    common.dump_meta_path("r001").write_text(json.dumps({"created_at_utc": "2026-10-09T00:00:00+00:00",
+                                                       "row_counts": {"composers": 1, "works": 2}}))
+    stage = pipeline.run(pipeline.parse_args(["derive", "--from-dump", "r001", "--to", "r999",
+                                             "--no-promote", "--staging", str(tmp_path / "stage")]))
+    assert diff_dumps.read_dump("r999", stage)["works"].dump_date.tolist() == ["r999", "r999"]
 
 
 def test_real_regression_gate_prevents_promotion(repository, commands, monkeypatch):

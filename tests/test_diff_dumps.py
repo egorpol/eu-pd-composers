@@ -71,6 +71,15 @@ def test_cell_spelling_matters_and_duplicate_keys_fail():
         diff.compare_dumps(prev, nxt)
 
 
+def test_llm_style_share_counts_consensus_only():
+    previous, following = dumps(), dumps()
+    following["composers"]["llm_style_tags"] = ["modern", ""]
+    following["composers"]["llm_style_src"] = "llm_consensus_grounded_v2"
+    report, _ = diff.compare_dumps(previous, following, "r014", "r015")
+    assert "r014 composer styles: 0/2" in report
+    assert "r015 composer styles: 1/2" in report
+
+
 def test_cli_staged_dump_and_summary(tmp_path, monkeypatch):
     monkeypatch.setattr(common, "DATA_DIR", tmp_path)
     staged = tmp_path / "staged"

@@ -21,6 +21,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import common  # noqa: E402
 from common import dump_meta_path, dump_tsv_path  # noqa: E402
 from force_family import force_family_from_categories  # noqa: E402
+from style_vocab import ERA_SLUG_SET, STYLE_SLUG_SET  # noqa: E402
 from wikidata_enrich import STYLE_QID_TO_TAG  # noqa: E402
 
 # Share of works without any IMSLP genre/force category. r008 shipped 62.8%
@@ -65,6 +66,21 @@ def check_data_quality(
     """Invariants that would have caught the r008 crawl / rule / PD defects."""
     errors: list[str] = []
     warnings: list[str] = []
+
+    # Older revisions predate ledger replay; enforce retirement on the new schema.
+    if "llm_style_tags" in composers:
+        invalid = {s for value in composers["llm_style_tags"].map(_as_str)
+                   for s in common.pipe_split(value) if s not in STYLE_SLUG_SET}
+        if invalid:
+            errors.append("invalid llm_style_tags slugs: " + ", ".join(sorted(invalid)))
+        if "llm_style_period" in composers:
+            periods = set(composers["llm_style_period"].map(_as_str)) - {""}
+            if periods - ERA_SLUG_SET:
+                errors.append("invalid llm_style_period slugs: " + ", ".join(sorted(periods - ERA_SLUG_SET)))
+        if "style_tags_src" in composers:
+            legacy = composers["style_tags_src"].map(_as_str).str.startswith("llm").sum()
+            if legacy:
+                errors.append(f"legacy LLM style_tags_src rows: {int(legacy)}")
 
     # --- IMSLP category completeness ---
     if "imslp_genre_categories" in works.columns and len(works):

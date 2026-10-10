@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Carry approved force, GenInfo and style decisions into a new dump, offline."""
+"""Carry approved force and GenInfo decisions into a new dump, offline."""
 
 from __future__ import annotations
 
@@ -38,13 +38,10 @@ def carry_forward(
     prev_c = _index(base_composers, ("composer_id",))
     new_w = _index(works, WORK_KEY)
     new_c = _index(composers, ("composer_id",))
-    counts = {"force_family": 0, **{col: 0 for col in GENINFO_COLUMNS}, "style_tags": 0}
+    counts = {"force_family": 0, **{col: 0 for col in GENINFO_COLUMNS}}
     for col in GENINFO_COLUMNS:
         if col in base_works and col not in out_w:
             out_w[col] = ""
-    for col in ("style_tags", "style_tags_src"):
-        if col in base_composers and col not in out_c:
-            out_c[col] = ""
 
     for idx, row in works.iterrows():
         prior = prev_w.get(tuple(row[k] for k in WORK_KEY))
@@ -65,19 +62,11 @@ def carry_forward(
                 out_w.at[idx, col] = prior[col]
                 counts[col] += 1
 
-    for idx, row in composers.iterrows():
-        prior = prev_c.get((row["composer_id"],))
-        if prior and prior.get("style_tags_src", "").startswith("llm") and not row.get("style_tags", ""):
-            for col in ("style_tags", "style_tags_src"):
-                out_c.at[idx, col] = prior.get(col, "")
-            counts["style_tags"] += 1
-
     lost_w = [key for key in prev_w if key not in new_w]
     lost_c = [key for key in prev_c if key not in new_c]
     lost_decisions = {
         "force_family": [list(k) for k in lost_w if _force_decision(prev_w[k])],
         **{col: [list(k) for k in lost_w if prev_w[k].get(col, "")] for col in GENINFO_COLUMNS},
-        "style_tags": [k[0] for k in lost_c if prev_c[k].get("style_tags_src", "").startswith("llm")],
     }
     report = {
         "carried_forward": counts,

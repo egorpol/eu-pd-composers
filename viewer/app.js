@@ -203,8 +203,8 @@ export function buildStyleVocab(values) {
 
 /**
  * Per-composer styles keyed by source.
- * Wikidata / LLM use composer.styles when style_src matches; IMSLP is the union of work.st.
- * @param {{ styles?: string[], style_src?: string }} composer
+ * Wikidata uses styles/style_src, LLM uses ls; IMSLP is the union of work.st.
+ * @param {{ styles?: string[], style_src?: string, ls?: string[] }} composer
  * @param {Array<{ st?: string[] }>|undefined} works
  */
 export function composerStylesBySource(composer, works) {
@@ -212,7 +212,7 @@ export function composerStylesBySource(composer, works) {
   const tags = Array.isArray(composer.styles) ? composer.styles : [];
   const src = composer.style_src || "";
   if (tags.length && src === "wikidata") by.wikidata = tags.slice();
-  if (tags.length && String(src).startsWith("llm")) by.llm = tags.slice();
+  if (Array.isArray(composer.ls)) by.llm = composer.ls.slice();
   const imslp = new Set();
   for (const w of works || []) {
     for (const s of w.st || []) if (s) imslp.add(s);
@@ -753,11 +753,26 @@ function periodChipsHtml(w) {
     .join("");
 }
 
-function styleDetailLine(c) {
-  const by = c._stylesBySrc;
+export function styleDetailLine(c, policy = state.manifest?.llm_style_policy) {
+  const by = c._stylesBySrc || composerStylesBySource(c, []);
   const parts = [];
   for (const src of STYLE_SRC_ORDER) {
     const vals = by[src] || [];
+    if (src === "llm") {
+      const labellers = policy?.labellers || [];
+      const votes = c.lv || [];
+      if (!votes.some(Array.isArray)) continue;
+      const models = labellers.flatMap((labeller, i) => {
+        if (!Array.isArray(votes[i])) return [];
+        const labels = votes[i].map(humanizeStyleTag).join(", ") || "—";
+        return [`${labeller.name}: ${labels}`];
+      });
+      const complete = labellers.length && labellers.every((_, i) => Array.isArray(votes[i]));
+      const consensus = vals.map(humanizeStyleTag).join(", ") || (complete ? "no consensus" : "incomplete labelling");
+      const period = c.lp ? `; period: ${humanizeStyleTag(c.lp)}` : "";
+      parts.push(`LLM: ${consensus}${models.length ? ` (${models.join(" · ")})` : ""}${period}`);
+      continue;
+    }
     if (!vals.length) continue;
     const labels = vals.map(humanizeStyleTag).join(", ");
     parts.push(`${STYLE_SRC_LABELS[src]}: ${labels}`);
