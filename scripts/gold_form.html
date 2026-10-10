@@ -538,7 +538,7 @@ function renderCard(tab, items, i) {
       el("p", { class: "help", text: "At least one score, part or recording file. Files on IMSLP's other servers count; cover images do not." }),
       seg("has_files", ["yes", "no", "unsure"].map(x => ({ v: x })))));
     card.append(q("IMSLP rights basis", "rights_basis",
-      el("p", { class: "help", text: "From the category list at the bottom of the work page. Take the first match in this order." }),
+      el("p", { class: "help", text: "From the category list at the bottom of the work page, first match in this order. A file's Copyright line does not count; if it disagrees with the categories, say so in notes." }),
       seg("rights_basis", [...BASES.map(([k, h], n) => ({ v: k, hint: h, n: String(n + 1) })), { v: "unsure", hint: "write why in notes" }], "grid")));
   }
   const notes = text("notes", "Conflicts between sources, doubts, page changes", { rows: "3" }, true);

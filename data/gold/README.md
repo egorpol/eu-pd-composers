@@ -113,6 +113,8 @@ First match in this order, from the categories at the bottom of the work page:
 
 WorkNonPD-US alone is a US warning, not a basis: it gives `none`.
 
+The **Copyright** line in a file's box ("Public Domain - Non-PD US, Non-PD EU") is IMSLP's status for that file: Public Domain means in Canada, and the rest are warnings. It does not set the basis; only the categories do. When the file line and the categories disagree, answer from the categories and write the difference in `notes`.
+
 ## What the scores mean
 
 Composers: wrong Wikidata person; wrong IMSLP link; missed IMSLP link; wrong death year (exact, and off by two years or more); missing death year; **false PD** (the dump says PD now, but the composer died too recently or is alive); missed PD. Works: wrong instrumentation family, wrong `has_files`, wrong rights basis. Each rate has a 95% Wilson interval, for the checked items and weighted to the whole dump. The re-check reports agreement and Cohen's κ per field.
