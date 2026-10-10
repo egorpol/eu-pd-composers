@@ -32,6 +32,14 @@ def default_ledger_path() -> Path:
     return common.REPO_ROOT / "data" / "llm_ledger" / "style_labels.jsonl"
 
 
+def meta_path_label(path: Path) -> str:
+    """Repo-relative path for dump meta, so a dump does not record the builder's home directory."""
+    try:
+        return path.resolve().relative_to(common.REPO_ROOT.resolve()).as_posix()
+    except ValueError:
+        return str(path)
+
+
 def vote_key(model: str, effort: str) -> str:
     return f"{model}@{effort}" if effort else model
 
@@ -136,7 +144,7 @@ def run(args: argparse.Namespace) -> None:
         "row_counts": {"composers": len(composers), "works": len(works)},
         "output_files": {stem: common.dump_tsv_path(stem, output).name for stem in ("composers", "works")},
         "composer_columns": list(composers.columns), "work_columns": list(works.columns),
-        "llm_styles": {"policy": policy_metadata(), "ledger_path": str(ledger_path),
+        "llm_styles": {"policy": policy_metadata(), "ledger_path": meta_path_label(ledger_path),
                        "ledger_sha256": hashlib.sha256(ledger_path.read_bytes()).hexdigest(), "counts": counts},
     })
     common.write_dump_meta(output, meta)
