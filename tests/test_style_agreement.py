@@ -164,3 +164,13 @@ def test_pair_agreement_counts_both_abstain_separately():
     assert out["n_styles_labelled"] == 2
     assert out["mean_jaccard_styles"] == 0.5  # Q2 = 1.0, Q3 = 0.0; Q1 not scored
     assert out["n_period_known"] == 1
+
+
+def test_build_report_splits_codex_efforts():
+    composers = pd.DataFrame([{"composer_id": "Q1", "style_tags": "", "style_tags_src": ""}])
+    works = pd.DataFrame(columns=["composer_id", "imslp_style"])
+    base = {"composer_id": "Q1", "condition": "closed", "prompt_version": "style-v1",
+            "model": "gpt-x", "styles": ["romantic"], "primary_period": "romantic", "confidence": "high"}
+    ledger = [{**base, "effort": "low"}, {**base, "effort": "medium"}]
+    report = sa.build_report(ledger, composers, works)
+    assert {r["model"] for r in report["per_model_condition"]} == {"gpt-x@low", "gpt-x@medium"}

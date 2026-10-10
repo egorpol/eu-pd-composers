@@ -178,7 +178,11 @@ def build_report(
     groups: dict[tuple[str, str], dict[str, dict[str, Any]]] = defaultdict(dict)
     for row in ledger:
         cond = f"{row.get('condition', '')}@{row.get('prompt_version', '')}"
-        key = (str(row.get("model", "")), cond)
+        # Codex efforts share one model id, so the effort is part of the labeller's name.
+        model = str(row.get("model", ""))
+        if row.get("effort"):
+            model = f"{model}@{row['effort']}"
+        key = (model, cond)
         cid = str(row.get("composer_id", ""))
         groups[key][cid] = row
 
