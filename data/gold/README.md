@@ -105,7 +105,7 @@ First match in this order, from the categories at the bottom of the work page:
 | Basis | IMSLP categories |
 |---|---|
 | `eu_warning` | WorkNonPD-EU, WorkNonPD-USandEU |
-| `us_only` | WorkPD-USonly |
+| `us_only` | WorkPD-USonly (public domain in the US only; the opposite of a "Non-PD US" warning) |
 | `licensed` | Works not in public domain, FileNonPD-PermissionGranted, Works Licensed through BMI / ASCAP / GEMA |
 | `wima` | WIMA files |
 | `us_routes` | Work-PD-US-notrenewed, PD-US-no notice |
