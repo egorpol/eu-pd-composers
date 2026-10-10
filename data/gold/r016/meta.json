@@ -1,0 +1,83 @@
+{
+  "dump_id": "r016",
+  "seed": 20261010,
+  "tool_version": "3.5.0",
+  "created_at_utc": "2026-10-10T14:20:37.585412+00:00",
+  "allocation": "square-root of stratum size, floor --min-per-stratum, capped at stratum size",
+  "min_per_stratum": 8,
+  "recheck_share": 0.1,
+  "strata": {
+    "composers": {
+      "imslp_rejected_or_unverified": {
+        "stratum_size": 16,
+        "stratum_sample": 8
+      },
+      "not_pd/name": {
+        "stratum_size": 213,
+        "stratum_sample": 18
+      },
+      "not_pd/not_found": {
+        "stratum_size": 1286,
+        "stratum_sample": 45
+      },
+      "not_pd/p839": {
+        "stratum_size": 319,
+        "stratum_sample": 22
+      },
+      "pd/name": {
+        "stratum_size": 41,
+        "stratum_sample": 8
+      },
+      "pd/not_found": {
+        "stratum_size": 97,
+        "stratum_sample": 11
+      },
+      "pd/p839": {
+        "stratum_size": 619,
+        "stratum_sample": 31
+      },
+      "qa_flagged": {
+        "stratum_size": 69,
+        "stratum_sample": 9
+      },
+      "unknown_death/name": {
+        "stratum_size": 16,
+        "stratum_sample": 8
+      },
+      "unknown_death/not_found": {
+        "stratum_size": 677,
+        "stratum_sample": 32
+      },
+      "unknown_death/p839": {
+        "stratum_size": 16,
+        "stratum_sample": 8
+      }
+    },
+    "works": {
+      "imslp/eu_warning": {
+        "stratum_size": 4505,
+        "stratum_sample": 66
+      },
+      "imslp/none": {
+        "stratum_size": 20569,
+        "stratum_sample": 140
+      },
+      "imslp/other_rights": {
+        "stratum_size": 3426,
+        "stratum_sample": 57
+      },
+      "llm": {
+        "stratum_size": 364,
+        "stratum_sample": 19
+      },
+      "title": {
+        "stratum_size": 108,
+        "stratum_sample": 10
+      },
+      "unlabelled": {
+        "stratum_size": 54,
+        "stratum_sample": 8
+      }
+    }
+  }
+}
