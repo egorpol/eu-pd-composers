@@ -41,6 +41,13 @@ SETS = ("composers", "works")
 ID_COLUMN = {"composers": "composer_id", "works": "work_id"}
 ITEM_PREFIX = {"composers": "C", "works": "W"}
 
+# Dataset map_genre_form order (first match wins), minus arrangement/other, plus song and none.
+GOLD_GENRE_FORMS = (
+    "opera", "ballet", "concerto", "symphony", "sonata", "suite", "variations", "etude",
+    "prelude_fugue", "string_quartet", "dance", "mass_requiem", "oratorio_cantata",
+    "overture_tone_poem", "song_cycle", "song", "none",
+)
+
 # Sheet columns: what the annotator sees, then what they fill in.
 SHOWN = {
     "composers": ("composer_id", "name", "wikipedia_url", "wikidata_url", "imslp_url", "gnd_id", "viaf_id"),
@@ -49,7 +56,7 @@ SHOWN = {
 GOLD_FIELDS = {
     "composers": ("wikidata_same_person", "imslp_check", "imslp_found_url", "death_status", "death_year",
                   "death_source", "notes"),
-    "works": ("force_family", "has_files", "rights_basis", "notes"),
+    "works": ("force_family", "genre_form", "has_files", "rights_basis", "notes"),
 }
 FREE_TEXT = {"imslp_found_url", "death_source", "notes", "death_year"}
 VOCAB = {
@@ -57,6 +64,7 @@ VOCAB = {
     "imslp_check": {"same", "different", "found", "none", "unsure"},
     "death_status": {"dead", "living", "unknown"},
     "force_family": {f for f in FORCE_FAMILIES if f != "unclassified"} | {"unsure"},
+    "genre_form": set(GOLD_GENRE_FORMS) | {"unsure"},
     "has_files": {"yes", "no", "unsure"},
     "rights_basis": set(BASIS_LABELS) | {"unsure"},
 }
@@ -158,6 +166,19 @@ def _sheet_rows(kind: str, sample: pd.DataFrame, composers: pd.DataFrame) -> pd.
 
 def gold_dir(dump_id: str) -> Path:
     return DATA_DIR / "gold" / dump_id
+
+
+def ensure_gold_columns(kind: str, frame: pd.DataFrame) -> pd.DataFrame:
+    """Older sheets may lack a gold field; treat missing ones as empty."""
+    shown = [c for c in frame.columns if c not in GOLD_FIELDS[kind]]
+    return frame.reindex(columns=[*shown, *GOLD_FIELDS[kind]], fill_value="")
+
+
+def alias_dump_genre_form(value: str) -> str:
+    """Dump `other` is IMSLP Songs/Lieder → gold `song`; empty → `none`."""
+    if value == "other":
+        return "song"
+    return value if value else "none"
 
 
 def build_sample(
@@ -300,7 +321,7 @@ def import_answers(directory: Path, store: Path) -> dict[str, Any]:
         seen: set[str] = set()
         for kind in SETS:
             path = directory / f"{kind}_{part}.tsv"
-            sheet = pd.read_csv(path, **read)
+            sheet = ensure_gold_columns(kind, pd.read_csv(path, **read))
             hits = sheet.index[sheet["item"].isin(docs)]
             for i in hits:
                 doc = docs[sheet.at[i, "item"]]
@@ -416,10 +437,28 @@ def composer_metrics(reference_year: int) -> dict[str, tuple[str, Callable[[pd.S
 
 
 def work_metrics() -> dict[str, tuple[str, Callable[[pd.Series], tuple[bool, bool]]]]:
+    forms = VOCAB["genre_form"] - {"unsure"}
+
+    def dump_form(row: pd.Series) -> str:
+        return str(row.get("dump_genre_form", "") or "")
+
     return {
         "force_family_wrong": ("Instrumentation family differs",
                                lambda r: (r["force_family"] in VOCAB["force_family"] - {"unsure"},
                                           r["force_family"] != r["dump_force_family"])),
+        "genre_form_wrong": ("Form differs",
+                             lambda r: (r["genre_form"] in forms,
+                                        r["genre_form"] != alias_dump_genre_form(dump_form(r)))),
+        "genre_form_missed": ("No form in the dump although the original has one",
+                              lambda r: (bool(r["genre_form"] in forms and not dump_form(r)),
+                                         r["genre_form"] != "none")),
+        "genre_form_spurious": ("Dump gives a form, but none of the listed forms applies",
+                                lambda r: (bool(r["genre_form"] in forms and dump_form(r)
+                                                and dump_form(r) != "arrangement"),
+                                           r["genre_form"] == "none")),
+        "genre_form_arrangement": ("Dump says arrangement; the original has a listed form",
+                                   lambda r: (bool(r["genre_form"] in forms and dump_form(r) == "arrangement"),
+                                              r["genre_form"] != "none")),
         "has_files_wrong": ("has_files differs",
                             lambda r: (r["has_files"] in {"yes", "no"} and r["dump_has_files"] in {"true", "false"},
                                        (r["has_files"] == "yes") != (r["dump_has_files"] == "true"))),
@@ -545,7 +584,7 @@ def run_score(args: argparse.Namespace) -> dict[str, Any]:
     reference_year = int(meta.get("pd_reference_year") or 2026)
     report: dict[str, Any] = {"dump_id": args.dump, "reference_year": reference_year}
     for kind, metrics in (("composers", composer_metrics(reference_year)), ("works", work_metrics())):
-        sheet = pd.read_csv(directory / f"{kind}_sheet.tsv", **read)
+        sheet = ensure_gold_columns(kind, pd.read_csv(directory / f"{kind}_sheet.tsv", **read))
         design = pd.read_csv(directory / f"{kind}_design.tsv", **read)
         design["stratum_size"] = design["stratum_size"].astype(int)
         dump = pd.read_csv(dump_tsv_path(kind, args.dump), **read)
@@ -554,7 +593,7 @@ def run_score(args: argparse.Namespace) -> dict[str, Any]:
         report[kind] = score_set(kind, sheet, design, dump, metrics)
         recheck_path = directory / f"{kind}_recheck.tsv"
         if recheck_path.exists():
-            recheck = pd.read_csv(recheck_path, **read)
+            recheck = ensure_gold_columns(kind, pd.read_csv(recheck_path, **read))
             report[kind]["recheck"] = agreement(kind, sheet, recheck)
     markdown = to_markdown(report)
     if args.out:

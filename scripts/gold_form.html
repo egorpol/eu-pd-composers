@@ -154,7 +154,7 @@ textarea.dump { width: 100%; box-sizing: border-box; min-height: 120px; font-fam
 "use strict";
 const FIELDS = {
   c: ["wikidata_same_person", "imslp_check", "imslp_found_url", "death_status", "death_year", "death_source", "notes"],
-  w: ["force_family", "has_files", "rights_basis", "notes"],
+  w: ["force_family", "genre_form", "has_files", "rights_basis", "notes"],
 };
 const SHEET_COLS = {
   c: ["item", "composer_id", "name", "wikipedia_url", "wikidata_url", "imslp_url", "gnd_id", "viaf_id"],
@@ -179,6 +179,25 @@ const FAMILIES = [
   ["electronic", "with electronics or tape; no voices, chorus, orchestra, band"],
   ["pedagogical", "methods, exercises, studies as teaching material"],
   ["other", "none of the above, or unspecified"],
+];
+const GENRES = [
+  ["opera", "opera, operetta, singspiel, zarzuela or other staged sung drama"],
+  ["ballet", "ballet or other staged dance work"],
+  ["concerto", "called concerto, concertino, concerto grosso or sinfonia concertante"],
+  ["symphony", "symphony, sinfonietta, or a sinfonia in several movements; a symphonic poem is not"],
+  ["sonata", "sonata, sonatina or trio sonata, any instrumentation"],
+  ["suite", "suite or partita: contrasting movements published as one work"],
+  ["variations", "variations on a theme, under any title"],
+  ["etude", "étude or study, alone or in a set; a method or exercise book is not"],
+  ["prelude_fugue", "prelude, fugue or fughetta, alone or paired; chorale preludes count"],
+  ["string_quartet", "for exactly 2 violins, viola and cello; other quartets are not"],
+  ["dance", "dance or set of dances (waltz, mazurka, polonaise, minuet…); marches count"],
+  ["mass_requiem", "Mass or Requiem, or a single movement or Proper text of one"],
+  ["oratorio_cantata", "oratorio, cantata or Passion: unstaged, voices and instruments, several numbers"],
+  ["overture_tone_poem", "concert overture, symphonic poem or tone poem"],
+  ["song_cycle", "songs the composer published as one connected cycle"],
+  ["song", "a song, Lied, mélodie, part-song or set of songs that is not a cycle"],
+  ["none", "none of these applies (a nocturne, fantasia, motet, caprice…)"],
 ];
 const BASES = [
   ["eu_warning", "WorkNonPD-EU, WorkNonPD-USandEU"],
@@ -225,7 +244,7 @@ function itemsOf(tab) {
   return tab.src === "practice" ? [...d.practice.composers, ...d.practice.works] : d[tab.src];
 }
 function complete(kind, v, it) {
-  if (kind === "w") return !!(v.force_family && v.has_files && v.rights_basis);
+  if (kind === "w") return !!(v.force_family && v.genre_form && v.has_files && v.rights_basis);
   if (!v.wikidata_same_person || !v.imslp_check || !v.death_status) return false;
   if (v.imslp_check === "found" && !(v.imslp_found_url || "").trim()) return false;
   if (v.death_status !== "unknown" && !(v.death_source || "").trim()) return false;
@@ -537,6 +556,9 @@ function renderCard(tab, items, i) {
     card.append(q("Instrumentation of the original version", "force_family",
       el("p", { class: "help", text: "Judge the composer's original scoring and ignore arrangements by others. If the composer made several versions, pick the one later in this list." }),
       seg("force_family", [...FAMILIES.map(([k, h], n) => ({ v: k, hint: h, n: String(n + 1) })), { v: "unsure", hint: "write why in notes" }], "grid")));
+    card.append(q("Form of the original work", "genre_form",
+      el("p", { class: "help", text: "Judge the composer's original; an arrangement takes the original's form. A piece drawn from a larger work (an overture, aria or suite from an opera or ballet) takes the larger work's form. If several apply, pick the first in this list." }),
+      seg("genre_form", [...GENRES.map(([k, h], n) => ({ v: k, hint: h, n: String(n + 1) })), { v: "unsure", hint: "write why in notes" }], "grid")));
     card.append(q("Files on the page?", "has_files",
       el("p", { class: "help", text: "At least one score, part or recording file. Files on IMSLP's other servers count; cover images do not." }),
       seg("has_files", ["yes", "no", "unsure"].map(x => ({ v: x })))));

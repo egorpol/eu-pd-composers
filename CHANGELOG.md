@@ -11,6 +11,7 @@ Dump snapshots: revision `dump_id` (`rNNN`) — see [VERSIONING.md](VERSIONING.m
 Schema stays **3** (two added works columns, two added composer columns). Dump: **r018**.
 
 ### Added
+- Gold-set works field `genre_form` (17 forms in the dataset's precedence order; dump aliases `other`→`song` and empty→`none`; rates for wrong, missed, spurious and arrangement)
 - Dump **r018** = r017 + an offline `pipeline.py derive`: the new `imslp_n_players` column; composers unchanged
 - Works column `imslp_n_players` after `genre_form`: IMSLP's `For N players` counts (instrumental soloists, arrangements excluded), pipe-joined when a page holds versions for different forces. Set for 13,873 works (47.8%). `remap_force.py` derives it; `--preserve-schema` keeps it out of dumps that lack it
 - `data/vocab/lc_crosswalk.tsv` and `scripts/lc_crosswalk.py`: every `force_family` and `genre_form` value mapped to LCMPT (medium of performance) or LCGFT (genre/form) URIs with SKOS mapping relations (51 rows; `check` offline, `verify` against id.loc.gov)

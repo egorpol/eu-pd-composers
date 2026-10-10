@@ -69,6 +69,7 @@ Decided cases:
 | Column | Values | Meaning |
 |---|---|---|
 | `force_family` | a family below, or `unsure` | The instrumentation of the composer's **original** version |
+| `genre_form` | a form below, `none`, or `unsure` | The form of the composer's original work |
 | `has_files` | `yes` / `no` / `unsure` | Does the work page list at least one score, part or recording file? Files hosted on IMSLP's other servers count; cover images do not |
 | `rights_basis` | a basis below, or `unsure` | IMSLP's own rights category, from the category list at the bottom of the work page |
 | `notes` | free text | Doubts, several original versions, a page that changed |
@@ -104,6 +105,38 @@ Decided cases:
 - **Files only for an arrangement** still give `has_files` = `yes`; the family still follows the original.
 - **IMSLP's "For …" categories and tags** are a starting point, not the answer. The dataset derives many labels from them, so check them against the work page's Instrumentation line and the score.
 
+### Forms
+
+Judge the composer's original; an arrangement takes the original's form. A piece drawn from a larger work (an overture, aria or suite from an opera or ballet) takes the larger work's form. If several apply, pick the first in this list (the dataset uses the same order).
+
+| Form | Use for |
+|---|---|
+| `opera` | opera, operetta, singspiel, zarzuela or other staged sung drama |
+| `ballet` | ballet or other staged dance work |
+| `concerto` | called concerto, concertino, concerto grosso or sinfonia concertante |
+| `symphony` | symphony, sinfonietta, or a sinfonia in several movements; a symphonic poem is not |
+| `sonata` | sonata, sonatina or trio sonata, any instrumentation |
+| `suite` | suite or partita: contrasting movements published as one work |
+| `variations` | variations on a theme, under any title |
+| `etude` | étude or study, alone or in a set; a method or exercise book is not |
+| `prelude_fugue` | prelude, fugue or fughetta, alone or paired; chorale preludes count |
+| `string_quartet` | for exactly 2 violins, viola and cello; other quartets are not |
+| `dance` | dance or set of dances (waltz, mazurka, polonaise, minuet…); marches count |
+| `mass_requiem` | Mass or Requiem, or a single movement or Proper text of one |
+| `oratorio_cantata` | oratorio, cantata or Passion: unstaged, voices and instruments, several numbers |
+| `overture_tone_poem` | concert overture, symphonic poem or tone poem |
+| `song_cycle` | songs the composer published as one connected cycle |
+| `song` | a song, Lied, mélodie, part-song or set of songs that is not a cycle |
+| `none` | none of these applies (a nocturne, fantasia, motet, caprice…) |
+
+Decided cases:
+
+- **Arrangements**: judge the original; `arrangement` is not an answer (the scorer counts the dataset's `arrangement` label as its own error class).
+- **A piece drawn from a larger work** takes the larger work's form, as in Library of Congress practice ("Operas -- Excerpts"): an opera's overture is `opera`, a ballet suite is `ballet`.
+- **`concerto`** only for works called concerto (concertino, concerto grosso, sinfonia concertante). Other works for soloist and orchestra take their own form or `none`; their family can still be `concerto`.
+- **`string_quartet`** only for 2 violins, viola and cello; IMSLP's Quartets category also holds piano quartets.
+- **`song`** covers what the dataset currently labels `other` (IMSLP Songs/Lieder); the scorer reads the dump's `other` as `song` and an empty cell as `none`.
+
 ### Rights basis
 
 First match in this order, from the categories at the bottom of the work page:
@@ -123,4 +156,4 @@ The **Copyright** line in a file's box ("Public Domain - Non-PD US, Non-PD EU") 
 
 ## What the scores mean
 
-Composers: wrong Wikidata person; wrong IMSLP link; missed IMSLP link; wrong death year (exact, and off by two years or more); missing death year; **false PD** (the dump says PD now, but the composer died too recently or is alive); missed PD. Works: wrong instrumentation family, wrong `has_files`, wrong rights basis. Each rate has a 95% Wilson interval, for the checked items and weighted to the whole dump. The re-check reports agreement and Cohen's κ per field.
+Composers: wrong Wikidata person; wrong IMSLP link; missed IMSLP link; wrong death year (exact, and off by two years or more); missing death year; **false PD** (the dump says PD now, but the composer died too recently or is alive); missed PD. Works: wrong instrumentation family; form differs; no form in the dump although the original has one; dump gives a form but none of the listed forms applies; dump says arrangement while the original has a listed form; wrong `has_files`; wrong rights basis. Each rate has a 95% Wilson interval, for the checked items and weighted to the whole dump. The re-check reports agreement and Cohen's κ per field.
