@@ -299,14 +299,16 @@ def apply_year_fallbacks(
     fallback_birth: Optional[int],
     fallback_death: Optional[int],
     refine_birth: bool = False,
-    refine_death: bool = False,
 ) -> dict[str, Any]:
     """Fill years Wikidata lacks from the Wikipedia list (or a prior dump).
 
-    With `refine_*`, a fallback also replaces a coarse Wikidata year (decade,
-    century) when it lies inside that interval: "20th century" is stored as
-    2000, and a list death year of 1912 states the same claim precisely. Only
-    list years refine; a prior dump's year may be an older coarse reading.
+    With `refine_birth`, a birth fallback also replaces a coarse Wikidata birth
+    year (decade, century) that it lies inside: "19th century" is stored as
+    1900, and the list's 1876 states the same claim precisely. Only list years
+    refine; a prior dump's year may be an older coarse reading. Death years are
+    never refined: a coarse Wikidata death often encodes "after 1912", and the
+    list's 1912 there is the last year the composer was known alive, so using it
+    would claim the public domain too early.
     A fallback equal to a deprecated Wikidata year is rejected: that value was
     explicitly marked wrong. Returns birth_year, death_year, date_precision and
     qa_flags with `*_from_list` and lifespan flags recomputed on final years.
@@ -320,7 +322,7 @@ def apply_year_fallbacks(
         flags.append("birth_from_list")
         if death is None and precision in {"unknown", "decade", "century", "millennium"}:
             precision = "year"
-    if _usable_fallback(claims, "P570", death, fallback_death, refine_death):
+    if _usable_fallback(claims, "P570", death, fallback_death, False):
         death = fallback_death
         flags.append("death_from_list")
         precision = "year"

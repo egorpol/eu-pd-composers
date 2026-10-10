@@ -351,7 +351,6 @@ def build(args: argparse.Namespace) -> None:
                 fallback_birth=list_birth_i,
                 fallback_death=list_death_i,
                 refine_birth=True,
-                refine_death=True,
             )
             years["qa_flags"] = pipe_join([
                 *pipe_split(years["qa_flags"]),

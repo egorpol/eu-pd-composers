@@ -105,9 +105,9 @@ def remap_composers(
             missing_entities += 1
             continue
         enriched = enrich_from_entity(ent)
-        # Years Wikidata cannot supply (or gives only as a decade or century)
-        # came from the Wikipedia list at build time; keep them unless Wikidata
-        # deprecated exactly that value.
+        # Years Wikidata cannot supply (and birth years it gives only as a decade
+        # or century) came from the Wikipedia list at build time; keep them
+        # unless Wikidata deprecated exactly that value.
         prior_flags = pipe_split(row.get("qa_flags"))
         enriched.update(
             apply_year_fallbacks(
@@ -116,7 +116,6 @@ def remap_composers(
                 fallback_birth=_as_int(row.get("birth_year")),
                 fallback_death=_as_int(row.get("death_year")),
                 refine_birth="birth_from_list" in prior_flags,
-                refine_death="death_from_list" in prior_flags,
             )
         )
         fields = {field: enriched[field] for field in ENRICH_FIELDS}
