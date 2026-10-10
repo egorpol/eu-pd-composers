@@ -145,7 +145,7 @@ LCGFT has no medium-based terms (no *Orchestral music*, *Choral music* or *Strin
 
 ## Gold set
 
-[`gold/`](gold/README.md) holds a stratified sample of r016 (200 composers, 300 works) with blind annotation sheets, the annotation guide and, once annotated, error rates with Wilson intervals (`scripts/gold_set.py`). Until then, no field has a measured error rate.
+[`gold/`](gold/README.md) holds a stratified sample of r018 (200 composers, 300 works) with blind annotation sheets, the annotation guide and, once annotated, error rates with Wilson intervals (`scripts/gold_set.py`). Annotation is under way (the r016 sample was a pilot); until it is scored, no field has a measured error rate.
 
 ## Caveats (read these)
 
