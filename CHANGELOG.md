@@ -17,6 +17,7 @@ Schema stays **3** (one added works column). Dump: **r016**.
 - `pipeline.py refresh` runs `refetch_work_files.py` before `remap_work_evidence.py` (about 600 IMSLP requests)
 - Release gates: unknown `imslp_copyright_flags` tokens, invalid `has_files` values, hosts without files, and a has_files coverage drop of more than 5 points fail; a new IMSLP file server warns
 - `scripts/rights_basis.py`: offline report of each work's IMSLP rights basis by the composer's death-year band, IMSLP's EU-warning rate per band, and file hosts for not-yet-PD works without a rights category. On r016 IMSLP warns on 86.2% of works by composers who died 1956–71 and on 0.3% of works by PD-now composers
+- Gold set for r016 (`data/gold/`, `scripts/gold_set.py`): a seeded, stratified sample of 200 composers (`qa_flags`, rejected or unverified IMSLP matches, EU PD status × IMSLP link) and 300 works (force-label source × IMSLP rights basis, spread across families), square-root allocation; blind annotation sheets plus a 10% re-check sheet; an annotation guide with a source hierarchy for life dates; a scorer reporting identity, IMSLP-link, death-year, false-PD / missed-PD, instrumentation, `has_files` and rights-basis error rates with Wilson intervals per stratum and weighted to the dump, and re-check agreement with Cohen's κ. Sheets are not yet annotated
 - Viewer badges for the new rights tokens (warnings for copyright, neutral for WIMA), pages with no files (`hf`), and files on IMSLP's US or life+50 servers (`fh`)
 
 ### Changed

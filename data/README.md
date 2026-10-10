@@ -108,6 +108,10 @@ Dump cells retain ledger slugs; viewer export maps period slugs to IMSLP facet n
 | `is_film_composer` | `true` / `false` — Wikidata occupation includes film composer |
 | `qa_flags` | pipe list, empty if none: `birth_rank_conflict`, `death_rank_conflict` (best-rank Wikidata claims disagree), `birth_imprecise`, `death_imprecise` (decade/century precision; the year is the interval's last year), `implausible_lifespan`, `death_before_birth`, `not_human` (QID is not a person), `no_composer_occupation` (QID may be a different person), `birth_from_list`, `death_from_list` (year from the Wikipedia list, not Wikidata); since r012 also `imslp_dates_conflict`, `imslp_p839_wrong`, `manual_override` |
 
+## Gold set
+
+[`gold/`](gold/README.md) holds a stratified sample of r016 (200 composers, 300 works) with blind annotation sheets, the annotation guide and, once annotated, error rates with Wilson intervals (`scripts/gold_set.py`). Until then, no field has a measured error rate.
+
 ## Caveats (read these)
 
 - **Not legal advice.** `eu_pd_*` is a death-year + 71 calendar heuristic against the dump snapshot year, for the composer only. It ignores lyricists/librettists of vocal and stage works, editions, and national deviations. Missing death → `unknown_death` (not `living`).

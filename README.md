@@ -93,6 +93,7 @@ data/
   composers_r016.tsv, works_r016.tsv, dump_meta_r016.json   # the product (latest revision only)
   overrides/composers.tsv     # hand-reviewed, sourced fixes
   llm_ledger/                 # append-only LLM style decisions (replayed offline)
+  gold/                       # hand-checked stratified sample: annotation guide, sheets, scores
 viewer/                       # static filter UI, published by GitHub Pages
 scripts/
   pipeline.py                 # refresh (crawl + all stages) / derive (offline stages)
@@ -103,6 +104,7 @@ scripts/
   check_release.py, diff_dumps.py, export_viewer_json.py               # gates, review, viewer
   llm_style_pass.py, fetch_wikipedia_leads.py, style_agreement.py, pilot_sample.py   # LLM style study
   rights_basis.py             # IMSLP rights evidence vs the composer rule, by death year
+  gold_set.py                 # gold-set sampler (blind sheets) and scorer (Wilson intervals)
   common.py, imslp.py, wikidata_enrich.py, force_family.py, …          # shared modules
   legacy/                     # one-off passes that produced older labels; not run by the pipeline
 tests/                        # offline pytest suite (no network)
