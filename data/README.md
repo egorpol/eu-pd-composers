@@ -8,11 +8,17 @@ Pipeline diagram: [`docs/PIPELINE.md`](../docs/PIPELINE.md).
 
 | File | Rows | dump_id |
 |---|---|---|
-| `composers_r017.tsv` | 3369 | `r017` |
-| `works_r017.tsv` | 29033 | `r017` |
-| `dump_meta_r017.json` | — | companion meta |
+| `composers_r018.tsv` | 3369 | `r018` |
+| `works_r018.tsv` | 29033 | `r018` |
+| `dump_meta_r018.json` | — | companion meta |
 
-Only the **latest** revision is kept in `data/` in git. Older `rNNN` / calendar dumps are recoverable from **git history** (not from gitignored `data/cache/`). The viewer is exported from `r017` (`scripts/export_viewer_json.py --dump r017`).
+Only the **latest** revision is kept in `data/` in git. Older `rNNN` / calendar dumps are recoverable from **git history** (not from gitignored `data/cache/`). The viewer is exported from `r018` (`scripts/export_viewer_json.py --dump r018`).
+
+### What changed since r017
+
+- **r018 — players and Library of Congress terms.** r017 plus an offline `pipeline.py derive` (no crawl). Composers are unchanged.
+  - New works column `imslp_n_players` after `genre_form` (see *Columns added in r018*): set for 13,873 works (47.8%); 86 works list two counts because IMSLP files versions for different forces on one page.
+  - New [`vocab/lc_crosswalk.tsv`](vocab/lc_crosswalk.tsv): each `force_family` and `genre_form` value mapped to LCMPT or LCGFT (see *Library of Congress crosswalk*).
 
 ### What changed since r016
 
@@ -125,6 +131,18 @@ Dump cells retain ledger slugs; viewer export maps period slugs to IMSLP facet n
 
 New `qa_flags` values: `list_years_conflict` (the Wikipedia list row gives a different birth or death year than the dump; a large gap usually means the list links the wrong person, a small one is a date dispute), `gnd_death_conflict` (the GND record's death year differs from `death_year`), `gnd_from_lobid` (`gnd_id` came from the name search, not Wikidata).
 
+## Columns added in r018
+
+| Column | Values |
+|---|---|
+| `imslp_n_players` | IMSLP's `For N players` categories on the work page, arrangements excluded; pipe list when versions differ (`1\|2`), empty when there is none. IMSLP counts instrumental soloists only: voices are not counted, so songs, choral, orchestral and stage works mostly have none. It is not MARC 382 $s (total performers) |
+
+## Library of Congress crosswalk
+
+[`vocab/lc_crosswalk.tsv`](vocab/lc_crosswalk.tsv) maps each `force_family` and `genre_form` value to the Library of Congress Medium of Performance Thesaurus for Music (LCMPT, `scheme=lcmpt`) or Genre/Form Terms (LCGFT, `scheme=lcgft`). Columns: `facet`, `value`, `scheme`, `relation`, `label`, `uri`, `note`; a value with several LC terms has several rows. `relation` is a SKOS mapping property read as *value relation term*: `exactMatch` and `closeMatch` (same concept), `broadMatch` (the LC term is broader: `keyboard_other` → keyboard instrument), `narrowMatch` (the LC term is narrower: `mass_requiem` → Masses, Requiems). `solo_instrument` and `force_family=other` have no LC equivalent (empty scheme).
+
+LCGFT has no medium-based terms (no *Orchestral music*, *Choral music* or *String quartets*), so those families map to LCMPT and `string_quartet` to LCGFT *Chamber music* (`broadMatch`). Two quirks of the rules show here: `string_quartet` also fires on IMSLP *Quartets* (any quartet), and `genre_form=other` is set only for IMSLP *Songs* / *Lieder* that are not song cycles, so it maps to LCGFT *Songs*. Labels and URIs were checked against id.loc.gov on 2026-10-10 (`python scripts/lc_crosswalk.py verify`).
+
 ## Gold set
 
 [`gold/`](gold/README.md) holds a stratified sample of r016 (200 composers, 300 works) with blind annotation sheets, the annotation guide and, once annotated, error rates with Wilson intervals (`scripts/gold_set.py`). Until then, no field has a measured error rate.
@@ -146,11 +164,11 @@ The whole chain is one command ([`docs/PIPELINE.md`](../docs/PIPELINE.md), [`doc
 
 ```bash
 pip install -r requirements.txt
-python scripts/pipeline.py refresh --base r017                  # crawl + all stages → next revision
-python scripts/pipeline.py derive --from-dump r017 --to r018    # offline stages only
+python scripts/pipeline.py refresh --base r018                  # crawl + all stages → next revision
+python scripts/pipeline.py derive --from-dump r018 --to r019    # offline stages only
 
-python scripts/export_viewer_json.py --dump r017
-python scripts/check_release.py --dump r017 --viewer-data viewer/data
+python scripts/export_viewer_json.py --dump r018
+python scripts/check_release.py --dump r018 --viewer-data viewer/data
 ```
 
 The stages it runs, in order, each as `--from-dump rX --to rY`: `remap_force.py` → `carry_forward.py --base rPREV` → `remap_composers.py` → `apply_overrides.py` → `remap_imslp_matches.py` (after `refetch_composer_pages.py --dump rX`, network, ~1 min) → `remap_work_evidence.py` (after `refetch_work_files.py --dump rX` on refresh, network, ~10 min) → `apply_llm_styles.py` (replays the committed ledger; never calls a model).

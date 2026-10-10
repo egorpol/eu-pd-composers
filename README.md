@@ -4,11 +4,11 @@
 
 A versioned dataset and a static browser for finding 20th-century classical composers whose music is likely public domain in the EU (life + 70 years), with links to their works on IMSLP.
 
-**Live viewer:** [egorpol.github.io/eu-pd-composers](https://egorpol.github.io/eu-pd-composers/) · **Release:** v3.5.0 · **Dump:** r017 (schema 3) · [Changelog](CHANGELOG.md) · [Versioning](VERSIONING.md)
+**Live viewer:** [egorpol.github.io/eu-pd-composers](https://egorpol.github.io/eu-pd-composers/) · **Release:** v3.5.0 · **Dump:** r018 (schema 3) · [Changelog](CHANGELOG.md) · [Versioning](VERSIONING.md)
 
 > **Not legal advice.** "Public domain" here is a heuristic based on the composer's death year only. It ignores lyricists and librettists, editions, arrangements, posthumous publication rights and national exceptions. Check the work itself before you copy, perform or publish it.
 
-## What is in the current dump (r017)
+## What is in the current dump (r018)
 
 | | |
 |---|---|
@@ -16,7 +16,7 @@ A versioned dataset and a static browser for finding 20th-century classical comp
 | EU public-domain status (reference year 2026) | **777** PD now (died 1955 or earlier) · **1,870** not yet · **722** with no death date on record. 21 more enter the public domain on 1 January 2027, 82 more by 2031 |
 | IMSLP identity | **1,254** composers matched to an IMSLP category: 974 through Wikidata's IMSLP ID, 280 by name, confirmed against IMSLP's own life dates or Wikipedia link. 14 wrong matches rejected; 7 name matches IMSLP cannot confirm; 2,094 not found |
 | Works | **29,033** IMSLP work pages for 1,058 composers. **20,391** belong to the 657 PD-now composers who have works on IMSLP |
-| Instrumentation (`force_family`) | 17 families (piano solo, solo voice, choral, orchestral, chamber, …) plus `unclassified` / `other`. 98.2% come straight from IMSLP's categories, 1.3% from earlier LLM guesses |
+| Instrumentation (`force_family`) | 17 families (piano solo, solo voice, choral, orchestral, chamber, …) plus `unclassified` / `other`. 98.2% come straight from IMSLP's categories, 1.3% from earlier LLM guesses. Each family and `genre_form` value maps to Library of Congress terms (LCMPT medium, LCGFT genre/form) in [`data/vocab/lc_crosswalk.tsv`](data/vocab/lc_crosswalk.tsv); IMSLP's count of instrumental players for 13,873 works (47.8%) |
 | Work-level IMSLP evidence | IMSLP period style (99.8% of works), first publication year (73.9%), IMSLP's own rights categories (34.1%), librettists (27.3%); whether the page links any score or recording (28,930 of 29,033) and which IMSLP server hosts it |
 | Authority records | GND id for **2,897** composers (2,889 from Wikidata, 8 from a GND name search with matching life dates), VIAF id for **3,262**; 103 have neither. 14 GND death years differ from the dump's and are flagged |
 | Composer styles | Wikidata movements for 153 composers; agreed labels from two LLMs, grounded in the Wikipedia lead, for 2,842 |
@@ -35,22 +35,22 @@ A useful cross-check: IMSLP flags 4,527 of the 7,834 works by not-yet-PD compose
 
 ```python
 import pandas as pd
-composers = pd.read_csv("data/composers_r017.tsv", sep="\t", dtype=str, keep_default_na=False)
-works = pd.read_csv("data/works_r017.tsv", sep="\t", dtype=str, keep_default_na=False)
+composers = pd.read_csv("data/composers_r018.tsv", sep="\t", dtype=str, keep_default_na=False)
+works = pd.read_csv("data/works_r018.tsv", sep="\t", dtype=str, keep_default_na=False)
 ```
 
-Cite the revision id (`r017`) and the release tag. Column reference and caveats: [`data/README.md`](data/README.md).
+Cite the revision id (`r018`) and the release tag. Column reference and caveats: [`data/README.md`](data/README.md).
 
 **Maintain the dataset.** These are the jobs a maintainer runs (details in [`docs/PIPELINE.md`](docs/PIPELINE.md) and [`docs/AUTOMATION.md`](docs/AUTOMATION.md)):
 
 | Task | How | Network |
 |---|---|---|
-| Rebuild from current Wikipedia, Wikidata and IMSLP | Run the **refresh** workflow in GitHub Actions, or `python scripts/pipeline.py refresh --base r017`. It opens a PR with a readable diff | Yes, about 2–2.5 h (IMSLP at ≤ 1 request/s) |
-| Fix a wrong person, date or IMSLP match | `python scripts/identity_candidates.py --dump r017 --out build/identity.tsv` lists rows whose list years, occupation or type disagree with Wikidata, with candidate items. Add a sourced row to [`data/overrides/composers.tsv`](data/overrides/README.md), then derive. A re-key to a new Wikidata item first needs `python scripts/refetch_override_entities.py` | For the review queue and new re-key targets |
-| Change a rule (instrumentation mapping, identity check, PD arithmetic) | Edit the code, then `python scripts/pipeline.py derive --from-dump r017 --to r018` | No |
+| Rebuild from current Wikipedia, Wikidata and IMSLP | Run the **refresh** workflow in GitHub Actions, or `python scripts/pipeline.py refresh --base r018`. It opens a PR with a readable diff | Yes, about 2–2.5 h (IMSLP at ≤ 1 request/s) |
+| Fix a wrong person, date or IMSLP match | `python scripts/identity_candidates.py --dump r018 --out build/identity.tsv` lists rows whose list years, occupation or type disagree with Wikidata, with candidate items. Add a sourced row to [`data/overrides/composers.tsv`](data/overrides/README.md), then derive. A re-key to a new Wikidata item first needs `python scripts/refetch_override_entities.py` | For the review queue and new re-key targets |
+| Change a rule (instrumentation mapping, identity check, PD arithmetic) | Edit the code, then `python scripts/pipeline.py derive --from-dump r018 --to r019` | No |
 | Relabel composer styles with LLMs | `scripts/llm_style_pass.py` appends to the committed ledger in `data/llm_ledger/` (a local step that needs approval); `derive` replays it. The pipeline never calls a model | Model CLIs only |
-| Review a revision | `python scripts/diff_dumps.py r017 r018 --out diff.md` and `python scripts/check_release.py --dump r018 --against r017` | No |
-| Preview the viewer | `python scripts/export_viewer_json.py --dump r017`, then `python -m http.server 8080 --directory viewer` | No |
+| Review a revision | `python scripts/diff_dumps.py r018 r019 --out diff.md` and `python scripts/check_release.py --dump r019 --against r018` | No |
+| Preview the viewer | `python scripts/export_viewer_json.py --dump r018`, then `python -m http.server 8080 --directory viewer` | No |
 | Publish | Merge to `main`: CI runs the tests and release gates; Pages redeploys `viewer/` | — |
 
 ## How it works
@@ -105,7 +105,7 @@ Every style decision is a row in the append-only ledger in `data/llm_ledger/` (m
 
 ```text
 data/
-  composers_r017.tsv, works_r017.tsv, dump_meta_r017.json   # the product (latest revision only)
+  composers_r018.tsv, works_r018.tsv, dump_meta_r018.json   # the product (latest revision only)
   overrides/composers.tsv     # hand-reviewed, sourced fixes
   llm_ledger/                 # append-only LLM style decisions (replayed offline)
   gold/                       # hand-checked stratified sample: annotation guide, sheets, scores

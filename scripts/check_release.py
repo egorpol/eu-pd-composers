@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -21,8 +22,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import common  # noqa: E402
 from authorities import AUTHORITY_COLUMNS, GND_ID_RE, VIAF_ID_RE  # noqa: E402
 from common import dump_meta_path, dump_tsv_path  # noqa: E402
-from force_family import force_family_from_categories  # noqa: E402
+from force_family import N_PLAYERS_COLUMN, force_family_from_categories  # noqa: E402
 from imslp_work_evidence import COPYRIGHT_TOKENS, FILE_HOSTS, FILE_HOSTS_COLUMN  # noqa: E402
+from lc_crosswalk import crosswalk_errors, load_crosswalk  # noqa: E402
 from style_vocab import ERA_SLUG_SET, STYLE_SLUG_SET  # noqa: E402
 from wikidata_enrich import STYLE_QID_TO_TAG  # noqa: E402
 
@@ -110,6 +112,21 @@ def check_data_quality(
                       & works["has_files"].map(_as_str).ne("true")).sum()
             if orphan:
                 errors.append(f"works with file hosts but has_files != true: {int(orphan)}")
+
+    if N_PLAYERS_COLUMN in works:
+        bad = sorted({v for v in works[N_PLAYERS_COLUMN].map(_as_str) if v and not re.fullmatch(r"[1-9]\d*(\|[1-9]\d*)*", v)})
+        if bad:
+            errors.append(f"invalid {N_PLAYERS_COLUMN} values: " + ", ".join(bad[:10]))
+
+    # --- LC crosswalk covers every force_family / genre_form value ---
+    crosswalk = load_crosswalk()
+    errors.extend(f"lc_crosswalk: {e}" for e in crosswalk_errors(crosswalk))
+    for facet in ("force_family", "genre_form"):
+        if facet in works:
+            mapped = {r["value"] for r in crosswalk if r["facet"] == facet}
+            unmapped = set(works[facet].map(_as_str)) - mapped - {"", "unclassified"}
+            if unmapped:
+                errors.append(f"{facet} values missing from data/vocab/lc_crosswalk.tsv: " + ", ".join(sorted(unmapped)))
 
     # --- Authority ids ---
     for column, pattern in (("gnd_id", GND_ID_RE), ("viaf_id", VIAF_ID_RE)):

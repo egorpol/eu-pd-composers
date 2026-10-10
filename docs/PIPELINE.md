@@ -113,7 +113,9 @@ Arrangement `(arr)` category tokens never set force; opera/voice beat concerto; 
 | organ / harpsichord, harmonium, … only | `organ` / `keyboard_other` |
 | 2+ instrumentalists otherwise | `chamber` |
 
-`For N players` and `Quartets`-style labels only decide when no explicit instrumentation category exists.
+`For N players` and `Quartets`-style labels only decide when no explicit instrumentation category exists. The same stage copies the `For N players` counts into `imslp_n_players` (originals only; IMSLP counts instrumental soloists, not voices).
+
+Every `force_family` and `genre_form` value maps to Library of Congress vocabularies in [`data/vocab/lc_crosswalk.tsv`](../data/vocab/lc_crosswalk.tsv): LCMPT for medium-based families (piano, orchestra, chorus, electronics), LCGFT for genre and form (Chamber music, Concertos, Sonatas, …), each with a SKOS mapping relation. `scripts/lc_crosswalk.py check` validates coverage offline (also a release gate); `verify` resolves every label against id.loc.gov.
 
 LLM history: the bulk title-only pass (r001, `force_family_src=llm`) ran gpt-6-luna at **low** reasoning; residual passes used gpt-6-luna xhigh (`llm_luna_xhigh`) and grok-4.7-high (`llm_grok`, run outside this repo). Since r009 these survive only where categories, GenInfo and title rules all fail (~1.3% of works).
 
@@ -185,8 +187,8 @@ Caches: `data/cache/` (gitignored). Complete work categories under `imslp_page_c
 ## Filter viewer
 
 ```bash
-python scripts/export_viewer_json.py --dump r017
-python scripts/check_release.py --dump r017 --viewer-data viewer/data
+python scripts/export_viewer_json.py --dump r018
+python scripts/check_release.py --dump r018 --viewer-data viewer/data
 python -m http.server 8080 --directory viewer
 ```
 

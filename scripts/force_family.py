@@ -537,6 +537,18 @@ def map_genre_form(genre_cell: str, title: str = "") -> str:
     return ""
 
 
+N_PLAYERS_COLUMN = "imslp_n_players"
+# IMSLP: "works originally scored for N instrumental soloists" (voices are not counted;
+# orchestral and choral works carry no such category).
+_N_PLAYERS_RE = re.compile(r"^for (\d+) players?(?: with continuo)?$", re.I)
+
+
+def n_players_from_categories(genre_cell: str) -> str:
+    """'For 1 player|For 2 players|For 3 players (arr)' → '1|2' (originals only)."""
+    counts = {int(m.group(1)) for t in _original_tokens(genre_cell) if (m := _N_PLAYERS_RE.match(t))}
+    return "|".join(str(n) for n in sorted(counts))
+
+
 def map_work_row(genre_cell: str, title: str) -> dict[str, str]:
     family, src = map_force_family(genre_cell, title)
     form = map_genre_form(genre_cell, title)

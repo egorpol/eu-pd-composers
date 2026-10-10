@@ -1,23 +1,19 @@
 {
-  "dump_id": "r017",
+  "dump_id": "r018",
   "tool_version": "3.5.0",
   "schema_version": 3,
-  "created_at_utc": "2026-10-10T19:55:44.950325+00:00",
-  "derived_from_dump_id": "r016",
-  "enrichment": "pipeline_refresh",
+  "created_at_utc": "2026-10-10T20:14:55.092834+00:00",
+  "derived_from_dump_id": "r017",
+  "enrichment": "pipeline_derive",
   "output_files": {
-    "composers": "composers_r017.tsv",
-    "works": "works_r017.tsv"
+    "composers": "composers_r018.tsv",
+    "works": "works_r018.tsv"
   },
   "row_counts": {
     "composers": 3369,
     "works": 29033
   },
-  "status_transitions": {
-    "matched \u2192 rejected_p839": 4,
-    "unverified_heuristic \u2192 matched": 280,
-    "unverified_heuristic \u2192 rejected_heuristic": 10
-  },
+  "status_transitions": {},
   "status_counts": {
     "matched": 1254,
     "not_found": 2094,
@@ -37,10 +33,10 @@
       "template_kind": "person",
       "dates": "conflict_strong",
       "wikilink": "differs",
-      "old_status": "unverified_heuristic",
+      "old_status": "rejected_heuristic",
       "new_status": "rejected_heuristic",
       "method": "exact_name",
-      "reason": "dates_conflict_strong",
+      "reason": "existing_rejected_heuristic",
       "evidence": [
         "dates_conflict_strong",
         "wikilink_differs"
@@ -59,10 +55,10 @@
       "template_kind": "person",
       "dates": "conflict_strong",
       "wikilink": "differs",
-      "old_status": "unverified_heuristic",
+      "old_status": "rejected_heuristic",
       "new_status": "rejected_heuristic",
       "method": "exact_name",
-      "reason": "dates_conflict_strong",
+      "reason": "existing_rejected_heuristic",
       "evidence": [
         "dates_conflict_strong",
         "wikilink_differs"
@@ -81,10 +77,10 @@
       "template_kind": "person",
       "dates": "conflict_strong",
       "wikilink": "differs",
-      "old_status": "unverified_heuristic",
+      "old_status": "rejected_heuristic",
       "new_status": "rejected_heuristic",
       "method": "exact_name",
-      "reason": "dates_conflict_strong",
+      "reason": "existing_rejected_heuristic",
       "evidence": [
         "dates_conflict_strong",
         "wikilink_differs"
@@ -103,16 +99,16 @@
       "template_kind": "person",
       "dates": "conflict_strong",
       "wikilink": "differs",
-      "old_status": "unverified_heuristic",
+      "old_status": "rejected_heuristic",
       "new_status": "rejected_heuristic",
       "method": "exact_name",
-      "reason": "dates_conflict_strong",
+      "reason": "existing_rejected_heuristic",
       "evidence": [
         "dates_conflict_strong",
         "wikilink_differs"
       ],
       "collision": null,
-      "works_dropped": 1
+      "works_dropped": 0
     },
     {
       "name": "Donald Harris",
@@ -125,10 +121,10 @@
       "template_kind": "person",
       "dates": "conflict_strong",
       "wikilink": "unknown",
-      "old_status": "unverified_heuristic",
+      "old_status": "rejected_heuristic",
       "new_status": "rejected_heuristic",
       "method": "exact_name",
-      "reason": "dates_conflict_strong",
+      "reason": "existing_rejected_heuristic",
       "evidence": [
         "dates_conflict_strong"
       ],
@@ -146,36 +142,17 @@
       "template_kind": "person",
       "dates": "conflict_strong",
       "wikilink": "differs",
-      "old_status": "unverified_heuristic",
+      "old_status": "rejected_heuristic",
       "new_status": "rejected_heuristic",
       "method": "exact_name",
-      "reason": "dates_conflict_strong; collision_lost (wikidata_p839)",
+      "reason": "existing_rejected_heuristic",
       "evidence": [
         "dates_conflict_strong",
         "wikilink_differs",
         "collision_lost"
       ],
-      "collision": {
-        "category": "Category:Smit,_Leo",
-        "claimants": [
-          {
-            "qid": "Q643984",
-            "name": "Leo Smit",
-            "dates": "agree",
-            "wikilink": "agree"
-          },
-          {
-            "qid": "Q2341356",
-            "name": "Leo Smit",
-            "dates": "conflict_strong",
-            "wikilink": "differs"
-          }
-        ],
-        "winner": "Q643984",
-        "winner_name": "Leo Smit",
-        "reason": "wikidata_p839"
-      },
-      "works_dropped": 4
+      "collision": null,
+      "works_dropped": 0
     },
     {
       "name": "William Sweeney",
@@ -188,15 +165,15 @@
       "template_kind": "person",
       "dates": "conflict_strong",
       "wikilink": "unknown",
-      "old_status": "unverified_heuristic",
+      "old_status": "rejected_heuristic",
       "new_status": "rejected_heuristic",
       "method": "exact_name",
-      "reason": "dates_conflict_strong",
+      "reason": "existing_rejected_heuristic",
       "evidence": [
         "dates_conflict_strong"
       ],
       "collision": null,
-      "works_dropped": 1
+      "works_dropped": 0
     },
     {
       "name": "Rudolf Kelterborn",
@@ -209,10 +186,10 @@
       "template_kind": "person",
       "dates": "conflict_strong",
       "wikilink": "unknown",
-      "old_status": "unverified_heuristic",
+      "old_status": "rejected_heuristic",
       "new_status": "rejected_heuristic",
       "method": "exact_name",
-      "reason": "dates_conflict_strong",
+      "reason": "existing_rejected_heuristic",
       "evidence": [
         "dates_conflict_strong"
       ],
@@ -230,10 +207,10 @@
       "template_kind": "person",
       "dates": "conflict_strong",
       "wikilink": "differs",
-      "old_status": "unverified_heuristic",
+      "old_status": "rejected_heuristic",
       "new_status": "rejected_heuristic",
       "method": "exact_name",
-      "reason": "dates_conflict_strong",
+      "reason": "existing_rejected_heuristic",
       "evidence": [
         "dates_conflict_strong",
         "wikilink_differs"
@@ -252,36 +229,17 @@
       "template_kind": "person",
       "dates": "conflict_strong",
       "wikilink": "differs",
-      "old_status": "unverified_heuristic",
+      "old_status": "rejected_heuristic",
       "new_status": "rejected_heuristic",
       "method": "exact_name",
-      "reason": "dates_conflict_strong; collision_lost (dates_agree)",
+      "reason": "existing_rejected_heuristic",
       "evidence": [
         "dates_conflict_strong",
         "wikilink_differs",
         "collision_lost"
       ],
-      "collision": {
-        "category": "Category:Reed,_William",
-        "claimants": [
-          {
-            "qid": "Q373961",
-            "name": "William Reed",
-            "dates": "agree",
-            "wikilink": "differs"
-          },
-          {
-            "qid": "Q8017433",
-            "name": "William Reed",
-            "dates": "conflict_strong",
-            "wikilink": "differs"
-          }
-        ],
-        "winner": "Q373961",
-        "winner_name": "William Reed",
-        "reason": "dates_agree"
-      },
-      "works_dropped": 5
+      "collision": null,
+      "works_dropped": 0
     }
   ],
   "rejected_p839": [
@@ -296,10 +254,10 @@
       "template_kind": "person",
       "dates": "conflict_strong",
       "wikilink": "unknown",
-      "old_status": "matched",
+      "old_status": "rejected_p839",
       "new_status": "rejected_p839",
       "method": "wikidata_p839",
-      "reason": "dates_conflict_strong",
+      "reason": "existing_rejected_p839",
       "evidence": [
         "dates_conflict_strong"
       ],
@@ -317,10 +275,10 @@
       "template_kind": "person",
       "dates": "conflict_strong",
       "wikilink": "unknown",
-      "old_status": "matched",
+      "old_status": "rejected_p839",
       "new_status": "rejected_p839",
       "method": "wikidata_p839",
-      "reason": "dates_conflict_strong",
+      "reason": "existing_rejected_p839",
       "evidence": [
         "dates_conflict_strong"
       ],
@@ -338,15 +296,15 @@
       "template_kind": "composer",
       "dates": "conflict_strong",
       "wikilink": "unknown",
-      "old_status": "matched",
+      "old_status": "rejected_p839",
       "new_status": "rejected_p839",
       "method": "wikidata_p839",
-      "reason": "dates_conflict_strong",
+      "reason": "existing_rejected_p839",
       "evidence": [
         "dates_conflict_strong"
       ],
       "collision": null,
-      "works_dropped": 1
+      "works_dropped": 0
     },
     {
       "name": "Karl H\u00f6ller",
@@ -359,15 +317,15 @@
       "template_kind": "person",
       "dates": "conflict_strong",
       "wikilink": "unknown",
-      "old_status": "matched",
+      "old_status": "rejected_p839",
       "new_status": "rejected_p839",
       "method": "wikidata_p839",
-      "reason": "dates_conflict_strong",
+      "reason": "existing_rejected_p839",
       "evidence": [
         "dates_conflict_strong"
       ],
       "collision": null,
-      "works_dropped": 1
+      "works_dropped": 0
     }
   ],
   "weak_conflicts_kept": [
@@ -404,10 +362,10 @@
       "template_kind": "person",
       "dates": "conflict_weak",
       "wikilink": "agree",
-      "old_status": "unverified_heuristic",
+      "old_status": "matched",
       "new_status": "matched",
-      "method": "exact_name",
-      "reason": "dates_conflict_weak; wikilink_agree",
+      "method": "exact_name+wikilink",
+      "reason": "dates_conflict_weak",
       "evidence": [
         "dates_conflict_weak",
         "wikilink_agree"
@@ -491,10 +449,10 @@
       "template_kind": "person",
       "dates": "conflict_weak",
       "wikilink": "agree",
-      "old_status": "unverified_heuristic",
+      "old_status": "matched",
       "new_status": "matched",
-      "method": "exact_name",
-      "reason": "dates_conflict_weak; wikilink_agree",
+      "method": "exact_name+wikilink",
+      "reason": "dates_conflict_weak",
       "evidence": [
         "dates_conflict_weak",
         "wikilink_agree"
@@ -579,10 +537,10 @@
       "template_kind": "person",
       "dates": "conflict_weak",
       "wikilink": "agree",
-      "old_status": "unverified_heuristic",
+      "old_status": "matched",
       "new_status": "matched",
-      "method": "exact_name",
-      "reason": "dates_conflict_weak; wikilink_agree",
+      "method": "exact_name+wikilink",
+      "reason": "dates_conflict_weak",
       "evidence": [
         "dates_conflict_weak",
         "wikilink_agree"
@@ -667,10 +625,10 @@
       "template_kind": "person",
       "dates": "conflict_weak",
       "wikilink": "agree",
-      "old_status": "unverified_heuristic",
+      "old_status": "matched",
       "new_status": "matched",
-      "method": "exact_name",
-      "reason": "dates_conflict_weak; wikilink_agree",
+      "method": "exact_name+wikilink",
+      "reason": "dates_conflict_weak",
       "evidence": [
         "dates_conflict_weak",
         "wikilink_agree"
@@ -679,48 +637,7 @@
       "works_dropped": 0
     }
   ],
-  "collisions": [
-    {
-      "category": "Category:Smit,_Leo",
-      "claimants": [
-        {
-          "qid": "Q643984",
-          "name": "Leo Smit",
-          "dates": "agree",
-          "wikilink": "agree"
-        },
-        {
-          "qid": "Q2341356",
-          "name": "Leo Smit",
-          "dates": "conflict_strong",
-          "wikilink": "differs"
-        }
-      ],
-      "winner": "Q643984",
-      "winner_name": "Leo Smit",
-      "reason": "wikidata_p839"
-    },
-    {
-      "category": "Category:Reed,_William",
-      "claimants": [
-        {
-          "qid": "Q373961",
-          "name": "William Reed",
-          "dates": "agree",
-          "wikilink": "differs"
-        },
-        {
-          "qid": "Q8017433",
-          "name": "William Reed",
-          "dates": "conflict_strong",
-          "wikilink": "differs"
-        }
-      ],
-      "winner": "Q373961",
-      "winner_name": "William Reed",
-      "reason": "dates_agree"
-    }
-  ],
+  "collisions": [],
   "p839_dates_conflicts": [
     {
       "name": "Leo Ornstein",
@@ -762,48 +679,6 @@
       "evidence": [
         "dates_conflict_weak",
         "wikilink_agree"
-      ],
-      "collision": null,
-      "works_dropped": 0
-    },
-    {
-      "name": "John White",
-      "qid": "Q3182735",
-      "category": "Category:White,_John",
-      "birth_year": 1936,
-      "death_year": 2024,
-      "imslp_born_year": 1855,
-      "imslp_died_year": 1902,
-      "template_kind": "person",
-      "dates": "conflict_strong",
-      "wikilink": "unknown",
-      "old_status": "matched",
-      "new_status": "rejected_p839",
-      "method": "wikidata_p839",
-      "reason": "dates_conflict_strong",
-      "evidence": [
-        "dates_conflict_strong"
-      ],
-      "collision": null,
-      "works_dropped": 0
-    },
-    {
-      "name": "Jind\u0159ich Feld",
-      "qid": "Q1370733",
-      "category": "Category:Feld,_Jind\u0159ich",
-      "birth_year": 1925,
-      "death_year": 2007,
-      "imslp_born_year": 1883,
-      "imslp_died_year": 1953,
-      "template_kind": "person",
-      "dates": "conflict_strong",
-      "wikilink": "unknown",
-      "old_status": "matched",
-      "new_status": "rejected_p839",
-      "method": "wikidata_p839",
-      "reason": "dates_conflict_strong",
-      "evidence": [
-        "dates_conflict_strong"
       ],
       "collision": null,
       "works_dropped": 0
@@ -873,48 +748,6 @@
       ],
       "collision": null,
       "works_dropped": 0
-    },
-    {
-      "name": "John Lambert",
-      "qid": "Q15485321",
-      "category": "Category:Lambert,_John",
-      "birth_year": 1926,
-      "death_year": 1995,
-      "imslp_born_year": null,
-      "imslp_died_year": 1892,
-      "template_kind": "composer",
-      "dates": "conflict_strong",
-      "wikilink": "unknown",
-      "old_status": "matched",
-      "new_status": "rejected_p839",
-      "method": "wikidata_p839",
-      "reason": "dates_conflict_strong",
-      "evidence": [
-        "dates_conflict_strong"
-      ],
-      "collision": null,
-      "works_dropped": 1
-    },
-    {
-      "name": "Karl H\u00f6ller",
-      "qid": "Q315122",
-      "category": "Category:H\u00f6ller,_Georg",
-      "birth_year": 1907,
-      "death_year": 1987,
-      "imslp_born_year": 1838,
-      "imslp_died_year": 1901,
-      "template_kind": "person",
-      "dates": "conflict_strong",
-      "wikilink": "unknown",
-      "old_status": "matched",
-      "new_status": "rejected_p839",
-      "method": "wikidata_p839",
-      "reason": "dates_conflict_strong",
-      "evidence": [
-        "dates_conflict_strong"
-      ],
-      "collision": null,
-      "works_dropped": 1
     },
     {
       "name": "Lucia Contini Anselmi",
@@ -1154,7 +987,7 @@
       "works_dropped": 0
     }
   ],
-  "works_dropped": 13,
+  "works_dropped": 0,
   "pd_works_dropped": 0,
   "evidence_counts": {
     "collision_lost": 2,
@@ -1236,6 +1069,7 @@
     "force_family",
     "force_family_src",
     "genre_form",
+    "imslp_n_players",
     "has_files",
     "imslp_file_hosts",
     "fetched_at",
@@ -1463,26 +1297,15 @@
     }
   },
   "pd_reference_year": 2026,
-  "source_dump_id": "2026-10-10",
+  "source_dump_id": "r017",
   "stages": [
-    {
-      "script": "build_dump.py",
-      "dump_id": "2026-10-10",
-      "enrichment": "build_dump",
-      "row_counts": {
-        "composers": 3369,
-        "works": 29046,
-        "imslp_matched_p839": 976,
-        "imslp_unverified_heuristic": 299
-      }
-    },
     {
       "script": "remap_force.py",
       "dump_id": "pipeline_stage_01",
       "enrichment": "remap_force_ids_pd",
       "row_counts": {
         "composers": 3369,
-        "works": 29046,
+        "works": 29033,
         "force_rows_changed": 0,
         "pd_rows_changed": 0,
         "duplicate_composer_rows_removed": 0,
@@ -1495,7 +1318,7 @@
       "enrichment": "carry_forward",
       "row_counts": {
         "composers": 3369,
-        "works": 29046
+        "works": 29033
       }
     },
     {
@@ -1504,7 +1327,7 @@
       "enrichment": "remap_composers_wikidata",
       "row_counts": {
         "composers": 3369,
-        "works": 29046
+        "works": 29033
       }
     },
     {
@@ -1513,7 +1336,7 @@
       "enrichment": "apply_composer_overrides",
       "row_counts": {
         "composers": 3369,
-        "works": 29046
+        "works": 29033
       }
     },
     {
@@ -1522,7 +1345,7 @@
       "enrichment": "remap_authorities",
       "row_counts": {
         "composers": 3369,
-        "works": 29046
+        "works": 29033
       }
     },
     {
@@ -1553,138 +1376,19 @@
       }
     }
   ],
-  "crawl_date": "2026-10-10",
-  "pageviews_range": [
-    "20251001",
-    "20260930"
-  ],
+  "crawl_date": null,
+  "pageviews_range": null,
   "carry_forward": {
-    "base_dump_id": "r016",
+    "base_dump_id": "r017",
     "carried_forward": {
-      "force_family": 366,
-      "instrumentation_raw": 198,
-      "piece_style_raw": 200,
-      "composition_year": 94
+      "force_family": 0,
+      "instrumentation_raw": 0,
+      "piece_style_raw": 0,
+      "composition_year": 0
     },
     "lost_rows": {
-      "works": [
-        [
-          "Q330862",
-          "249764"
-        ],
-        [
-          "Q330862",
-          "1349127"
-        ],
-        [
-          "Q330862",
-          "26913"
-        ],
-        [
-          "Q330862",
-          "988352"
-        ],
-        [
-          "Q330862",
-          "1485099"
-        ],
-        [
-          "Q330862",
-          "1521171"
-        ],
-        [
-          "Q330862",
-          "777549"
-        ],
-        [
-          "Q330862",
-          "782244"
-        ],
-        [
-          "Q330862",
-          "1469036"
-        ],
-        [
-          "Q330862",
-          "1513007"
-        ],
-        [
-          "Q330862",
-          "1498633"
-        ],
-        [
-          "Q330862",
-          "1324836"
-        ],
-        [
-          "Q330862",
-          "1635521"
-        ],
-        [
-          "Q330862",
-          "144988"
-        ],
-        [
-          "Q330862",
-          "102726"
-        ],
-        [
-          "Q330862",
-          "1326036"
-        ],
-        [
-          "Q330862",
-          "458520"
-        ],
-        [
-          "Q330862",
-          "1328591"
-        ],
-        [
-          "Q330862",
-          "102873"
-        ],
-        [
-          "Q330862",
-          "1568538"
-        ],
-        [
-          "Q330862",
-          "1544506"
-        ],
-        [
-          "Q330862",
-          "1348470"
-        ],
-        [
-          "Q330862",
-          "1368136"
-        ],
-        [
-          "Q330862",
-          "1365884"
-        ],
-        [
-          "Q330862",
-          "102788"
-        ],
-        [
-          "Q330862",
-          "102770"
-        ],
-        [
-          "Q709658",
-          "943126"
-        ]
-      ],
-      "composers": [
-        "Q6831259",
-        "Q4731863",
-        "Q330862",
-        "Q709658",
-        "Q276413",
-        "wiki:John_Mitchell"
-      ]
+      "works": [],
+      "composers": []
     },
     "lost_decisions": {
       "force_family": [],

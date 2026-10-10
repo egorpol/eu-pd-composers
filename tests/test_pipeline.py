@@ -136,7 +136,7 @@ def test_derive_adds_work_evidence_by_default(repository, commands, tmp_path):
                                                 "--staging", str(tmp_path / "staging")]))
     prev, nxt = diff_dumps.read_dump("r001"), diff_dumps.read_dump("r999", staging)
     added = [c for c in nxt["works"].columns if c not in prev["works"].columns]
-    assert added == ["imslp_file_hosts", "imslp_style", "imslp_first_published", "imslp_copyright_flags",
+    assert added == ["imslp_n_players", "imslp_file_hosts", "imslp_style", "imslp_first_published", "imslp_copyright_flags",
                      "imslp_librettists"]
     shared = [c for c in prev["works"].columns if c != "dump_date"]
     pd.testing.assert_frame_equal(prev["works"][shared], nxt["works"][shared])

@@ -136,3 +136,14 @@ def test_schema_drift_is_reported_even_for_required_columns(tmp_path, monkeypatc
         common.write_dump_meta(dump_id, {"row_counts": {"composers": len(c), "works": len(w)}})
     errors, _ = check_release.check("r002", None, "r001")
     assert any("schema drift" in err and column in err for err in errors)
+
+
+def test_n_players_and_lc_crosswalk_coverage():
+    c, w = frames(1, 4)
+    w["force_family"] = ["piano_solo", "unclassified", "", "kazoo_band"]
+    w["genre_form"] = ["sonata", "", "other", "polka"]
+    w["imslp_n_players"] = ["1", "1|2", "", "0|x"]
+    errors, _ = check_release.check_data_quality(c, w, {})
+    assert errors == ["invalid imslp_n_players values: 0|x",
+                      "force_family values missing from data/vocab/lc_crosswalk.tsv: kazoo_band",
+                      "genre_form values missing from data/vocab/lc_crosswalk.tsv: polka"]

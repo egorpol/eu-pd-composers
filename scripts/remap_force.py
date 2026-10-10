@@ -34,8 +34,10 @@ from common import (  # noqa: E402
 )
 from force_family import (  # noqa: E402
     FORCE_FAMILIES,
+    N_PLAYERS_COLUMN,
     map_force_family_with_geninfo,
     map_genre_form,
+    n_players_from_categories,
 )
 from imslp import PAGE_CATS_NAMESPACE, filter_imslp_genre_categories  # noqa: E402
 
@@ -240,6 +242,14 @@ def dump_year_from_meta(src: str) -> int:
     return datetime.now(timezone.utc).year
 
 
+def _insert_n_players_column(works: pd.DataFrame) -> pd.DataFrame:
+    if N_PLAYERS_COLUMN in works.columns:
+        return works
+    columns = list(works.columns)
+    columns.insert(columns.index("genre_form") + 1, N_PLAYERS_COLUMN)
+    return works.reindex(columns=columns, fill_value="")
+
+
 def run(args: argparse.Namespace) -> None:
     src = args.from_dump
     out_id = args.to or next_revision_id()
@@ -261,6 +271,11 @@ def run(args: argparse.Namespace) -> None:
     if args.refresh_categories:
         works, category_stats = refresh_genre_categories(works, composers)
         log.info("imslp_genre_categories refresh: %s", category_stats)
+
+    # --preserve-schema: recompute the column only where the source dump already has it.
+    add_n_players = not getattr(args, "preserve_schema", False) or N_PLAYERS_COLUMN in works.columns
+    if add_n_players:
+        works = _insert_n_players_column(works)
 
     dump_year = dump_year_from_meta(src)
     old_force = works[["force_family", "force_family_src"]].copy()
@@ -285,6 +300,8 @@ def run(args: argparse.Namespace) -> None:
         works.at[idx, "force_family"] = family
         works.at[idx, "force_family_src"] = src_tag
         works.at[idx, "genre_form"] = form
+        if add_n_players:
+            works.at[idx, N_PLAYERS_COLUMN] = n_players_from_categories(genre)
 
     log.info("force_family rows changed: %d / %d", changed_force, len(works))
 
@@ -387,7 +404,9 @@ def run(args: argparse.Namespace) -> None:
                 "Recomputed force_family ignoring (arr) tokens; opera/voice beat concerto",
                 "Merged duplicate composer_id rows; deduped works by imslp_pageid",
                 "Missing death_year → eu_pd_status=unknown_death",
-            ],
+            ]
+            + ([f"{N_PLAYERS_COLUMN} from IMSLP 'For N players' categories (originals only)"]
+               if add_n_players else []),
         },
     )
     log.info("Wrote %s → %s, %s", out_id, c_path.name, w_path.name)
@@ -404,6 +423,8 @@ def main() -> None:
         "(fill it with refetch_work_categories.py)",
     )
     p.add_argument("--dry-run", action="store_true")
+    p.add_argument("--preserve-schema", action="store_true",
+                   help=f"Do not add {N_PLAYERS_COLUMN} when the source dump lacks it")
     run(p.parse_args())
 
 
