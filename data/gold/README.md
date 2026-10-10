@@ -23,7 +23,7 @@ The sample for r016: 200 composers and 300 works, drawn with `python scripts/gol
 1. Fill `composers_sheet.tsv` and `works_sheet.tsv` in a spreadsheet (keep TSV, UTF-8; do not reorder or delete rows), or in the annotation form (below). Budget about 3 minutes per composer and 1 minute per work, so roughly 15 hours.
 2. **Stay blind.** While annotating, do not open the dump, the viewer, the design files or this repo's labels for these items. The sheets deliberately omit death years, PD status, instrumentation and rights labels.
 3. At least **7 days** after finishing an item set, fill its `*_recheck.tsv` without looking at your first answers.
-4. Score: `python scripts/gold_set.py score --dump r016 --out data/gold/r016/report.md --json data/gold/r016/report.json`. Partly filled sheets score fine; blank rows are skipped, and invalid values are listed and ignored.
+4. Score: `python scripts/gold_set.py score --dump r016 --out data/gold/r016/report.md --json data/gold/r016/report.json`. Partly filled sheets score fine; blank rows are skipped, and invalid values are listed and ignored. Score only after finishing a pass: with few items filled, the rates show whether single answers matched the dump, which unblinds the rest.
 
 Use `unsure` sparingly; write the reason in `notes`. Leave a cell empty only if you have not checked it yet.
 
@@ -31,7 +31,7 @@ Use `unsure` sparingly; write the reason in `notes`. Leave a cell empty only if 
 
 `python scripts/gold_set.py form --dump r016` builds the form from the sheets into `build/gold_form/r016/`. The page holds only what the sheets show, plus the practice items. It shows one item at a time with its links and name searches (IMSLP, GND, LoC, BnF, Grove), offers only valid values, and keeps the re-check tabs locked until 7 days after a set's last answer.
 
-- `gold_form.html` is the claude.ai Artifact page (r016: [the published form](https://claude.ai/artifact/HKFhFwjLq3mVDvaTfMmbjR), private to its owner). Answers go to the artifact's store (collections `answers`, `recheck`, `practice`, one document per item), from which Claude writes them into the TSVs.
+- `gold_form.html` is the claude.ai Artifact page (r016: [the published form](https://claude.ai/artifact/HKFhFwjLq3mVDvaTfMmbjR), private to its owner). Answers go to the artifact's store (collections `answers`, `recheck`, `practice`, one document per item). To export, Claude saves `answers` and `recheck` with `ArtifactData list` (`out_dir`), then `python scripts/gold_set.py import-form --dump r016 --store <out_dir>` writes them into the sheets; an item in the store replaces all its answer cells, and invalid values are listed.
 - `gold_form_local.html` opens in any browser. Answers stay in that browser's storage; copy each sheet into `data/gold/<dump>/` from Progress & export.
 
 ## Composers

@@ -239,3 +239,39 @@ def test_form_template_matches_scorer_vocabulary():
                                                           "w": list(gs.GOLD_FIELDS["works"])}
     assert columns("const SHEET_COLS", "const FAMILIES") == {"c": ["item", *gs.SHOWN["composers"]],
                                                             "w": ["item", *gs.SHOWN["works"]]}
+
+
+def test_import_form_answers(tmp_path):
+    result = gs.build_sample(_composers(), _works(), seed=7, n_composers=30, n_works=40, minimum=3,
+                             recheck_share=0.1)
+    for kind in gs.SETS:
+        for part in ("sheet", "recheck"):
+            result[kind][part].to_csv(tmp_path / f"{kind}_{part}.tsv", sep="\t", index=False)
+    sheet_path = tmp_path / "works_sheet.tsv"
+    sheet = pd.read_csv(sheet_path, sep="\t", dtype=str, keep_default_na=False)
+    sheet.loc[sheet["item"] == "W002", "notes"] = "typed in a spreadsheet"
+    sheet.loc[sheet["item"] == "W003", "notes"] = "cleared in the form"
+    sheet.to_csv(sheet_path, sep="\t", index=False)
+    recheck_item = result["composers"]["recheck"]["item"].iloc[0]
+    store = tmp_path / "store"
+    docs = {
+        "answers/W001.json": {"item": "W001", "force_family": "concerto", "has_files": "yes",
+                              "rights_basis": "none", "notes": "harp\tand\nstrings", "updatedAt": "x"},
+        "answers/W003.json": {"item": "W003", "force_family": "harp_only"},
+        "answers/probe.json": {"item": "probe"},
+        f"recheck/{recheck_item}.json": {"item": recheck_item, "wikidata_same_person": "yes"},
+    }
+    for name, doc in docs.items():
+        (store / name).parent.mkdir(parents=True, exist_ok=True)
+        (store / name).write_text(json.dumps(doc), encoding="utf-8")
+    composers_before = (tmp_path / "composers_sheet.tsv").read_bytes()
+    summary = gs.import_answers(tmp_path, store)
+    works = pd.read_csv(sheet_path, sep="\t", dtype=str, keep_default_na=False).set_index("item")
+    assert works.loc["W001", list(gs.GOLD_FIELDS["works"])].tolist() == ["concerto", "yes", "none", "harp and strings"]
+    assert works.loc["W002", "notes"] == "typed in a spreadsheet"
+    assert works.loc["W003", "notes"] == ""
+    assert summary["works_sheet.tsv"] == {"imported": 2, "problems": ["W003 force_family='harp_only'"]}
+    assert summary["answers_unknown"] == ["probe"]
+    assert summary["composers_recheck.tsv"]["imported"] == 1
+    assert (tmp_path / "composers_sheet.tsv").read_bytes() == composers_before
+    assert list(works.reset_index().columns) == ["item", *gs.SHOWN["works"], *gs.GOLD_FIELDS["works"]]

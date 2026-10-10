@@ -3,6 +3,7 @@
 
   python scripts/gold_set.py sample --dump r016        # writes data/gold/r016/
   python scripts/gold_set.py form --dump r016          # annotation form → build/gold_form/r016/
+  python scripts/gold_set.py import-form --dump r016 --store DIR   # form answers → sheets
   python scripts/gold_set.py score --dump r016 --out data/gold/r016/report.md
 
 Offline. `sample` is deterministic for a dump and seed, and refuses to overwrite
@@ -266,6 +267,54 @@ def run_form(args: argparse.Namespace) -> list[Path]:
     return paths
 
 
+# Form store collection → sheet part it fills.
+FORM_COLLECTIONS = {"answers": "sheet", "recheck": "recheck"}
+
+
+def import_answers(directory: Path, store: Path) -> dict[str, Any]:
+    """Write form answers (<store>/<collection>/<item>.json, one document per item) into the sheets.
+
+    An item in the store replaces all its answer cells, so a cleared answer clears the cell; items not in
+    the store keep theirs. Returns per-sheet counts, invalid cells and store items no sheet has.
+    """
+    read = dict(sep="\t", dtype=str, keep_default_na=False)
+    summary: dict[str, Any] = {}
+    for collection, part in FORM_COLLECTIONS.items():
+        docs = {}
+        for path in sorted((store / collection).glob("*.json")):
+            doc = json.loads(path.read_text(encoding="utf-8"))
+            docs[str(doc.get("item", path.stem))] = doc
+        seen: set[str] = set()
+        for kind in SETS:
+            path = directory / f"{kind}_{part}.tsv"
+            sheet = pd.read_csv(path, **read)
+            hits = sheet.index[sheet["item"].isin(docs)]
+            for i in hits:
+                doc = docs[sheet.at[i, "item"]]
+                for field in GOLD_FIELDS[kind]:
+                    sheet.at[i, field] = " ".join(str(doc.get(field) or "").split())
+            if len(hits):
+                sheet.to_csv(path, sep="\t", index=False)
+            seen |= set(sheet["item"])
+            summary[path.name] = {"imported": len(hits), "problems": validate(kind, sheet)}
+        summary[f"{collection}_unknown"] = sorted(set(docs) - seen)
+    return summary
+
+
+def run_import(args: argparse.Namespace) -> dict[str, Any]:
+    directory = Path(args.gold_dir) if args.gold_dir else gold_dir(args.dump)
+    summary = import_answers(directory, Path(args.store))
+    for name, entry in summary.items():
+        if name.endswith("_unknown"):
+            if entry:
+                print(f"{name.removesuffix('_unknown')}: not in any sheet, skipped: {', '.join(entry)}")
+            continue
+        print(f"{name}: {entry['imported']} items imported")
+        for problem in entry["problems"]:
+            print(f"  invalid: {problem}")
+    return summary
+
+
 # --- Scoring --------------------------------------------------------------
 
 def wilson(p: float, n: float, z: float = 1.96) -> tuple[float, float]:
@@ -519,6 +568,10 @@ def main() -> None:
     form.add_argument("--dump", required=True)
     form.add_argument("--gold-dir", help="Default: data/gold/<dump>/")
     form.add_argument("--out-dir", help="Default: build/gold_form/<dump>/")
+    imp = commands.add_parser("import-form", help="Write answers saved by the form into the sheets")
+    imp.add_argument("--dump", required=True)
+    imp.add_argument("--store", required=True, help="Directory with answers/ and recheck/, one <item>.json each")
+    imp.add_argument("--gold-dir", help="Default: data/gold/<dump>/")
     score = commands.add_parser("score", help="Score filled sheets against the dump")
     score.add_argument("--dump", required=True)
     score.add_argument("--gold-dir", help="Default: data/gold/<dump>/")
@@ -529,6 +582,8 @@ def main() -> None:
         run_sample(args)
     elif args.command == "form":
         run_form(args)
+    elif args.command == "import-form":
+        run_import(args)
     else:
         run_score(args)
 
