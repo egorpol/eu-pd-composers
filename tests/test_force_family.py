@@ -6,6 +6,7 @@ from force_family import (
     force_family_from_categories,
     force_family_from_for_category,
     force_family_from_instrumentation,
+    n_players_from_categories,
 )
 
 
@@ -119,3 +120,21 @@ def test_category_cell(cell, family):
 )
 def test_instrumentation(instrumentation, family):
     assert force_family_from_instrumentation(instrumentation)[0] == family
+
+
+@pytest.mark.parametrize(
+    "cell, expected",
+    [
+        ("For 1 player|For piano", "1"),
+        # Versions for different forces keep every original count; arrangements never count.
+        ("For 1 player|For 2 players|For 3 players (arr)|For piano|For violin, piano", "1|2"),
+        ("For 2 players (arr)|For violin, piano (arr)", ""),
+        ("For 2 players with continuo|For 2 violins, continuo", "2"),
+        ("For 10 players|For 2 players", "2|10"),
+        ("For unspecified number of players", ""),
+        ("For voice, piano|Songs", ""),
+        ("", ""),
+    ],
+)
+def test_n_players(cell, expected):
+    assert n_players_from_categories(cell) == expected

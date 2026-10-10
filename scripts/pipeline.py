@@ -20,6 +20,7 @@ import pandas as pd
 import common
 from apply_llm_styles import LLM_STYLE_COLUMNS, default_ledger_path
 from authorities import AUTHORITY_COLUMNS
+from force_family import N_PLAYERS_COLUMN
 from imslp_work_evidence import EVIDENCE_COLUMNS, FILE_HOSTS_COLUMN
 
 log = logging.getLogger("pipeline")
@@ -78,7 +79,7 @@ def offline_stages(
     stages = []
     current = source
     steps = [
-        ("remap_force.py", []),
+        ("remap_force.py", ["--preserve-schema"] if preserve_schema else []),
         ("carry_forward.py", ["--base", base]),
         ("remap_composers.py", []),
         ("apply_overrides.py", ["--overrides", str(overrides_path())]),
@@ -117,7 +118,7 @@ def prepare_result(
             removed = [c for c in original.columns if c not in frame.columns]
             # derive adds only supported evidence columns; --preserve-schema forbids any change.
             allowed = () if preserve_schema else (
-                (*EVIDENCE_COLUMNS, FILE_HOSTS_COLUMN) if stem == "works" else (*LLM_STYLE_COLUMNS, *AUTHORITY_COLUMNS))
+                (*EVIDENCE_COLUMNS, FILE_HOSTS_COLUMN, N_PLAYERS_COLUMN) if stem == "works" else (*LLM_STYLE_COLUMNS, *AUTHORITY_COLUMNS))
             if removed or any(c not in allowed for c in added):
                 raise ValueError(f"derive changed {stem} schema: added {added}, removed {removed}")
             if preserve_schema:

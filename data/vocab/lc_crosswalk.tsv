@@ -1,0 +1,52 @@
+facet	value	scheme	relation	label	uri	note
+force_family	piano_solo	lcmpt	closeMatch	piano	http://id.loc.gov/authorities/performanceMediums/mp2013015550	One pianist, two hands; MARC 382 $a piano $n 1
+force_family	piano_ensemble	lcmpt	closeMatch	piano	http://id.loc.gov/authorities/performanceMediums/mp2013015550	Two or more pianists or pianos (4 hands, 2 pianos); LCMPT records the count in MARC 382 $n, not a separate term
+force_family	organ	lcmpt	closeMatch	organ	http://id.loc.gov/authorities/performanceMediums/mp2013015519	
+force_family	keyboard_other	lcmpt	broadMatch	keyboard instrument	http://id.loc.gov/authorities/performanceMediums/mp2013015382	Harpsichord, clavichord, celesta, harmonium and similar; the LCMPT term also covers piano and organ
+force_family	solo_instrument					One instrument, alone or with one keyboard; no LC term for the grouping, the LCMPT term is the instrument named in the IMSLP For … category
+force_family	guitar	lcmpt	narrowMatch	guitar	http://id.loc.gov/authorities/performanceMediums/mp2013015306	
+force_family	guitar	lcmpt	narrowMatch	lute	http://id.loc.gov/authorities/performanceMediums/mp2013015433	Also archlute, theorbo and vihuela
+force_family	guitar	lcmpt	broadMatch	plucked string instrument	http://id.loc.gov/authorities/performanceMediums/mp2013015565	The LCMPT term also covers harp
+force_family	chamber	lcgft	closeMatch	Chamber music	http://id.loc.gov/authorities/genreForms/gf2014026704	Two or more instrumentalists; LCGFT also uses the term for vocal chamber music
+force_family	orchestral	lcmpt	closeMatch	orchestra	http://id.loc.gov/authorities/performanceMediums/mp2013015516	
+force_family	orchestral	lcmpt	narrowMatch	string orchestra	http://id.loc.gov/authorities/performanceMediums/mp2013015681	
+force_family	concerto	lcgft	closeMatch	Concertos	http://id.loc.gov/authorities/genreForms/gf2014026725	Soloist(s) with orchestra or string orchestra
+force_family	wind_band	lcmpt	closeMatch	band	http://id.loc.gov/authorities/performanceMediums/mp2013015048	
+force_family	wind_band	lcmpt	narrowMatch	wind ensemble	http://id.loc.gov/authorities/performanceMediums/mp2013015802	
+force_family	wind_band	lcmpt	narrowMatch	brass ensemble	http://id.loc.gov/authorities/performanceMediums/mp2013015101	
+force_family	solo_voice	lcmpt	closeMatch	voice	http://id.loc.gov/authorities/performanceMediums/mp2013015791	Solo voice(s) with any accompaniment
+force_family	solo_voice	lcgft	narrowMatch	Songs	http://id.loc.gov/authorities/genreForms/gf2014027103	The family also holds arias
+force_family	choral	lcmpt	closeMatch	chorus	http://id.loc.gov/authorities/performanceMediums/mp2013015143	Any chorus, or three or more unaccompanied voices
+force_family	stage_opera	lcgft	closeMatch	Operas	http://id.loc.gov/authorities/genreForms/gf2014026976	LCGFT folds Singspiels into Operas
+force_family	stage_opera	lcgft	narrowMatch	Musicals	http://id.loc.gov/authorities/genreForms/gf2014026957	LCGFT folds Operettas into Musicals
+force_family	stage_opera	lcgft	broadMatch	Dramatic music	http://id.loc.gov/authorities/genreForms/gf2014026775	
+force_family	stage_ballet	lcgft	closeMatch	Ballets (Music)	http://id.loc.gov/authorities/genreForms/gf2014026650	
+force_family	film_media	lcgft	narrowMatch	Motion picture music	http://id.loc.gov/authorities/genreForms/gf2014026950	IMSLP film categories
+force_family	film_media	lcgft	narrowMatch	Incidental music	http://id.loc.gov/authorities/genreForms/gf2014026873	IMSLP incidental-music categories
+force_family	film_media	lcgft	narrowMatch	Radio music	http://id.loc.gov/authorities/genreForms/gf2014027031	IMSLP radio categories
+force_family	electronic	lcmpt	closeMatch	electronics	http://id.loc.gov/authorities/performanceMediums/mp2013015248	LCGFT has no medium-based term for electronic music; tape and computer parts count here
+force_family	pedagogical	lcgft	closeMatch	Teaching pieces (Music)	http://id.loc.gov/authorities/genreForms/gf2014027207	
+force_family	pedagogical	lcgft	narrowMatch	Studies (Music)	http://id.loc.gov/authorities/genreForms/gf2014027115	IMSLP Etudes, Studies, Exercises
+force_family	pedagogical	lcgft	narrowMatch	Methods (Music)	http://id.loc.gov/authorities/genreForms/gf2014027209	IMSLP Methods
+force_family	other					Residual: categories that name no force; no LC equivalent
+genre_form	sonata	lcgft	exactMatch	Sonatas	http://id.loc.gov/authorities/genreForms/gf2014027099	
+genre_form	symphony	lcgft	exactMatch	Symphonies	http://id.loc.gov/authorities/genreForms/gf2014027121	
+genre_form	suite	lcgft	exactMatch	Suites	http://id.loc.gov/authorities/genreForms/gf2014027116	
+genre_form	variations	lcgft	exactMatch	Variations (Music)	http://id.loc.gov/authorities/genreForms/gf2014027156	
+genre_form	etude	lcgft	closeMatch	Studies (Music)	http://id.loc.gov/authorities/genreForms/gf2014027115	
+genre_form	prelude_fugue	lcgft	narrowMatch	Preludes (Music)	http://id.loc.gov/authorities/genreForms/gf2014027013	
+genre_form	prelude_fugue	lcgft	narrowMatch	Fugues	http://id.loc.gov/authorities/genreForms/gf2014026818	
+genre_form	dance	lcgft	closeMatch	Dance music	http://id.loc.gov/authorities/genreForms/gf2014026753	
+genre_form	string_quartet	lcgft	broadMatch	Chamber music	http://id.loc.gov/authorities/genreForms/gf2014026704	LCGFT has no medium-based term; catalogues add LCMPT violin (2), viola, cello. The value also fires on IMSLP Quartets, i.e. any quartet
+genre_form	song_cycle	lcgft	exactMatch	Song cycles	http://id.loc.gov/authorities/genreForms/gf2014027101	
+genre_form	mass_requiem	lcgft	narrowMatch	Masses	http://id.loc.gov/authorities/genreForms/gf2014026926	
+genre_form	mass_requiem	lcgft	narrowMatch	Requiems	http://id.loc.gov/authorities/genreForms/gf2014027048	
+genre_form	oratorio_cantata	lcgft	narrowMatch	Oratorios	http://id.loc.gov/authorities/genreForms/gf2014026977	
+genre_form	oratorio_cantata	lcgft	narrowMatch	Cantatas	http://id.loc.gov/authorities/genreForms/gf2014026688	
+genre_form	overture_tone_poem	lcgft	narrowMatch	Overtures	http://id.loc.gov/authorities/genreForms/gf2014026980	
+genre_form	overture_tone_poem	lcgft	narrowMatch	Symphonic poems	http://id.loc.gov/authorities/genreForms/gf2014027120	
+genre_form	concerto	lcgft	exactMatch	Concertos	http://id.loc.gov/authorities/genreForms/gf2014026725	
+genre_form	opera	lcgft	exactMatch	Operas	http://id.loc.gov/authorities/genreForms/gf2014026976	
+genre_form	ballet	lcgft	exactMatch	Ballets (Music)	http://id.loc.gov/authorities/genreForms/gf2014026650	
+genre_form	arrangement	lcgft	exactMatch	Arrangements (Music)	http://id.loc.gov/authorities/genreForms/gf2014027203	
+genre_form	other	lcgft	closeMatch	Songs	http://id.loc.gov/authorities/genreForms/gf2014027103	The rules assign other only to IMSLP Songs or Lieder that are not song cycles
