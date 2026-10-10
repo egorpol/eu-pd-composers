@@ -19,6 +19,7 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import re
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -269,13 +270,20 @@ def run_form(args: argparse.Namespace) -> list[Path]:
 
 # Form store collection → sheet part it fills.
 FORM_COLLECTIONS = {"answers": "sheet", "recheck": "recheck"}
+# A bare identifier in death_source is a GND number (Wikidata P227 format).
+GND_ID = re.compile(r"1[01]?\d{7}[0-9X]|[47]\d{6}-\d|[1-9]\d{0,7}-[0-9X]|3\d{7}[0-9X]")
+
+
+def _cell(field: str, value: Any) -> str:
+    text = " ".join(str(value or "").split())
+    return f"GND {text}" if field == "death_source" and GND_ID.fullmatch(text) else text
 
 
 def import_answers(directory: Path, store: Path) -> dict[str, Any]:
     """Write form answers (<store>/<collection>/<item>.json, one document per item) into the sheets.
 
     An item in the store replaces all its answer cells, so a cleared answer clears the cell; items not in
-    the store keep theirs. Returns per-sheet counts, invalid cells and store items no sheet has.
+    the store keep theirs. A bare GND number in death_source becomes "GND <number>". Returns per-sheet counts, invalid cells and store items no sheet has.
     """
     read = dict(sep="\t", dtype=str, keep_default_na=False)
     summary: dict[str, Any] = {}
@@ -292,7 +300,7 @@ def import_answers(directory: Path, store: Path) -> dict[str, Any]:
             for i in hits:
                 doc = docs[sheet.at[i, "item"]]
                 for field in GOLD_FIELDS[kind]:
-                    sheet.at[i, field] = " ".join(str(doc.get(field) or "").split())
+                    sheet.at[i, field] = _cell(field, doc.get(field))
             if len(hits):
                 sheet.to_csv(path, sep="\t", index=False)
             seen |= set(sheet["item"])

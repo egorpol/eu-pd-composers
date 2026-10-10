@@ -518,7 +518,7 @@ function renderCard(tab, items, i) {
       linked ? null : el("div", { class: "row" }, found.box)));
     const yr = text("death_year", "Death year", { inputmode: "numeric", maxlength: "4", placeholder: "YYYY", class: "year" });
     yearInp = yr.inp;
-    const src = text("death_source", "Source (short name + URL)", { placeholder: "GND https://d-nb.info/gnd/…", grow: "1" });
+    const src = text("death_source", "Source: a GND number, or short name + URL or id", { placeholder: "118776312, or LoC n92085993", grow: "1" });
     card.append(q("Death", "death_status",
       el("p", { class: "help", text: "Living needs positive evidence of life after 2020. If you can't tell, use unknown. Leave the year empty if the person died but no source gives it." }),
       seg("death_status", ["dead", "living", "unknown"].map(x => ({ v: x }))),

@@ -259,7 +259,8 @@ def test_import_form_answers(tmp_path):
                               "rights_basis": "none", "notes": "harp\tand\nstrings", "updatedAt": "x"},
         "answers/W003.json": {"item": "W003", "force_family": "harp_only"},
         "answers/probe.json": {"item": "probe"},
-        f"recheck/{recheck_item}.json": {"item": recheck_item, "wikidata_same_person": "yes"},
+        f"recheck/{recheck_item}.json": {"item": recheck_item, "wikidata_same_person": "yes",
+                                         "death_source": " 118776312 "},
     }
     for name, doc in docs.items():
         (store / name).parent.mkdir(parents=True, exist_ok=True)
@@ -273,5 +274,8 @@ def test_import_form_answers(tmp_path):
     assert summary["works_sheet.tsv"] == {"imported": 2, "problems": ["W003 force_family='harp_only'"]}
     assert summary["answers_unknown"] == ["probe"]
     assert summary["composers_recheck.tsv"]["imported"] == 1
+    recheck = pd.read_csv(tmp_path / "composers_recheck.tsv", sep="\t", dtype=str, keep_default_na=False)
+    assert recheck.loc[recheck["item"] == recheck_item, "death_source"].item() == "GND 118776312"
+    assert gs._cell("death_source", "LoC n92085993") == "LoC n92085993" and gs._cell("notes", "118776312") == "118776312"
     assert (tmp_path / "composers_sheet.tsv").read_bytes() == composers_before
     assert list(works.reset_index().columns) == ["item", *gs.SHOWN["works"], *gs.GOLD_FIELDS["works"]]

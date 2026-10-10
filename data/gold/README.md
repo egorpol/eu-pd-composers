@@ -44,7 +44,7 @@ Use `unsure` sparingly; write the reason in `notes`. Leave a cell empty only if 
 | `imslp_found_url` | URL | Only with `found` |
 | `death_status` | `dead` / `living` / `unknown` | `living` needs positive evidence of life after 2020 (recent activity, an institutional page, an interview). If you cannot tell, use `unknown` |
 | `death_year` | `YYYY` | With `dead`. Leave empty if the person died but no source gives the year |
-| `death_source` | short name + URL | The source you relied on (see the hierarchy) |
+| `death_source` | GND number, or short name + URL or id | The source you relied on (see the hierarchy). A bare number is a GND id (`118776312`, written to the sheet as `GND 118776312`); name any other source (`LoC n92085993`, `Wikidata Q10274029`, `Grove https://…`) |
 | `notes` | free text | Conflicts between sources, doubts, page changes |
 
 ### Source hierarchy for life dates
