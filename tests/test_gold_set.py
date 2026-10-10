@@ -301,6 +301,9 @@ def test_form_template_matches_scorer_vocabulary():
                                                           "w": list(gs.GOLD_FIELDS["works"])}
     assert columns("const SHEET_COLS", "const FAMILIES") == {"c": ["item", *gs.SHOWN["composers"]],
                                                             "w": ["item", *gs.SHOWN["works"]]}
+    # The one-click source fills the form the import keeps unchanged; the GND link is the canonical URI.
+    assert 'const gnd = "GND " + it.gnd_id;' in template and '"https://d-nb.info/gnd/" + enc(it.gnd_id)' in template
+    assert gs._cell("death_source", "GND 118590219") == "GND 118590219"
 
 
 def test_import_form_answers(tmp_path):

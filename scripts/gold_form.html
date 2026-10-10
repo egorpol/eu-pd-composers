@@ -116,6 +116,7 @@ details.ref ol { margin: 6px 0 0; padding-left: 20px; display: grid; gap: 2px; m
 .nav { border: 1px solid var(--line); background: var(--surface); border-radius: var(--r); padding: 6px 14px; cursor: pointer; }
 .nav:hover:not(:disabled) { border-color: var(--accent); }
 .nav:disabled { opacity: .45; cursor: default; }
+.nav.fill { align-self: flex-end; }
 .nav.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 600; }
 .save { margin-left: auto; font-size: 13px; color: var(--muted); }
 .save.err { color: var(--err); }
@@ -481,10 +482,12 @@ function renderCard(tab, items, i) {
     const links = el("div", { class: "links" }, ext(it.wikipedia_url, "Wikipedia"), ext(it.wikidata_url, "Wikidata"));
     links.append(it.imslp_url ? ext(it.imslp_url, "IMSLP category") : el("span", { class: "nolink", text: "No IMSLP link in this row: search for one" }));
     // GND and VIAF ids come from the Wikidata item: check them against the article like the item itself.
-    if (it.gnd_id) links.append(ext("https://lobid.org/gnd/" + enc(it.gnd_id), "GND " + it.gnd_id));
+    // d-nb.info is the canonical GND URI and opens the record in the DNB portal; lobid shows the same record.
+    if (it.gnd_id) links.append(ext("https://d-nb.info/gnd/" + enc(it.gnd_id), "GND " + it.gnd_id));
     if (it.viaf_id) links.append(ext("https://viaf.org/viaf/" + enc(it.viaf_id), "VIAF"));
     const n = enc(it.name);
     const look = el("div", { class: "lookups" }, el("span", { text: "Look up:" }),
+      it.gnd_id ? ext("https://lobid.org/gnd/" + enc(it.gnd_id), "GND on lobid", "") : null,
       ext("https://imslp.org/index.php?title=Special:Search&search=" + n, "IMSLP search", ""),
       ext("https://lobid.org/gnd/search?q=" + n + "&filter=type:Person", it.gnd_id ? "GND search" : "GND", ""),
       ext("https://id.loc.gov/search/?q=" + n + "&q=cs:http://id.loc.gov/authorities/names", "LoC", ""),
@@ -541,10 +544,18 @@ function renderCard(tab, items, i) {
     const yr = text("death_year", "Death year", { inputmode: "numeric", maxlength: "4", placeholder: "YYYY", class: "year" });
     yearInp = yr.inp;
     const src = text("death_source", "Source: a GND number, or short name + URL or id", { placeholder: "118776312, or LoC n92085993", grow: "1" });
+    let useGnd = null;
+    if (it.gnd_id) {
+      const gnd = "GND " + it.gnd_id;
+      useGnd = el("button", { class: "nav fill", id: "use-gnd", type: "button", text: "Use " + gnd,
+        title: "Fill the source with this row's GND record. Type the year yourself.",
+        onclick: () => { edit(coll, id, "death_source", gnd); flush(coll, id); sync(); } });
+      groups.push(() => { useGnd.disabled = (v().death_source || "").trim() === gnd; });
+    }
     card.append(q("Death", "death_status",
       el("p", { class: "help", text: "Living needs positive evidence of life after 2020. If you can't tell, use unknown. Leave the year empty if the person died but no source gives it." }),
       seg("death_status", ["dead", "living", "unknown"].map(x => ({ v: x }))),
-      el("div", { class: "row" }, yr.box, src.box),
+      el("div", { class: "row" }, yr.box, src.box, useGnd),
       el("details", { class: "ref" }, el("summary", { text: "Source hierarchy" }),
         el("ol", {},
           el("li", { text: "National authority files: GND, BnF, Library of Congress, or their VIAF cluster." }),
