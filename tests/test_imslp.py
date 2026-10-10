@@ -118,3 +118,37 @@ def test_redirect_pages_are_flagged():
     assert out[8]["redirect"] is True
     assert out[8]["categories"] == []
     assert session.calls[0]["prop"] == "categories|info"
+
+
+def _files(*names):
+    return [{"ns": 6, "title": f"File:{n}"} for n in names]
+
+
+def test_page_files_follow_continuation_and_cache_without_prefix():
+    session = FakeSession(
+        [
+            {
+                "query": {
+                    "pages": {
+                        "1": {"pageid": 1, "title": "A", "images": _files("PMLP1-a.pdf")},
+                        "2": {"pageid": 2, "title": "B", "images": _files("PMLP2-PMLUS01-placeholder-b.pdf")},
+                    }
+                },
+                "query-continue": {"images": {"imcontinue": "1|PMLP1-b.mp3"}},
+            },
+            {"query": {"pages": {"1": {"pageid": 1, "title": "A", "images": _files("PMLP1-b.mp3")}, "2": {"pageid": 2}}}},
+        ]
+    )
+    out = imslp.fetch_page_files([1, 2], session, sleep_s=0)
+
+    assert session.calls[0]["prop"] == "images|info" and session.calls[0]["imlimit"] == "max"
+    assert session.calls[1]["imcontinue"] == "1|PMLP1-b.mp3"
+    assert out[1]["images"] == ["PMLP1-a.pdf", "PMLP1-b.mp3"]
+    assert common.cache_get(imslp.PAGE_FILES_NAMESPACE, "2")["images"] == ["PMLP2-PMLUS01-placeholder-b.pdf"]
+    assert common.cache_get(imslp.PAGE_CATS_NAMESPACE, "1") is None
+
+
+def test_page_without_files_is_cached_empty_not_missing():
+    session = FakeSession([{"query": {"pages": {"3": {"pageid": 3, "title": "C"}}}}])
+    out = imslp.fetch_page_files([3], session, sleep_s=0)
+    assert out[3]["images"] == [] and out[3]["missing"] is False
