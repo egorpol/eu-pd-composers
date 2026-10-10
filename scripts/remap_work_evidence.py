@@ -2,7 +2,9 @@
 """Add IMSLP work evidence columns from cached page categories.
 
 Offline only. Writes a new revision without overwriting inputs; --dry-run
-prints the complete audit report without writing any output files.
+prints the complete audit report without writing any output files. Works whose
+page is not in the local cache keep their prior evidence cells, so an incomplete
+cache never erases published evidence.
 """
 
 from __future__ import annotations
@@ -60,11 +62,23 @@ def _insert_evidence_columns(works: pd.DataFrame) -> pd.DataFrame:
     return out.reindex(columns=columns)
 
 
+def _prior_evidence(works: pd.DataFrame, idx: Any) -> dict[str, str]:
+    """Evidence cells the input row already carries (empty when the column is absent)."""
+    prior = {}
+    for col in EVIDENCE_COLUMNS:
+        value = works.at[idx, col] if col in works.columns else ""
+        prior[col] = "" if pd.isna(value) else str(value)
+    return prior
+
+
 def remap_work_evidence(
     composers: pd.DataFrame,
     works: pd.DataFrame,
 ) -> tuple[pd.DataFrame, dict[str, Any]]:
-    """Fill evidence cells from cache; composers are returned unchanged."""
+    """Fill evidence cells from cache; composers are returned unchanged.
+
+    Uncached pages keep their prior cells; rows without a page id get empty cells.
+    """
     out = _insert_evidence_columns(works)
     n = len(out)
     style_counts: Counter[str] = Counter()
@@ -72,31 +86,29 @@ def remap_work_evidence(
     unmapped_counts: Counter[str] = Counter()
     librettist_names: set[str] = set()
     coverage = {col: 0 for col in EVIDENCE_COLUMNS}
+    no_pageid = 0
     missing_cache = 0
+    kept_prior = 0
     redirect_or_missing_page = 0
 
     for idx, row in out.iterrows():
         pageid = str(row.get("imslp_pageid") or "").strip()
+        categories: list[str] = []
         if not pageid:
+            no_pageid += 1
+            evidence = dict(EMPTY_EVIDENCE)
+        elif (cached := cache_get(PAGE_CATS_NAMESPACE, pageid)) is None:
             missing_cache += 1
-            for col, value in EMPTY_EVIDENCE.items():
-                out.at[idx, col] = value
-            continue
-
-        cached = cache_get(PAGE_CATS_NAMESPACE, pageid)
-        if cached is None:
-            missing_cache += 1
-            for col, value in EMPTY_EVIDENCE.items():
-                out.at[idx, col] = value
-            continue
-
-        if cached.get("redirect") or cached.get("missing"):
-            redirect_or_missing_page += 1
-            categories: list[str] = []
+            evidence = _prior_evidence(works, idx)
+            if any(evidence.values()):
+                kept_prior += 1
         else:
-            categories = list(cached.get("categories") or [])
+            if cached.get("redirect") or cached.get("missing"):
+                redirect_or_missing_page += 1
+            else:
+                categories = list(cached.get("categories") or [])
+            evidence = work_evidence(categories)
 
-        evidence = work_evidence(categories)
         for col, value in evidence.items():
             out.at[idx, col] = value
             if value:
@@ -153,7 +165,9 @@ def remap_work_evidence(
         "distinct_librettists": len(librettist_names),
         "eu_pd_status_x_nonpd_eu": dict(sorted(crosstab.items())),
         "pd_composer_nonpd_eu_examples": pd_nonpd_eu_examples,
+        "no_pageid": no_pageid,
         "missing_cache": missing_cache,
+        "kept_prior": kept_prior,
         "redirect_or_missing_page": redirect_or_missing_page,
         "works_total": n,
     }
@@ -182,7 +196,11 @@ def print_report(report: dict[str, Any], src: str, out_id: str) -> None:
     if not report["unmapped_copyright_categories"]:
         print("  none")
     print(f"Distinct librettists: {report['distinct_librettists']}")
-    print(f"Missing cache entries: {report['missing_cache']}")
+    print(f"Works without page id: {report['no_pageid']}")
+    print(
+        f"Missing cache entries: {report['missing_cache']} "
+        f"(prior evidence kept: {report['kept_prior']})"
+    )
     print(f"Redirect / missing pages: {report['redirect_or_missing_page']}")
     print("Composer eu_pd_status × nonpd_eu:")
     for key, count in report["eu_pd_status_x_nonpd_eu"].items():
@@ -212,6 +230,12 @@ def run(args: argparse.Namespace) -> None:
     )
     log.info("Loaded %d composers, %d works from %s", len(composers), len(works), src)
     works_out, report = remap_work_evidence(composers, works)
+    if report["missing_cache"]:
+        log.warning(
+            "%d works have no cached page categories; kept their prior evidence "
+            "(fill the cache with refetch_work_categories.py --dump %s)",
+            report["missing_cache"], src,
+        )
     if getattr(args, "preserve_schema", False):
         works_out = works_out.reindex(columns=works.columns)
     composers_out = composers.copy()
@@ -250,7 +274,9 @@ def run(args: argparse.Namespace) -> None:
             "distinct_librettists": report["distinct_librettists"],
             "eu_pd_status_x_nonpd_eu": report["eu_pd_status_x_nonpd_eu"],
             "pd_composer_nonpd_eu_examples": report["pd_composer_nonpd_eu_examples"],
+            "no_pageid": report["no_pageid"],
             "missing_cache": report["missing_cache"],
+            "kept_prior": report["kept_prior"],
             "redirect_or_missing_page": report["redirect_or_missing_page"],
             "notes": [
                 "Offline parse of cached IMSLP work-page categories (imslp_page_cats)",
@@ -258,6 +284,7 @@ def run(args: argparse.Namespace) -> None:
                 "Style names strip the trailing ' style' suffix; first published uses YYYY-only categories",
                 "Copyright categories map to normalised tokens; unmapped NonPD/RoST/copyright cats are reported",
                 "Redirect and missing pages yield empty evidence cells",
+                "Uncached pages keep their prior evidence cells; rows without a page id are empty",
                 "Composers copied unchanged except dump_date; works dump_date stamped only when present",
             ],
         },
