@@ -8,7 +8,19 @@ Dump snapshots: revision `dump_id` (`rNNN`) — see [VERSIONING.md](VERSIONING.m
 
 ## [Unreleased]
 
-Schema stays **3** (two added works columns, two added composer columns). Dump: **r018**.
+### Deferred
+- Louis Barron (1920–1989) missing: the Wikipedia list links both Barrons to the duo article and swaps their years
+- Unresolved identities: John Mitchell (b. 1941, unlinked on the list), Robert Graham Manson (`no_composer_occupation`); 7 `unverified_heuristic` matches
+- Upstream fixes on Wikipedia (list links: Jean Perrin → `dab=composer`) and Wikidata (4 wrong P839 values; remove the physicist Jean Perrin's composer occupation; merge Carter Larsen's duplicate item Q139205033 into Q5047189)
+- Enable the monthly refresh schedule once IMSLP has been notified (`refresh.yml`, commented out)
+- Lyricist-aware PD flags: librettist life dates (names are now in `imslp_librettists`)
+- LLM force decision ledger (today: force labels carry forward from the previous revision)
+- Dataset licence + `CITATION.cff`; gold-set error rates (the r018 sheets are being annotated)
+- Death years where the Wikipedia list and a coarse Wikidata date disagree (Margherita Galeotti, Eugenia Calosso: articles say "after 1912" / "after 1914", GND gives Calosso †1962) stay at the interval's last year until a source settles them
+
+## [3.6.0] - 2026-10-10
+
+Evidence and authorities release. Schema stays **3** (two added works columns, two added composer columns). Shipped dump: **r018**.
 
 ### Added
 - Gold-set works field `genre_form` (17 forms in the dataset's precedence order; dump aliases `other`→`song` and empty→`none`; rates for wrong, missed, spurious and arrangement)
@@ -45,16 +57,6 @@ Schema stays **3** (two added works columns, two added composer columns). Dump: 
 - Coarse Wikidata birth years (decade, century, stored as the interval's last year) are replaced by the Wikipedia list's year when it lies inside the interval: C. A. Bracco, Edgar Bara, Carter Larsen (2000 → 1955). Death years keep the conservative last year: a list death year can be a floruit ("after 1912")
 - `remap_work_evidence.py` no longer clears a work's IMSLP evidence when its page is missing from the local `imslp_page_cats` cache: the prior cells are kept, counted (`missing_cache`, `kept_prior`, `no_pageid` in the report and dump meta) and logged as a warning. An offline `derive` from r015 with an incomplete local cache had wiped 159 cells on 63 works
 
-### Deferred
-- Louis Barron (1920–1989) missing: the Wikipedia list links both Barrons to the duo article and swaps their years
-- Unresolved identities: John Mitchell (b. 1941, unlinked on the list), Robert Graham Manson (`no_composer_occupation`); 7 `unverified_heuristic` matches
-- Upstream fixes on Wikipedia (list links: Jean Perrin → `dab=composer`) and Wikidata (4 wrong P839 values; remove the physicist Jean Perrin's composer occupation; merge Carter Larsen's duplicate item Q139205033 into Q5047189)
-- Enable the monthly refresh schedule once IMSLP has been notified (`refresh.yml`, commented out)
-- Lyricist-aware PD flags: librettist life dates (names are now in `imslp_librettists`)
-- LLM force decision ledger (today: force labels carry forward from the previous revision)
-- Dataset licence + `CITATION.cff`; gold set and error rates
-- Death years where the Wikipedia list and a coarse Wikidata date disagree (Margherita Galeotti, Eugenia Calosso: articles say "after 1912" / "after 1914", GND gives Calosso †1962) stay at the interval's last year until a source settles them
-
 ## [3.5.0] - 2026-10-10
 
 LLM style release. Schema stays **3** (four added composer columns). Shipped dump: **r015**.
@@ -71,15 +73,11 @@ LLM style release. Schema stays **3** (four added composer columns). Shipped dum
 ## [3.4.2] - 2026-10-09
 
 ### Fixed
-- Jean Perrin: the list's `{{sort name|Jean|Perrin}}` links the physicist (Q134085, 1870–1942); override re-keys the row to the Swiss composer (Q6171318, 1920–1989). The physicist's Wikidata item also carries an unsourced "composer" occupation (SweetBot, 2016), which hid him from the occupation check
-- Coarse Wikidata birth years (decade, century, stored as the interval's last year) are replaced by the Wikipedia list's year when it lies inside the interval: C. A. Bracco, Edgar Bara, Carter Larsen (2000 → 1955). Death years keep the conservative last year: a list death year can be a floruit ("after 1912")
 - The first GitHub-runner refresh failed after its 2-hour crawl. `apply_overrides.py` (offline) needs the Wikidata entities of the people that overrides re-key to, and a cold crawl only fetches the entities the Wikipedia list links to. The new `scripts/refetch_override_entities.py` fetches the re-key targets and their citizenship countries, and `pipeline.py refresh` runs it **first**, as a preflight, so a bad overrides file fails in seconds rather than after the crawl
 
 ## [3.4.1] - 2026-10-09
 
 ### Fixed
-- Jean Perrin: the list's `{{sort name|Jean|Perrin}}` links the physicist (Q134085, 1870–1942); override re-keys the row to the Swiss composer (Q6171318, 1920–1989). The physicist's Wikidata item also carries an unsourced "composer" occupation (SweetBot, 2016), which hid him from the occupation check
-- Coarse Wikidata birth years (decade, century, stored as the interval's last year) are replaced by the Wikipedia list's year when it lies inside the interval: C. A. Bracco, Edgar Bara, Carter Larsen (2000 → 1955). Death years keep the conservative last year: a list death year can be a floruit ("after 1912")
 - IMSLP politeness: `build_dump.py` paced IMSLP at 0.1–0.15 s between requests, faster than the announced ≤ 1 request/s. `common.request_json` now enforces a per-host minimum interval (IMSLP 1.0 s, `EU_PD_IMSLP_MIN_INTERVAL`) on every call path and honours `Retry-After` on 429/503. A cold refresh therefore takes about 2–2.5 hours
 
 ## [3.4.0] - 2026-10-09
@@ -124,8 +122,6 @@ Automation release. Schema stays **3** (four added works columns). Shipped dump:
 Identity release. Schema stays **3** (one added column, two added status values). Shipped dump: **r012** (via r011).
 
 ### Fixed
-- Jean Perrin: the list's `{{sort name|Jean|Perrin}}` links the physicist (Q134085, 1870–1942); override re-keys the row to the Swiss composer (Q6171318, 1920–1989). The physicist's Wikidata item also carries an unsourced "composer" occupation (SweetBot, 2016), which hid him from the occupation check
-- Coarse Wikidata birth years (decade, century, stored as the interval's last year) are replaced by the Wikipedia list's year when it lies inside the interval: C. A. Bracco, Edgar Bara, Carter Larsen (2000 → 1955). Death years keep the conservative last year: a list death year can be a floruit ("after 1912")
 - Name-guessed IMSLP categories were never checked against the person: they are now compared with IMSLP's own life dates and Wikipedia link. 279 of 298 guesses confirmed, 10 rejected as someone else's page (e.g. composer Karl Marx → the philosopher, William Wordsworth → the poet), 7 still unverified
 - Four Wikidata P839 links point at a different person's IMSLP page (John White, Jindřich Feld → his father, John Lambert, Karl Höller → Georg Höller); rejected with `imslp_p839_wrong`
 - Category collisions: the younger Leo Smit (1921–1999) and William Reed (1910–2002) no longer receive the works of their PD namesakes; no IMSLP page is listed under two composers
@@ -143,8 +139,6 @@ Identity release. Schema stays **3** (one added column, two added status values)
 Data-correctness release. Schema stays **3** (two added columns). Shipped dump: **r010** (via r009).
 
 ### Fixed
-- Jean Perrin: the list's `{{sort name|Jean|Perrin}}` links the physicist (Q134085, 1870–1942); override re-keys the row to the Swiss composer (Q6171318, 1920–1989). The physicist's Wikidata item also carries an unsourced "composer" occupation (SweetBot, 2016), which hid him from the occupation check
-- Coarse Wikidata birth years (decade, century, stored as the interval's last year) are replaced by the Wikipedia list's year when it lies inside the interval: C. A. Bracco, Edgar Bara, Carter Larsen (2000 → 1955). Death years keep the conservative last year: a list death year can be a floruit ("after 1912")
 - IMSLP work categories were truncated: one `cllimit=100` was shared by 20 pages and continuation was ignored, so 62.8% of works were stored with no categories and the empty result was cached. Categories are now fetched by page id with continuation (`imslp_page_cats` cache); empty cells drop to ~1% and `imslp_tags` label 98.3% of works (LLM-derived labels 43.8% → 1.3%)
 - `force_family` category rules matched substrings: every flute work became `guitar` ("lute"), string orchestras `solo_instrument`, harpsichord/harmonium `solo_instrument`, vocal duets `solo_instrument`, string trios `other`. `For …` categories are now parsed by parts and whole words
 - `For 2 players` / `Quartets` no longer override explicit instrumentation, so violin + piano works are `solo_instrument` as documented (≈1,200 works moved from `chamber`)
@@ -229,7 +223,8 @@ Published on GitHub as tag `v1.0`. Data files first appeared in-repo earlier (20
 - `composers.tsv` / `composers_imslp.tsv`
 - MIT license
 
-[Unreleased]: https://github.com/egorpol/eu-pd-composers/compare/v3.0.0...HEAD
+[Unreleased]: https://github.com/egorpol/eu-pd-composers/compare/v3.6.0...HEAD
+[3.6.0]: https://github.com/egorpol/eu-pd-composers/compare/v3.5.0...v3.6.0
 [3.0.0]: https://github.com/egorpol/eu-pd-composers/compare/v1.1...v3.0.0
 [1.1.0]: https://github.com/egorpol/eu-pd-composers/compare/v1.0...v1.1
 [1.0.0]: https://github.com/egorpol/eu-pd-composers/releases/tag/v1.0
