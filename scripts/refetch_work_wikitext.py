@@ -6,8 +6,8 @@ Fetches the current wikitext of each work page, by page id; the per-file licence
 Already-cached pages are skipped, so an interrupted run resumes where it stopped.
 Writes no dump.
 
-  python scripts/refetch_work_wikitext.py --dump r019 --limit 200
-  python scripts/refetch_work_wikitext.py --dump r019
+  python scripts/refetch_work_wikitext.py --dump r020 --limit 200
+  python scripts/refetch_work_wikitext.py --dump r020
 """
 
 from __future__ import annotations

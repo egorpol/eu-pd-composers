@@ -168,8 +168,8 @@ python scripts/remap_work_evidence.py --from-dump r015 --to r016
 
 # Work-page wikitext into cache (network, resumable), then open-licence columns
 # from score-block licences + data/overrides/open_catalogues.tsv → next revision
-python scripts/refetch_work_wikitext.py --dump r019
-python scripts/remap_open_licences.py --from-dump r019 --to r020
+python scripts/refetch_work_wikitext.py --dump r020
+python scripts/remap_open_licences.py --from-dump r020 --to r021
 
 # Replay committed grounded style consensus (offline; no model calls)
 python scripts/apply_llm_styles.py --from-dump r014 --to r015
@@ -192,8 +192,8 @@ Caches: `data/cache/` (gitignored). Complete work categories under `imslp_page_c
 ## Filter viewer
 
 ```bash
-python scripts/export_viewer_json.py --dump r019
-python scripts/check_release.py --dump r019 --viewer-data viewer/data
+python scripts/export_viewer_json.py --dump r020
+python scripts/check_release.py --dump r020 --viewer-data viewer/data
 python -m http.server 8080 --directory viewer
 ```
 

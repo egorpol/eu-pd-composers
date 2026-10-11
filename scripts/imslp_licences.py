@@ -8,7 +8,7 @@ block's files: "Public Domain", a Creative Commons licence, "Public Domain
 This script lists the blocks with a normalised licence id and summarises them per
 work. Research output for the open-licence sweep; writes no dump.
 
-  python scripts/imslp_licences.py --dump r019
+  python scripts/imslp_licences.py --dump r020
 """
 
 from __future__ import annotations
@@ -254,7 +254,7 @@ def run(args: argparse.Namespace) -> None:
 
 def main() -> None:
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("--dump", required=True, help="Dump id whose works to read (e.g. r019)")
+    p.add_argument("--dump", required=True, help="Dump id whose works to read (e.g. r020)")
     p.add_argument("--out-dir", default=str(REPO_ROOT / "build" / "open_licence"))
     run(p.parse_args())
 

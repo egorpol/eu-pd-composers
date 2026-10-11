@@ -9,10 +9,11 @@ Dump snapshots: revision `dump_id` (`rNNN`) — see [VERSIONING.md](VERSIONING.m
 ## [Unreleased]
 
 ### Added
-- Open-licence axis (for the next dump): works columns `imslp_open_licences`, `imslp_open_scope`, `imslp_open_formats` from cached IMSLP score-block wikitext; composer columns `open_catalogue_url`, `open_catalogue_licence` from `data/overrides/open_catalogues.tsv` (`scripts/remap_open_licences.py`, stage after `remap_work_evidence`; `refetch_work_wikitext` on refresh). Scope `composition` only when Image Type is New Composition, the composer is not EU-`pd`, and Arranger is empty or `Composer` (otherwise `edition`). Viewer facet **Open licence**, work badges, and catalogue link when the columns are present
+- Open-licence axis (dump r020): works columns `imslp_open_licences`, `imslp_open_scope`, `imslp_open_formats` from cached IMSLP score-block wikitext; composer columns `open_catalogue_url`, `open_catalogue_licence` from `data/overrides/open_catalogues.tsv` (`scripts/remap_open_licences.py`, stage after `remap_work_evidence`; `refetch_work_wikitext` on refresh). Scope `composition` only when Image Type is New Composition, the composer is not EU-`pd`, and Arranger is empty or `Composer` (otherwise `edition`). Viewer facet **Open licence**, work badges, and catalogue link when the columns are present
 - Release gate: unknown `qa_flags` tokens, or a cell out of canonical order, fail
 
 ### Changed
+- Dump **r020** = r019 + an offline `pipeline.py derive` adding the open-licence axis; EU PD columns unchanged. 5,573 works have an open-licence IMSLP score block (974 `composition`, 4,599 `edition`); 2 composer catalogues (Kyle Gann, Jacques Lenot)
 - Dump **r019** = r018 + an offline `pipeline.py derive` with three `genre_form` rule fixes, decided before the gold set was annotated; composers unchanged, 6,092 works change `genre_form`
 - `genre_form` `other` renamed `song` (it only ever meant IMSLP Songs / Lieder that are not song cycles); its crosswalk row to LCGFT *Songs* is now `broadMatch`, since the LC term also covers song cycles. The gold scorer still reads `other` as `song` for older dumps
 - Songs / Lieder beat an arrangement in `map_genre_form`: 744 songs with arranged files move from `arrangement` to `song` (5,947 `song` in all)

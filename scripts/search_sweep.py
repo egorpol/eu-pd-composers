@@ -8,10 +8,10 @@ as the search backend: it is told to copy result URLs in order, not to judge the
 homepage for Creative Commons licences and score links (search proposes, rules
 verify). Batches are cached by content, so an interrupted run resumes.
 
-  python scripts/search_sweep.py --dump r019 --sample 50 --include Q1795042
-  python scripts/search_sweep.py --dump r019 --sample 50 --include Q1795042 \
+  python scripts/search_sweep.py --dump r020 --sample 50 --include Q1795042
+  python scripts/search_sweep.py --dump r020 --sample 50 --include Q1795042 \
       --query '"{name}" "creative commons"' --tag _pilot_cc
-  python scripts/search_sweep.py --dump r019 --parallel 3
+  python scripts/search_sweep.py --dump r020 --parallel 3
 """
 
 from __future__ import annotations

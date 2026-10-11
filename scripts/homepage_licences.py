@@ -4,9 +4,9 @@
 Stage-1 rule-based sweep: start page plus one hop to score/catalogue/licence pages.
 Writes a review TSV; recall with evidence matters more than precision.
 
-  python scripts/homepage_licences.py --dump r019 --list-only
-  python scripts/homepage_licences.py --dump r019 --limit 20
-  python scripts/homepage_licences.py --dump r019 --targets build/open_licence/search/search_results_r019.tsv
+  python scripts/homepage_licences.py --dump r020 --list-only
+  python scripts/homepage_licences.py --dump r020 --limit 20
+  python scripts/homepage_licences.py --dump r020 --targets build/open_licence/search/search_results_r020.tsv
 """
 
 from __future__ import annotations
@@ -1534,7 +1534,7 @@ def run(args: argparse.Namespace) -> Optional[pd.DataFrame]:
 
 def main() -> None:
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--dump", required=True, help="Dump id (e.g. r019)")
+    p.add_argument("--dump", required=True, help="Dump id (e.g. r020)")
     p.add_argument("--limit", type=int, default=0, help="Process at most N start URLs")
     p.add_argument("--workers", type=int, default=8, help="Parallel hosts (default 8)")
     p.add_argument("--max-hops", type=int, default=8, help="Max same-site hop pages per start URL")

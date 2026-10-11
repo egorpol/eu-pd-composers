@@ -28,8 +28,8 @@ composer_id	name_display	catalogue_url	licence	rights_holder	n_score_links	evide
 **How to add a row.** Find a composer with a public score index that asserts an open licence. Record the catalogue URL, the SPDX licence id, a quote of the licence statement and the URL where it appears, then set `verified_on` to the review date. Check the wording by hand or with `scripts/homepage_licences.py` (network). Duplicate `composer_id`, a non-open `licence`, non-http(s) URLs, or blank required fields fail the remap stage loudly. A QID absent from the dump is a warning in stage meta, not an error.
 
 ```bash
-python scripts/remap_open_licences.py --from-dump r019 --to r020
-python scripts/remap_open_licences.py --from-dump r019 --to r999 --dry-run
+python scripts/remap_open_licences.py --from-dump r020 --to r021
+python scripts/remap_open_licences.py --from-dump r020 --to r999 --dry-run
 ```
 
 ## File

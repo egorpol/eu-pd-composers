@@ -6,8 +6,8 @@ the audit report without writing. Works whose page is not in the local
 `imslp_page_wikitext` cache keep their prior open-licence cells, so an incomplete
 cache never erases published evidence. Redirect / missing pages get empty cells.
 
-  python scripts/remap_open_licences.py --from-dump r019 --to r020
-  python scripts/remap_open_licences.py --from-dump r019 --to r999 --dry-run
+  python scripts/remap_open_licences.py --from-dump r020 --to r021
+  python scripts/remap_open_licences.py --from-dump r020 --to r999 --dry-run
 """
 
 from __future__ import annotations
