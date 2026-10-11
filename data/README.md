@@ -8,11 +8,18 @@ Pipeline diagram: [`docs/PIPELINE.md`](../docs/PIPELINE.md).
 
 | File | Rows | dump_id |
 |---|---|---|
-| `composers_r019.tsv` | 3369 | `r019` |
-| `works_r019.tsv` | 29033 | `r019` |
-| `dump_meta_r019.json` | — | companion meta |
+| `composers_r020.tsv` | 3369 | `r020` |
+| `works_r020.tsv` | 29033 | `r020` |
+| `dump_meta_r020.json` | — | companion meta |
 
-Only the **latest** revision is kept in `data/` in git. Older `rNNN` / calendar dumps are recoverable from **git history** (not from gitignored `data/cache/`). The viewer is exported from `r019` (`scripts/export_viewer_json.py --dump r019`).
+Only the **latest** revision is kept in `data/` in git. Older `rNNN` / calendar dumps are recoverable from **git history** (not from gitignored `data/cache/`). The viewer is exported from `r020` (`scripts/export_viewer_json.py --dump r020`).
+
+### What changed since r019
+
+- **r020 — open-licence axis.** r019 plus an offline `pipeline.py derive` (no crawl) with the new stage `remap_open_licences.py` over the cached work-page wikitext. EU PD columns are unchanged; only the five new columns and `dump_date` differ (see *Columns added in r020*).
+  - Works: 5,573 (19.2%) by 523 composers have an IMSLP score block under an open licence; 3,856 of them belong to PD-now composers. Most common licences: CC BY-SA 4.0 (2,099 works), CC BY 4.0 (1,569), CC0 (687). Formats in those blocks: PDF 5,420 works, ZIP 337, Braille 317, MuseScore 71, MusicXML 27.
+  - Scope `composition` (974 works by 28 composers: 379 not yet PD, 595 with no death date) needs a block marked "New Composition", a composer who is not EU-`pd`, and no third-party arranger. Uploaders also mark typesets and arrangements of PD works "New Composition" (Reinecke Op. 283, Grieg EG 120 arr. Gomi, Elgar Op. 85), hence the last two conditions. The other 4,599 works are `edition`; 743 of those are by not-yet-PD or undated composers, where the edition is open but the music is not.
+  - Composers: [`overrides/open_catalogues.tsv`](overrides/open_catalogues.tsv) lists Kyle Gann (CC BY-NC 3.0, 176 PDFs) and Jacques Lenot (CC BY-NC-ND 2.0 FR from his publisher, 11 PDFs). Both came from scanning the Wikidata official websites of 600 non-PD composers and were checked by hand; a web-search pilot on 49 random non-PD composers found none.
 
 ### What changed since r018
 
@@ -99,7 +106,7 @@ Each `dump_meta_rNNN.json` records counts and before/after transitions for its s
 
 ## Overrides
 
-Hand-reviewed fixes live in [`overrides/composers.tsv`](overrides/composers.tsv) (see [`overrides/README.md`](overrides/README.md)) and are applied last with `scripts/apply_overrides.py`, so they survive rebuilds. Touched rows carry `manual_override` in `qa_flags`.
+Hand-reviewed fixes live in [`overrides/composers.tsv`](overrides/composers.tsv) (see [`overrides/README.md`](overrides/README.md)) and are applied last with `scripts/apply_overrides.py`, so they survive rebuilds. Touched rows carry `manual_override` in `qa_flags`. Open-score catalogues for living / non-PD composers are listed separately in [`overrides/open_catalogues.tsv`](overrides/open_catalogues.tsv) and applied by `remap_open_licences.py`.
 
 ## Composer styles
 
@@ -144,6 +151,27 @@ New `qa_flags` values: `list_years_conflict` (the Wikipedia list row gives a dif
 |---|---|
 | `imslp_n_players` | IMSLP's `For N players` categories on the work page, arrangements excluded; pipe list when versions differ (`1\|2`), empty when there is none. IMSLP counts instrumental soloists only: voices are not counted, so songs, choral, orchestral and stage works mostly have none. It is not MARC 382 $s (total performers) |
 
+## Columns added in r020
+
+A second rights axis, separate from EU public domain: whether scores of this work / composer carry an open licence (Creative Commons family, CC0, PD dedication, CPDL, EFF OAL). Derived offline by `scripts/remap_open_licences.py` from cached work-page wikitext and [`overrides/open_catalogues.tsv`](overrides/open_catalogues.tsv).
+
+**Works** (after the other `imslp_*` evidence columns):
+
+| Column | Values |
+|---|---|
+| `imslp_open_licences` | Pipe-joined, sorted, distinct licence ids of open-licence **score** blocks (`{{#fte:imslpfile}}`); empty when none. Audio blocks ignored. |
+| `imslp_open_scope` | `composition` when at least one open score block has Image Type "New Composition", the composer's `eu_pd_status` is not `pd`, and `|Arranger=` is empty or literally `Composer` (IMSLP's own-arrangement marker); otherwise `edition` when open score blocks exist (covers typesets/arrangements of PD works and third-party arrangements tagged "New Composition"); empty when none |
+| `imslp_open_formats` | Pipe-joined, sorted formats of files in those open score blocks (`pdf`, `musicxml`, `midi`, `lilypond`, …) |
+
+**Composers** (after `years_until_eu_pd`):
+
+| Column | Values |
+|---|---|
+| `open_catalogue_url` | http(s) URL of a hand-verified open-score catalogue, or empty |
+| `open_catalogue_licence` | SPDX / open-licence id for that catalogue, or empty |
+
+These are uploader- or site-asserted licences, not a legal determination, and not the same as public domain. Uncached pages keep prior cells; redirect/missing pages get empty cells. See [`overrides/README.md`](overrides/README.md).
+
 ## Library of Congress crosswalk
 
 [`vocab/lc_crosswalk.tsv`](vocab/lc_crosswalk.tsv) maps each `force_family` and `genre_form` value to the Library of Congress Medium of Performance Thesaurus for Music (LCMPT, `scheme=lcmpt`) or Genre/Form Terms (LCGFT, `scheme=lcgft`). Columns: `facet`, `value`, `scheme`, `relation`, `label`, `uri`, `note`; a value with several LC terms has several rows. `relation` is a SKOS mapping property read as *value relation term*: `exactMatch` and `closeMatch` (same concept), `broadMatch` (the LC term is broader: `keyboard_other` → keyboard instrument), `narrowMatch` (the LC term is narrower: `mass_requiem` → Masses, Requiems). `solo_instrument` and `force_family=other` have no LC equivalent (empty scheme).
@@ -171,11 +199,11 @@ The whole chain is one command ([`docs/PIPELINE.md`](../docs/PIPELINE.md), [`doc
 
 ```bash
 pip install -r requirements.txt
-python scripts/pipeline.py refresh --base r019                  # crawl + all stages → next revision
-python scripts/pipeline.py derive --from-dump r019 --to r020    # offline stages only
+python scripts/pipeline.py refresh --base r020                  # crawl + all stages → next revision
+python scripts/pipeline.py derive --from-dump r020 --to r021    # offline stages only
 
-python scripts/export_viewer_json.py --dump r019
-python scripts/check_release.py --dump r019 --viewer-data viewer/data
+python scripts/export_viewer_json.py --dump r020
+python scripts/check_release.py --dump r020 --viewer-data viewer/data
 ```
 
 The stages it runs, in order, each as `--from-dump rX --to rY`: `remap_force.py` → `carry_forward.py --base rPREV` → `remap_composers.py` → `apply_overrides.py` → `remap_imslp_matches.py` (after `refetch_composer_pages.py --dump rX`, network, ~1 min) → `remap_work_evidence.py` (after `refetch_work_files.py --dump rX` on refresh, network, ~10 min) → `apply_llm_styles.py` (replays the committed ledger; never calls a model).

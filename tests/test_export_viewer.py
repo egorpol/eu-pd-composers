@@ -82,6 +82,8 @@ def test_export_evidence_keys_and_film_and_null_views(patched_paths):
                 pageviews_enwiki="",
                 works_count_total="2",
                 work_categories_present="piano_solo|orchestral",
+                open_catalogue_url="https://example.com/scores/",
+                open_catalogue_licence="CC-BY-4.0",
             ),
             _base_composer(
                 composer_id="Q2",
@@ -119,6 +121,9 @@ def test_export_evidence_keys_and_film_and_null_views(patched_paths):
                 imslp_librettists="Someone",
                 has_files="true",
                 imslp_file_hosts="ca|us",
+                imslp_open_licences="CC-BY-SA-4.0",
+                imslp_open_scope="composition",
+                imslp_open_formats="musicxml|pdf",
             ),
             _base_work(
                 work_id="W2",
@@ -132,6 +137,9 @@ def test_export_evidence_keys_and_film_and_null_views(patched_paths):
                 imslp_librettists="",
                 has_files="false",
                 imslp_file_hosts="",
+                imslp_open_licences="",
+                imslp_open_scope="",
+                imslp_open_formats="",
             ),
             _base_work(
                 work_id="W3",
@@ -144,6 +152,9 @@ def test_export_evidence_keys_and_film_and_null_views(patched_paths):
                 imslp_copyright_flags="pd_eu_rost",
                 has_files="true",
                 imslp_file_hosts="ca",
+                imslp_open_licences="CC-BY-4.0",
+                imslp_open_scope="edition",
+                imslp_open_formats="pdf",
             ),
         ]
     )
@@ -158,8 +169,11 @@ def test_export_evidence_keys_and_film_and_null_views(patched_paths):
     by_id = {c["id"]: c for c in c_rows}
     assert by_id["Q1"]["film"] is True
     assert by_id["Q1"]["views"] is None
+    assert by_id["Q1"]["ocu"] == "https://example.com/scores/"
+    assert by_id["Q1"]["ocl"] == "CC-BY-4.0"
     assert "film" not in by_id["Q2"]
     assert by_id["Q2"]["views"] == 0
+    assert "ocu" not in by_id["Q2"] and "ocl" not in by_id["Q2"]
     assert by_id["Q3"]["film"] is True
     assert by_id["Q3"]["views"] == 42
     # One authority link: GND when present, else VIAF, else none.
@@ -175,6 +189,9 @@ def test_export_evidence_keys_and_film_and_null_views(patched_paths):
     assert w1["fh"] == ["ca", "us"]
     assert "hf" not in w1
     assert "imslp_librettists" not in w1
+    assert w1["ol"] == ["CC-BY-SA-4.0"]
+    assert w1["os"] == "composition"
+    assert w1["of"] == ["musicxml", "pdf"]
 
     w2 = next(w for w in w_map["Q1"] if w["t"] == "Empty evidence")
     assert "st" not in w2
@@ -182,10 +199,14 @@ def test_export_evidence_keys_and_film_and_null_views(patched_paths):
     assert "cf" not in w2
     assert w2["hf"] is False
     assert "fh" not in w2
+    assert "ol" not in w2 and "os" not in w2 and "of" not in w2
 
     w3 = w_map["Q2"][0]
     assert "hf" not in w3
     assert "fh" not in w3
+    assert w3["ol"] == ["CC-BY-4.0"]
+    assert w3["os"] == "edition"
+    assert w3["of"] == ["pdf"]
 
     assert manifest["pageviews_window_label"] == "2025"
     assert list(manifest["facets"]["imslp_style"].items()) == [
@@ -211,6 +232,9 @@ def test_export_without_evidence_columns(patched_paths):
     w_map = json.loads((out / "works_by_composer.json").read_text(encoding="utf-8"))
     work = w_map["Q1"][0]
     assert set(work) == {"t", "u", "f", "s"}
+    c_rows = json.loads((out / "composers.json").read_text(encoding="utf-8"))
+    assert "ocu" not in c_rows[0] and "ocl" not in c_rows[0]
+    assert "ol" not in work and "os" not in work and "of" not in work
     manifest = json.loads((out / "manifest.json").read_text(encoding="utf-8"))
     assert manifest["facets"]["imslp_style"] == {}
     assert manifest["facets"]["force_family_src"] == ["imslp_tags"]

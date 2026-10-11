@@ -1,13 +1,13 @@
 {
-  "dump_id": "r019",
+  "dump_id": "r020",
   "tool_version": "3.6.0",
   "schema_version": 3,
-  "created_at_utc": "2026-10-10T22:15:36.107053+00:00",
-  "derived_from_dump_id": "r018",
+  "created_at_utc": "2026-10-11T00:32:07.040319+00:00",
+  "derived_from_dump_id": "r019",
   "enrichment": "pipeline_derive",
   "output_files": {
-    "composers": "composers_r019.tsv",
-    "works": "works_r019.tsv"
+    "composers": "composers_r020.tsv",
+    "works": "works_r020.tsv"
   },
   "row_counts": {
     "composers": 3369,
@@ -1002,14 +1002,14 @@
     "wikilink_differs": 221
   },
   "notes": [
-    "Offline parse of cached IMSLP work-page categories (imslp_page_cats)",
-    "Added imslp_style, imslp_first_published, imslp_copyright_flags, imslp_librettists after composition_year",
-    "Style names strip the trailing ' style' suffix; first published uses YYYY-only categories",
-    "Copyright categories map to normalised tokens; unmapped rights-like categories are reported",
-    "has_files / imslp_file_hosts from cached page files (imslp_page_files): non-image files only; hosts ca (main server), us (PMLUS), asia (PMLASIA) from file name prefixes",
-    "Redirect and missing pages yield empty evidence cells",
-    "Uncached pages keep their prior cells per cache; rows without a page id are empty",
-    "Composers copied unchanged except dump_date; works dump_date stamped only when present"
+    "Offline parse of cached IMSLP work-page wikitext (imslp_page_wikitext)",
+    "Added imslp_open_licences, imslp_open_scope, imslp_open_formats after imslp evidence",
+    "Open score blocks only ({{#fte:imslpfile}} with is_open_licence); audio ignored",
+    "Scope composition = New Composition + composer eu_pd_status\u2260pd + Arranger empty/Composer",
+    "Else edition when open scores exist (covers PD works and third-party arrangements)",
+    "Composer open_catalogue_url / open_catalogue_licence from open_catalogues.tsv",
+    "Redirect and missing pages yield empty open-licence cells",
+    "Uncached pages keep their prior open-licence cells"
   ],
   "composer_columns": [
     "composer_id",
@@ -1035,6 +1035,8 @@
     "eu_pd_year",
     "eu_pd_status",
     "years_until_eu_pd",
+    "open_catalogue_url",
+    "open_catalogue_licence",
     "style_tags",
     "style_tags_src",
     "llm_style_tags",
@@ -1079,7 +1081,10 @@
     "imslp_style",
     "imslp_first_published",
     "imslp_copyright_flags",
-    "imslp_librettists"
+    "imslp_librettists",
+    "imslp_open_licences",
+    "imslp_open_scope",
+    "imslp_open_formats"
   ],
   "coverage": {
     "imslp_style": {
@@ -1263,6 +1268,48 @@
   "files_missing_cache": 0,
   "files_kept_prior": 0,
   "files_redirect_or_missing_page": 61,
+  "open_licences": {
+    "works_with_open_licences": 5573,
+    "scope_counts": {
+      "edition": 4599,
+      "composition": 974
+    },
+    "licence_id_counts": {
+      "CC-BY-SA-4.0": 2099,
+      "CC-BY-4.0": 1569,
+      "CC0-1.0": 687,
+      "CC-BY-NC-4.0": 685,
+      "CC-BY-NC-SA-4.0": 596,
+      "CC-BY-NC-ND-4.0": 530,
+      "CC-BY-3.0": 346,
+      "PD-dedicated": 330,
+      "CC-BY-NC-SA-3.0": 221,
+      "CC-BY-NC-3.0": 163,
+      "CC-BY-NC-ND-3.0": 143,
+      "CC-BY-SA-3.0": 102,
+      "LicenseRef-CPDL-4": 28,
+      "CC-BY-ND-3.0": 23,
+      "CC-BY-ND-4.0": 2
+    },
+    "format_counts": {
+      "pdf": 5420,
+      "zip": 337,
+      "braille": 317,
+      "musescore": 71,
+      "musicxml": 27,
+      "sibelius": 3,
+      "finale": 1
+    },
+    "composers_with_composition_scope": 28,
+    "composers_with_open_catalogue": 2,
+    "registry_not_in_dump": [],
+    "page_state": {
+      "parsed": 28972,
+      "redirect_or_missing": 61
+    },
+    "kept_prior": 0,
+    "registry": "data/overrides/open_catalogues.tsv"
+  },
   "llm_styles": {
     "policy": {
       "id": "llm_consensus_grounded_v2",
@@ -1297,7 +1344,7 @@
     }
   },
   "pd_reference_year": 2026,
-  "source_dump_id": "r018",
+  "source_dump_id": "r019",
   "stages": [
     {
       "script": "remap_force.py",
@@ -1367,8 +1414,17 @@
       }
     },
     {
-      "script": "apply_llm_styles.py",
+      "script": "remap_open_licences.py",
       "dump_id": "pipeline_stage_08",
+      "enrichment": "remap_open_licences",
+      "row_counts": {
+        "composers": 3369,
+        "works": 29033
+      }
+    },
+    {
+      "script": "apply_llm_styles.py",
+      "dump_id": "pipeline_stage_09",
       "enrichment": "apply_llm_styles",
       "row_counts": {
         "composers": 3369,
@@ -1379,7 +1435,7 @@
   "crawl_date": null,
   "pageviews_range": null,
   "carry_forward": {
-    "base_dump_id": "r018",
+    "base_dump_id": "r019",
     "carried_forward": {
       "force_family": 0,
       "instrumentation_raw": 0,

@@ -6,7 +6,7 @@ Composer-first UI over the versioned dump. No backend.
 
 ```bash
 # Refresh JSON from a dump
-python scripts/export_viewer_json.py --dump r019
+python scripts/export_viewer_json.py --dump r020
 
 # Serve (module scripts need HTTP)
 python -m http.server 8080 --directory viewer
@@ -27,7 +27,7 @@ The filter panel is a collapsible `<details>` (“Filters · N active”): open 
 
 Filters are grouped:
 
-- **Composer** — EU public domain (live), Scope, Citizenship, **Style** (with **Style source**).
+- **Composer** — EU public domain (live), **Open licence** (music under an open licence / open-licence editions; independent of EU PD), Scope, Citizenship, **Style** (with **Style source**).
 - **Works on IMSLP** — Has works for, Label source, “Only with IMSLP works”. A composer matches when at least one work satisfies all work filters.
 
 **EU public domain** has five mutually exclusive buckets computed in the browser from `eu_year` and the current calendar year (`PD now` / enters next 1 January / enters within Y+2–Y+5 / later / no death date). Multi-select is a union; default is `PD now`. The results “EU” column and detail pane show this live state (not the dump-frozen `eu` status). The “as of YEAR” note lives in the ⓘ hint.
@@ -60,10 +60,17 @@ Each work row shows IMSLP's own rights evidence as badges (tooltips give IMSLP's
 meaning; none is a legal determination). Copyright warnings: not PD in EU / US,
 in copyright and hosted by permission (`nonpd_licensed`, `permission_granted`),
 licensed via BMI / ASCAP / GEMA, PD in US only (`pd_us_*`). Neutral notes: WIMA
-files, no files on the page (`hf: false`), and files on IMSLP's US or life+50
-servers (`fh`).
+files, no files on the page (`hf: false`), files on IMSLP's US or life+50
+servers (`fh`), and open-licence score blocks (`ol` / `os` / `of`: licence ids,
+music vs edition, non-PDF formats). Composer detail links an open-score catalogue
+when `ocu` / `ocl` are present.
 
-Filters, sort, and selected composer id are mirrored into the query string (`history.replaceState`) for shareable links (`style`, `styleSrc=wikidata,imslp,llm`). Legacy URLs keep working: `eu=pd` → `pd=now`; `eu=not_pd` → `pd=next,soon,later`; `eu=unknown_death` → `pd=unknown`; `pd=within5` → `pd=next,soon`; `ist=X` / `imslpStyle=X` → `style=X` with `styleSrc=imslp`; bare `style=Y` still applies with all sources on.
+**Open licence** is independent of EU public domain: *music under an open licence*
+matches a composer with an open catalogue or ≥1 work with scope `composition`;
+*open-licence editions* matches ≥1 work with scope `edition`. Empty selection =
+no filter. These are uploader-/site-asserted licences, not a legal determination.
+
+Filters, sort, and selected composer id are mirrored into the query string (`history.replaceState`) for shareable links (`style`, `styleSrc=wikidata,imslp,llm`, `open=music,edition`). Legacy URLs keep working: `eu=pd` → `pd=now`; `eu=not_pd` → `pd=next,soon,later`; `eu=unknown_death` → `pd=unknown`; `pd=within5` → `pd=next,soon`; `ist=X` / `imslpStyle=X` → `style=X` with `styleSrc=imslp`; bare `style=Y` still applies with all sources on.
 
 ## Layout breakpoints
 
