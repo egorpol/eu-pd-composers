@@ -11,6 +11,15 @@ const IMSLP_STATUS_LABELS = {
 const CF_TOOLTIP =
   "IMSLP's own copyright flag on the work page — not a legal determination from this dump.";
 
+const OPEN_LICENCE_TOOLTIP =
+  "Uploader- or site-asserted open licence on the score — not a legal determination, and not the same as public domain.";
+
+const OPEN_FACET_OPTIONS = [
+  { value: "music", label: "Music under an open licence" },
+  { value: "edition", label: "Open-licence editions" },
+];
+const OPEN_VALUES = new Set(OPEN_FACET_OPTIONS.map((o) => o.value));
+
 /** IMSLP rights tokens → badge label, IMSLP's meaning, and whether it warns (copyright) or informs. */
 const CF_BADGES = [
   { tokens: ["nonpd_eu"], label: "IMSLP: not PD in EU", note: "", warn: true },
@@ -129,6 +138,7 @@ const DEFAULTS = {
   style: [],
   styleSrc: [...DEFAULT_STYLE_SRC],
   pd: ["now"],
+  open: [],
   labelSrc: "all",
   sort: "views",
   sortDir: "desc",
@@ -176,6 +186,7 @@ function bindElements() {
     styleSrc: document.getElementById("styleSrc"),
     viewsHeader: document.getElementById("viewsHeader"),
     pd: document.getElementById("pd"),
+    open: document.getElementById("open"),
   });
   for (const f of FACETS) el[f.key] = document.getElementById(f.key);
 }
@@ -338,6 +349,7 @@ export function encodeUrlState(params) {
     srcs.length === DEFAULT_STYLE_SRC.length && DEFAULT_STYLE_SRC.every((s) => srcs.includes(s));
   if (srcs.length && !allSrc) setList("styleSrc", srcs);
   setList("pd", params.pd);
+  setList("open", params.open);
   if (params.labelSrc && params.labelSrc !== "all") sp.set("src", params.labelSrc);
   if (params.sort && params.sort !== "views") sp.set("sort", params.sort);
   if (params.sortDir && params.sortDir !== "desc") sp.set("dir", params.sortDir);
@@ -391,6 +403,7 @@ export function decodeUrlState(search, allowed) {
   const rawPd = list("pd", pdAllow);
   const rawEu = list("eu", new Set(Object.keys(EU_TO_PD)));
   out.pd = mapLegacyPdUrl(rawPd, rawEu);
+  out.open = list("open", OPEN_VALUES);
 
   out.labelSrc = "all";
   if (sp.has("src")) {
@@ -516,6 +529,44 @@ function fillPdFacet(selected) {
   updatePdButton();
 }
 
+function fillOpenFacet(selected) {
+  if (!el.open) return;
+  el.open.innerHTML = OPEN_FACET_OPTIONS.map(
+    (o) => `<label class="opt"><input type="checkbox" name="open" value="${o.value}"${
+      selected.includes(o.value) ? " checked" : ""
+    } /><span>${escapeHtml(o.label)}</span></label>`
+  ).join("");
+  updateOpenButton();
+}
+
+function setOpenFacet(values) {
+  if (!el.open) return;
+  for (const i of el.open.querySelectorAll("input")) i.checked = values.includes(i.value);
+  updateOpenButton();
+}
+
+function updateOpenButton() {
+  if (!el.open) return;
+  const btn = el.open.closest(".facet").querySelector(".facet-clear");
+  const n = selectedValues(el.open).length;
+  btn.disabled = n === 0;
+  btn.textContent = n ? `Clear (${n})` : "Any";
+  btn.setAttribute(
+    "aria-label",
+    n ? `Clear open licence filter, ${n} selected` : "Open licence: any"
+  );
+}
+
+/** Composer matches the Open licence facet (empty selection = no filter). */
+export function composerMatchesOpenLicence(composer, works, openSel) {
+  if (!openSel || !openSel.size) return true;
+  const hasCatalogue = Boolean(composer.ocu);
+  const scopes = new Set((works || []).map((w) => w.os).filter(Boolean));
+  if (openSel.has("music") && (hasCatalogue || scopes.has("composition"))) return true;
+  if (openSel.has("edition") && scopes.has("edition")) return true;
+  return false;
+}
+
 function setFacet(facet, values) {
   for (const i of el[facet.key].querySelectorAll("input")) i.checked = values.includes(i.value);
   updateFacetButton(facet);
@@ -585,6 +636,7 @@ function readUiState() {
     style: sel.style,
     styleSrc: selectedValues(el.styleSrc),
     pd: selectedValues(el.pd),
+    open: selectedValues(el.open),
     labelSrc: el.labelSrc.value,
     sort: el.sort.value,
     sortDir: el.sortDir.value,
@@ -601,6 +653,7 @@ function countActiveFilters(ui) {
   if (ui.cit.length) n += 1;
   if (ui.style.length) n += 1;
   if (ui.pd.length) n += 1;
+  if (ui.open && ui.open.length) n += 1;
   const allSrc =
     ui.styleSrc.length === DEFAULT_STYLE_SRC.length &&
     DEFAULT_STYLE_SRC.every((s) => ui.styleSrc.includes(s));
@@ -627,6 +680,7 @@ function filteredComposers() {
   const sel = {};
   for (const f of FACETS) sel[f.key] = new Set(selectedValues(el[f.key]));
   const pdSel = new Set(selectedValues(el.pd));
+  const openSel = new Set(selectedValues(el.open));
   const styleSrcSet = new Set(selectedValues(el.styleSrc));
   const onlyWorks = el.hasWorks.checked;
   const srcMode = el.labelSrc.value;
@@ -651,6 +705,8 @@ function filteredComposers() {
       const bucket = pdBucket(c.eu_year, state.currentYear);
       if (!pdSel.has(bucket)) return false;
     }
+
+    if (!composerMatchesOpenLicence(c, state.worksByComposer[c.id], openSel)) return false;
 
     const matched = matchingWorksFor(c, forceSet, srcMode);
     c._match_n = matched.length;
@@ -772,6 +828,18 @@ function evBadge(label, note, warn) {
   return `<span class="ev-badge${warn ? "" : " info"}" title="${escapeHtml(title)}">${escapeHtml(label)}</span>`;
 }
 
+function openLicenceBadgeHtml(w) {
+  const licences = w.ol || [];
+  if (!licences.length) return "";
+  const scope = w.os === "composition" ? "music" : w.os === "edition" ? "edition" : "";
+  const formats = (w.of || []).filter((f) => f && f !== "pdf");
+  const parts = [licences.join(", ")];
+  if (scope) parts.push(scope);
+  if (formats.length) parts.push(formats.join(", "));
+  const label = `Open: ${parts.join(" · ")}`;
+  return `<span class="ev-badge info open-lic" title="${escapeHtml(OPEN_LICENCE_TOOLTIP)}">${escapeHtml(label)}</span>`;
+}
+
 export function workEvidenceHtml(w) {
   const bits = [];
   const cf = w.cf || [];
@@ -785,6 +853,8 @@ export function workEvidenceHtml(w) {
     const badge = FILE_HOST_BADGES[host];
     if (badge) bits.push(evBadge(badge.label, badge.note, false));
   }
+  const openBadge = openLicenceBadgeHtml(w);
+  if (openBadge) bits.push(openBadge);
   if (w.fp != null && w.fp !== "") {
     bits.push(`<span class="pub-year">pub. ${escapeHtml(w.fp)}</span>`);
   }
@@ -880,6 +950,12 @@ function renderDetail() {
     links.push(`<a href="https://d-nb.info/gnd/${encodeURIComponent(c.gnd)}" target="_blank" rel="noopener" title="Gemeinsame Normdatei (German National Library)">GND</a>`);
   } else if (c.viaf) {
     links.push(`<a href="https://viaf.org/viaf/${encodeURIComponent(c.viaf)}" target="_blank" rel="noopener" title="Virtual International Authority File">VIAF</a>`);
+  }
+  if (c.ocu) {
+    const lic = c.ocl ? ` (${escapeHtml(c.ocl)})` : "";
+    links.push(
+      `<a href="${escapeHtml(c.ocu)}" target="_blank" rel="noopener" title="${escapeHtml(OPEN_LICENCE_TOOLTIP)}">Open-licence scores${lic}</a>`
+    );
   }
 
   const years = lifeSpan(c, " – ");
@@ -983,6 +1059,7 @@ function bindEvents() {
     const fs = e.target.closest(".facet");
     if (fs) {
       if (fs.dataset.facet === "pd") updatePdButton();
+      else if (fs.dataset.facet === "open") updateOpenButton();
       else if (fs.dataset.facet === "style" && e.target.name === "style") {
         updateFacetButton(FACETS.find((f) => f.key === "style"));
       } else {
@@ -1002,6 +1079,9 @@ function bindEvents() {
     if (facetEl.dataset.facet === "pd") {
       setPdFacet([]);
       el.pd.querySelector("input")?.focus();
+    } else if (facetEl.dataset.facet === "open") {
+      setOpenFacet([]);
+      el.open.querySelector("input")?.focus();
     } else {
       const facet = FACETS.find((f) => f.key === facetEl.dataset.facet);
       setFacet(facet, []);
@@ -1013,6 +1093,7 @@ function bindEvents() {
   el.clearAll.addEventListener("click", () => {
     for (const f of FACETS) setFacet(f, []);
     setPdFacet([]);
+    setOpenFacet([]);
     setStyleSrc([...DEFAULT_STYLE_SRC]);
     fillStyleFacet([]);
     el.q.value = "";
@@ -1030,6 +1111,7 @@ function bindEvents() {
       setFacet(f, DEFAULTS[f.key] || []);
     }
     setPdFacet(DEFAULTS.pd);
+    setOpenFacet(DEFAULTS.open || []);
     setStyleSrc([...DEFAULT_STYLE_SRC]);
     fillStyleFacet([]);
     el.q.value = "";
@@ -1142,6 +1224,7 @@ async function load() {
     );
   }
   fillPdFacet((init.pd || []).filter((v) => PD_VALUES.has(v)));
+  fillOpenFacet((init.open || []).filter((v) => OPEN_VALUES.has(v)));
 
   el.q.value = init.q || "";
   el.labelSrc.value = init.labelSrc || "all";

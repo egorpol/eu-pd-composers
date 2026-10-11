@@ -135,9 +135,9 @@ Identity rule (`scripts/imslp_identity.py`): compare dump birth/death years with
 ## One command: `scripts/pipeline.py`
 
 - `pipeline.py refresh --base rPREV`: cold crawl (`build_dump.py`) plus every stage below in a staging dir; promotes **one** new revision whose meta lists the stages; re-exports the viewer; runs `check_release.py --against rPREV`. Used by the monthly workflow ([AUTOMATION.md](AUTOMATION.md)).
-- `pipeline.py derive --from-dump rX --to rY`: the offline stages only (rules or overrides changed). By default it may add work-evidence and composer `llm_style_*` columns; `--preserve-schema` fails on any column change. Every output stamps `dump_date` with its revision id when the column exists; `derive` on an already-derived dump reproduces its TSVs modulo `dump_date` when the local cache matches the one that built it: uncached pages and entities keep their prior cells, but a stale cache entry overwrites them.
+- `pipeline.py derive --from-dump rX --to rY`: the offline stages only (rules or overrides changed). By default it may add work-evidence, open-licence and composer `llm_style_*` columns; `--preserve-schema` fails on any column change. Every output stamps `dump_date` with its revision id when the column exists; `derive` on an already-derived dump reproduces its TSVs modulo `dump_date` when the local cache matches the one that built it: uncached pages and entities keep their prior cells, but a stale cache entry overwrites them.
 - `refresh` first runs `refetch_override_entities.py` (preflight: override re-key targets into the cache), then `build_dump.py`.
-- Stage order: `remap_force` → `carry_forward` (earlier LLM force / GenInfo decisions, joined on composer + IMSLP page id; never over a category-derived label) → `remap_composers` → `apply_overrides` → (`refetch_authorities`) `remap_authorities` → (`refetch_composer_pages`) `remap_imslp_matches` → (`refetch_work_files`) `remap_work_evidence` → `apply_llm_styles`. The three `refetch_*` steps run on `refresh` only.
+- Stage order: `remap_force` → `carry_forward` (earlier LLM force / GenInfo decisions, joined on composer + IMSLP page id; never over a category-derived label) → `remap_composers` → `apply_overrides` → (`refetch_authorities`) `remap_authorities` → (`refetch_composer_pages`) `remap_imslp_matches` → (`refetch_work_files`) `remap_work_evidence` → (`refetch_work_wikitext`) `remap_open_licences` → `apply_llm_styles`. The `refetch_*` steps run on `refresh` only.
 - `apply_llm_styles` reads the committed ledger after composer re-keys, selects grounded `style-v2` rows from the two pinned labellers, writes consensus/votes/period/provenance, and retires legacy `llm*` composer tags. The meta records policy, ledger SHA-256 and counts. Carry-forward retains no LLM composer styles; replay is their only source. See [ledger policy](../data/llm_ledger/README.md).
 - `diff_dumps.py rPREV rNEXT --out diff.md --summary-json summary.json` writes the review report (PD flips, identity changes, works added or removed, label transitions, schema changes).
 - `check_release.py --against rPREV` fails if composers change by more than 3%, works drop by more than 5%, a column disappears, or the share of works with `has_files` set falls by more than 5 points (a skipped file fetch). It also checks the `imslp_copyright_flags` and `has_files` vocabularies and warns on a new IMSLP file server.
@@ -165,6 +165,11 @@ python scripts/remap_composers.py --from-dump r009 --to r010
 # work evidence (rights categories, has_files, imslp_file_hosts) → next revision
 python scripts/refetch_work_files.py --dump r015
 python scripts/remap_work_evidence.py --from-dump r015 --to r016
+
+# Work-page wikitext into cache (network, resumable), then open-licence columns
+# from score-block licences + data/overrides/open_catalogues.tsv → next revision
+python scripts/refetch_work_wikitext.py --dump r019
+python scripts/remap_open_licences.py --from-dump r019 --to r020
 
 # Replay committed grounded style consensus (offline; no model calls)
 python scripts/apply_llm_styles.py --from-dump r014 --to r015

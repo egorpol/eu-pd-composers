@@ -22,6 +22,7 @@ from apply_llm_styles import LLM_STYLE_COLUMNS, default_ledger_path
 from authorities import AUTHORITY_COLUMNS
 from force_family import N_PLAYERS_COLUMN
 from imslp_work_evidence import EVIDENCE_COLUMNS, FILE_HOSTS_COLUMN
+from open_licences import OPEN_COMPOSER_COLUMNS, OPEN_WORK_COLUMNS
 
 log = logging.getLogger("pipeline")
 SCRIPTS = Path(__file__).resolve().parent
@@ -86,6 +87,7 @@ def offline_stages(
         ("remap_authorities.py", ["--preserve-schema"] if preserve_schema else []),
         ("remap_imslp_matches.py", []),
         ("remap_work_evidence.py", ["--preserve-schema"] if preserve_schema else []),
+        ("remap_open_licences.py", ["--preserve-schema"] if preserve_schema else []),
         ("apply_llm_styles.py", ["--ledger", str(default_ledger_path())]),
     ]
     for number, (script, extra) in enumerate(steps, start=1):
@@ -95,6 +97,8 @@ def offline_stages(
             run_script("refetch_composer_pages.py", ["--dump", current], staging, cache)
         if script == "remap_work_evidence.py" and refresh:
             run_script("refetch_work_files.py", ["--dump", current], staging, cache)
+        if script == "remap_open_licences.py" and refresh:
+            run_script("refetch_work_wikitext.py", ["--dump", current], staging, cache)
         output = f"pipeline_stage_{number:02d}"
         run_script(script, ["--from-dump", current, "--to", output, *extra], staging, cache)
         stages.append(_record_stage(staging, output, script))
@@ -118,7 +122,10 @@ def prepare_result(
             removed = [c for c in original.columns if c not in frame.columns]
             # derive adds only supported evidence columns; --preserve-schema forbids any change.
             allowed = () if preserve_schema else (
-                (*EVIDENCE_COLUMNS, FILE_HOSTS_COLUMN, N_PLAYERS_COLUMN) if stem == "works" else (*LLM_STYLE_COLUMNS, *AUTHORITY_COLUMNS))
+                (*EVIDENCE_COLUMNS, FILE_HOSTS_COLUMN, N_PLAYERS_COLUMN, *OPEN_WORK_COLUMNS)
+                if stem == "works"
+                else (*LLM_STYLE_COLUMNS, *AUTHORITY_COLUMNS, *OPEN_COMPOSER_COLUMNS)
+            )
             if removed or any(c not in allowed for c in added):
                 raise ValueError(f"derive changed {stem} schema: added {added}, removed {removed}")
             if preserve_schema:

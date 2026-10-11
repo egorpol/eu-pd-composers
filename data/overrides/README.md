@@ -2,6 +2,36 @@
 
 Hand-reviewed corrections that survive dump rebuilds. Applied as the **last** transform step; they win over Wikipedia, Wikidata, IMSLP, and every automatic remap.
 
+## Open catalogues
+
+`open_catalogues.tsv` — composers who publish scores under an open licence on their own site (or a publisher's), separate from IMSLP file-block licences and from EU public domain. Consumed offline by `scripts/remap_open_licences.py` into `open_catalogue_url` and `open_catalogue_licence` on the composer row.
+
+Header (tab-separated, this column order):
+
+```
+composer_id	name_display	catalogue_url	licence	rights_holder	n_score_links	evidence_url	evidence_quote	verified_on	note
+```
+
+| Column | Meaning |
+|---|---|
+| `composer_id` | Wikidata QID in the dump |
+| `name_display` | Display name (for humans reading the file) |
+| `catalogue_url` | http(s) URL of the open-score index |
+| `licence` | SPDX / open-licence id accepted by `imslp_licences.is_open_licence` (CC family, CC0, PD-dedicated, CPDL, EFF OAL) |
+| `rights_holder` | Who grants the licence (e.g. `composer`, `composer+publisher`) |
+| `n_score_links` | Count of score links under that licence (integer) |
+| `evidence_url` | http(s) page where the licence statement appears |
+| `evidence_quote` | Exact quoted licence statement from that page |
+| `verified_on` | Review date `YYYY-MM-DD` |
+| `note` | Free-text caveats (partial catalogue, formats, …) |
+
+**How to add a row.** Find a composer with a public score index that asserts an open licence. Record the catalogue URL, the SPDX licence id, a quote of the licence statement and the URL where it appears, then set `verified_on` to the review date. Check the wording by hand or with `scripts/homepage_licences.py` (network). Duplicate `composer_id`, a non-open `licence`, non-http(s) URLs, or blank required fields fail the remap stage loudly. A QID absent from the dump is a warning in stage meta, not an error.
+
+```bash
+python scripts/remap_open_licences.py --from-dump r019 --to r020
+python scripts/remap_open_licences.py --from-dump r019 --to r999 --dry-run
+```
+
 ## File
 
 `composers.tsv` — one override per row. Header:

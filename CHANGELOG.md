@@ -8,15 +8,16 @@ Dump snapshots: revision `dump_id` (`rNNN`) — see [VERSIONING.md](VERSIONING.m
 
 ## [Unreleased]
 
+### Added
+- Open-licence axis (for the next dump): works columns `imslp_open_licences`, `imslp_open_scope`, `imslp_open_formats` from cached IMSLP score-block wikitext; composer columns `open_catalogue_url`, `open_catalogue_licence` from `data/overrides/open_catalogues.tsv` (`scripts/remap_open_licences.py`, stage after `remap_work_evidence`; `refetch_work_wikitext` on refresh). Scope `composition` only when Image Type is New Composition, the composer is not EU-`pd`, and Arranger is empty or `Composer` (otherwise `edition`). Viewer facet **Open licence**, work badges, and catalogue link when the columns are present
+- Release gate: unknown `qa_flags` tokens, or a cell out of canonical order, fail
+
 ### Changed
 - Dump **r019** = r018 + an offline `pipeline.py derive` with three `genre_form` rule fixes, decided before the gold set was annotated; composers unchanged, 6,092 works change `genre_form`
 - `genre_form` `other` renamed `song` (it only ever meant IMSLP Songs / Lieder that are not song cycles); its crosswalk row to LCGFT *Songs* is now `broadMatch`, since the LC term also covers song cycles. The gold scorer still reads `other` as `song` for older dumps
 - Songs / Lieder beat an arrangement in `map_genre_form`: 744 songs with arranged files move from `arrangement` to `song` (5,947 `song` in all)
 - `string_quartet` needs IMSLP *Quartets* plus the original forces `For 2 violins, viola, cello`, or "string quartet" in the title. *Quartets* holds every four-player work, so 147 piano, wind, brass and vocal quartets lose the label (785 → 638: 134 now empty, 11 `arrangement`, 2 `song`)
 - `qa_flags` tokens follow one canonical order (`common.QA_FLAG_ORDER`: Wikidata, Wikipedia list, IMSLP identity, GND, manual) whichever stage wrote the cell last; r018 already followed it, so no r019 cell changed
-
-### Added
-- Release gate: unknown `qa_flags` tokens, or a cell out of canonical order, fail
 
 ### Deferred
 - Louis Barron (1920–1989) missing: the Wikipedia list links both Barrons to the duo article and swaps their years

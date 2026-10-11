@@ -99,7 +99,7 @@ Each `dump_meta_rNNN.json` records counts and before/after transitions for its s
 
 ## Overrides
 
-Hand-reviewed fixes live in [`overrides/composers.tsv`](overrides/composers.tsv) (see [`overrides/README.md`](overrides/README.md)) and are applied last with `scripts/apply_overrides.py`, so they survive rebuilds. Touched rows carry `manual_override` in `qa_flags`.
+Hand-reviewed fixes live in [`overrides/composers.tsv`](overrides/composers.tsv) (see [`overrides/README.md`](overrides/README.md)) and are applied last with `scripts/apply_overrides.py`, so they survive rebuilds. Touched rows carry `manual_override` in `qa_flags`. Open-score catalogues for living / non-PD composers are listed separately in [`overrides/open_catalogues.tsv`](overrides/open_catalogues.tsv) and applied by `remap_open_licences.py`.
 
 ## Composer styles
 
@@ -143,6 +143,27 @@ New `qa_flags` values: `list_years_conflict` (the Wikipedia list row gives a dif
 | Column | Values |
 |---|---|
 | `imslp_n_players` | IMSLP's `For N players` categories on the work page, arrangements excluded; pipe list when versions differ (`1\|2`), empty when there is none. IMSLP counts instrumental soloists only: voices are not counted, so songs, choral, orchestral and stage works mostly have none. It is not MARC 382 $s (total performers) |
+
+## Open-licence columns (next dump)
+
+A second rights axis, separate from EU public domain: whether scores of this work / composer carry an open licence (Creative Commons family, CC0, PD dedication, CPDL, EFF OAL). Derived offline by `scripts/remap_open_licences.py` from cached work-page wikitext and [`overrides/open_catalogues.tsv`](overrides/open_catalogues.tsv).
+
+**Works** (after the other `imslp_*` evidence columns):
+
+| Column | Values |
+|---|---|
+| `imslp_open_licences` | Pipe-joined, sorted, distinct licence ids of open-licence **score** blocks (`{{#fte:imslpfile}}`); empty when none. Audio blocks ignored. |
+| `imslp_open_scope` | `composition` when at least one open score block has Image Type "New Composition", the composer's `eu_pd_status` is not `pd`, and `|Arranger=` is empty or literally `Composer` (IMSLP's own-arrangement marker); otherwise `edition` when open score blocks exist (covers typesets/arrangements of PD works and third-party arrangements tagged "New Composition"); empty when none |
+| `imslp_open_formats` | Pipe-joined, sorted formats of files in those open score blocks (`pdf`, `musicxml`, `midi`, `lilypond`, …) |
+
+**Composers** (after `years_until_eu_pd`):
+
+| Column | Values |
+|---|---|
+| `open_catalogue_url` | http(s) URL of a hand-verified open-score catalogue, or empty |
+| `open_catalogue_licence` | SPDX / open-licence id for that catalogue, or empty |
+
+These are uploader- or site-asserted licences, not a legal determination, and not the same as public domain. Uncached pages keep prior cells; redirect/missing pages get empty cells. See [`overrides/README.md`](overrides/README.md).
 
 ## Library of Congress crosswalk
 
