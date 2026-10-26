@@ -152,3 +152,41 @@ def test_page_without_files_is_cached_empty_not_missing():
     session = FakeSession([{"query": {"pages": {"3": {"pageid": 3, "title": "C"}}}}])
     out = imslp.fetch_page_files([3], session, sleep_s=0)
     assert out[3]["images"] == [] and out[3]["missing"] is False
+
+
+def _rev(text, revid=7):
+    return [{"revid": revid, "timestamp": "2026-01-01T00:00:00Z", "*": text}]
+
+
+def test_page_wikitext_caches_content_and_marks_missing():
+    session = FakeSession(
+        [
+            {
+                "query": {
+                    "pages": {
+                        "1": {"pageid": 1, "title": "A", "revisions": _rev("{{#fte:imslppage}}")},
+                        "-1": {"pageid": 9, "missing": ""},
+                    }
+                }
+            }
+        ]
+    )
+    out = imslp.fetch_page_wikitext([1, 9], session, sleep_s=0)
+
+    assert session.calls[0]["prop"] == "revisions|info" and session.calls[0]["rvprop"] == "content|ids|timestamp"
+    assert out[1]["wikitext"] == "{{#fte:imslppage}}" and out[1]["revid"] == 7 and not out[1]["missing"]
+    assert out[9]["missing"] is True and out[9]["wikitext"] == ""
+    assert common.cache_get(imslp.PAGE_WIKITEXT_NAMESPACE, "1")["title"] == "A"
+
+
+def test_page_wikitext_refetches_a_page_left_without_content():
+    session = FakeSession(
+        [
+            {"query": {"pages": {"1": {"pageid": 1, "title": "A", "revisions": _rev("a")}, "2": {"pageid": 2, "title": "B"}}}},
+            {"query": {"pages": {"2": {"pageid": 2, "title": "B", "revisions": _rev("b", revid=8)}}}},
+        ]
+    )
+    out = imslp.fetch_page_wikitext([1, 2], session, sleep_s=0)
+
+    assert session.calls[1]["pageids"] == "2"
+    assert out[2]["wikitext"] == "b" and out[2]["revid"] == 8

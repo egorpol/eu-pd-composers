@@ -300,6 +300,87 @@ def fetch_page_files(
     )
 
 
+# Current wikitext of each work page, keyed by page id. The per-file licence
+# (`|Copyright=` inside each {{#fte:imslpfile}} / {{#fte:imslpaudio}} block)
+# lives only here; IMSLP has no per-licence categories.
+PAGE_WIKITEXT_NAMESPACE = "imslp_page_wikitext"
+
+
+def fetch_page_wikitext(
+    pageids: list[int],
+    session: requests.Session,
+    *,
+    use_cache: bool = True,
+    batch_size: int = 50,
+    sleep_s: float = 0.15,
+) -> dict[int, dict[str, Any]]:
+    """Map IMSLP page ids → {title, wikitext, revid, timestamp, missing, redirect, fetched_at}.
+
+    A page that comes back from a batch without content (an oversized batch
+    response) is re-requested alone, so an empty wikitext means an empty page.
+    API-level errors raise instead of becoming empty observations.
+    """
+    out: dict[int, dict[str, Any]] = {}
+    pending: list[int] = []
+    for pid in dict.fromkeys(int(p) for p in pageids):
+        if use_cache:
+            cached = cache_get(PAGE_WIKITEXT_NAMESPACE, str(pid))
+            if cached is not None:
+                out[pid] = cached
+                continue
+        pending.append(pid)
+
+    def query(batch: list[int]) -> dict[int, dict[str, Any]]:
+        data = request_json(
+            session,
+            IMSLP_API,
+            params={
+                "action": "query",
+                "pageids": "|".join(str(p) for p in batch),
+                "prop": "revisions|info",
+                "rvprop": "content|ids|timestamp",
+                "format": "json",
+            },
+            timeout=120,
+            sleep_s=sleep_s,
+        )
+        if data.get("error"):
+            raise RuntimeError(f"IMSLP API error for pageids batch: {data['error']}")
+        pages: dict[int, dict[str, Any]] = {}
+        for key, page in (data.get("query", {}).get("pages") or {}).items():
+            pid = int(page.get("pageid") or key)
+            rev = (page.get("revisions") or [None])[0]
+            pages[pid] = {
+                "title": page.get("title", ""),
+                "wikitext": (rev or {}).get("*", ""),
+                "revid": (rev or {}).get("revid"),
+                "timestamp": (rev or {}).get("timestamp", ""),
+                "missing": "missing" in page or "invalid" in page,
+                "redirect": "redirect" in page,
+                "_no_revision": rev is None,
+            }
+        return pages
+
+    for i in range(0, len(pending), batch_size):
+        batch = pending[i : i + batch_size]
+        pages = query(batch)
+        retry = [p for p in batch if p not in pages or (pages[p]["_no_revision"] and not pages[p]["missing"])]
+        if len(batch) > 1:
+            for pid in retry:
+                pages.update(query([pid]))
+        now = datetime.now(timezone.utc).isoformat()
+        for pid in batch:
+            page = pages.get(pid)
+            if page is None:
+                page = {"title": "", "wikitext": "", "revid": None, "timestamp": "", "missing": True, "redirect": False}
+            page.pop("_no_revision", None)
+            entry = {"pageid": pid, **page, "fetched_at": now}
+            out[pid] = entry
+            if use_cache:
+                cache_set(PAGE_WIKITEXT_NAMESPACE, str(pid), entry)
+    return out
+
+
 # Raw wikitext of composer category pages ({{#fte:person |Born Year=… }}),
 # keyed by the category title as stored in composers.imslp_category.
 CAT_PAGE_NAMESPACE = "imslp_cat_page"

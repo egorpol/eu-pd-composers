@@ -23,6 +23,7 @@ OUT = REPO / "viewer" / "data"
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from common import DATA_DIR, dump_meta_path, format_viewer_dump_label  # noqa: E402
 from apply_llm_styles import policy_metadata  # noqa: E402
+from open_licences import OPEN_COMPOSER_COLUMNS, OPEN_WORK_COLUMNS  # noqa: E402
 from style_vocab import IMSLP_PERIOD_TO_SLUG  # noqa: E402
 
 # Follows EU_PD_DATA_DIR, so staged pipeline runs export the dump they just built.
@@ -119,6 +120,8 @@ def export(dump_id: str, out_dir: Path) -> None:
     has_imslp_fp = "imslp_first_published" in works.columns
     has_imslp_cf = "imslp_copyright_flags" in works.columns
     has_file_hosts = "imslp_file_hosts" in works.columns
+    has_open_work = all(col in works.columns for col in OPEN_WORK_COLUMNS)
+    has_open_composer = all(col in composers.columns for col in OPEN_COMPOSER_COLUMNS)
 
     meta = {}
     meta_path = dump_meta_path(dump_id)
@@ -175,6 +178,13 @@ def export(dump_id: str, out_dir: Path) -> None:
             entry["lp"] = llm_period
         if llm_votes:
             entry["lv"] = llm_votes
+        if has_open_composer:
+            ocu = str(_clean(row.get("open_catalogue_url")))
+            ocl = str(_clean(row.get("open_catalogue_licence")))
+            if ocu:
+                entry["ocu"] = ocu
+            if ocl:
+                entry["ocl"] = ocl
         composer_rows.append(entry)
 
     by_composer: dict[str, list] = defaultdict(list)
@@ -214,6 +224,16 @@ def export(dump_id: str, out_dir: Path) -> None:
             hosts = _pipe_list(row.get("imslp_file_hosts"))
             if any(host != "ca" for host in hosts):
                 work_entry["fh"] = hosts
+        if has_open_work:
+            ol = _pipe_list(row.get("imslp_open_licences"))
+            oscope = str(_clean(row.get("imslp_open_scope")))
+            ofmts = _pipe_list(row.get("imslp_open_formats"))
+            if ol:
+                work_entry["ol"] = ol
+            if oscope:
+                work_entry["os"] = oscope
+            if ofmts:
+                work_entry["of"] = ofmts
         by_composer[cid].append(work_entry)
 
     out_dir.mkdir(parents=True, exist_ok=True)
