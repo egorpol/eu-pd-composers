@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Web-search sweep for composer score pages (experimental; network via Codex web search).
+"""Web-search sweep for composer score pages (experimental; network via Codex or Cursor web search).
 
 For each non-public-domain composer, runs one web search (default `"<name>" score`;
 `--query` takes another template) and records the raw result URLs. Codex CLI (`codex exec` with live web search) acts only
@@ -8,21 +8,30 @@ as the search backend: it is told to copy result URLs in order, not to judge the
 homepage for Creative Commons licences and score links (search proposes, rules
 verify). Batches are cached by content, so an interrupted run resumes.
 
+`--agent cursor` uses headless `cursor-agent` instead. Its web search only runs with
+`--force`, so each batch gets an empty workspace whose `.cursor/cli.json` denies shell,
+writes and reads; URLs come from the search tool results in the event stream, never from
+the model's reply, and any other tool call that succeeds stops the sweep.
+
   python scripts/search_sweep.py --dump r020 --sample 50 --include Q1795042
   python scripts/search_sweep.py --dump r020 --sample 50 --include Q1795042 \
       --query '"{name}" "creative commons"' --tag _pilot_cc
   python scripts/search_sweep.py --dump r020 --parallel 3
+  python scripts/search_sweep.py --dump r020 --agent cursor --batch-size 10 --parallel 3
 """
 
 from __future__ import annotations
 
 import argparse
 import hashlib
+import json
 import logging
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
+import threading
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
@@ -46,6 +55,27 @@ copy them as returned. Do not judge relevance; include every result up to {top}.
 Input:
 {lines}
 """
+
+CURSOR_PROMPT = """You are a web-search backend. For each input line below (composer id, TAB, query), call
+your web search tool exactly once with exactly that query text, including any double quotes. Use no
+other tool. Do not summarise results. When all searches are done, reply with the single word DONE.
+
+Input:
+{lines}
+"""
+
+# `--force` is the only way headless cursor-agent runs web search; these deny rules keep it
+# from approving anything else (verified 2026-10-11: shell, edit and read calls are refused).
+CURSOR_PERMISSIONS = {"permissions": {"allow": [], "deny": ["Shell(*)", "Write(**)", "Read(**)"]}}
+CURSOR_SAFE_TOOLS = {"webSearchToolCall", "getMcpToolsToolCall"}
+CURSOR_BIN = shutil.which("cursor-agent") or str(Path.home() / ".local" / "bin" / "cursor-agent")
+_LINK_RE = re.compile(r"^\d+\.\s+\[(.*)\]\((https?://\S+)\)\s*$")
+STOP = threading.Event()
+
+
+class SandboxBreach(RuntimeError):
+    """A cursor tool other than web search succeeded; the sweep stops."""
+
 
 _LINE_RE = re.compile(r"^(Q\d+)\t(\d+)\t(\S*)\t?(.*)$")
 _TOKENS_RE = re.compile(r"tokens used\s*\n\s*([\d,]+)")
@@ -84,7 +114,120 @@ def parse_output(text: str, batch_ids: set[str]) -> list[dict[str, str]]:
     return rows
 
 
+def normalize_query(text: str) -> str:
+    """Casefolded, quotes dropped, whitespace collapsed (Cursor strips the query's quotes)."""
+    return " ".join(text.replace('"', " ").casefold().split())
+
+
+def search_links(chunk: str) -> list[tuple[str, str]]:
+    """(url, title) pairs from the numbered `Links:` block of a Cursor search result."""
+    links, inside = [], False
+    for line in chunk.splitlines():
+        if line.strip() == "Links:":
+            inside = True
+            continue
+        if inside:
+            m = _LINK_RE.match(line.strip())
+            if not m:
+                break
+            links.append((m.group(2), " ".join(m.group(1).split())))
+    return links
+
+
+def parse_cursor_stream(
+    lines: list[str], queries: dict[str, str], names: dict[str, str], top: int
+) -> tuple[dict[str, list[str]], dict[str, int]]:
+    """Batch-format lines per composer id from successful search calls, plus token usage."""
+    by_query = {normalize_query(q): cid for cid, q in queries.items()}
+    found: dict[str, list[str]] = {}
+    usage: dict[str, int] = {}
+    for raw in lines:
+        try:
+            event = json.loads(raw)
+        except json.JSONDecodeError:
+            continue
+        if event.get("type") == "result":
+            usage = event.get("usage") or {}
+        if event.get("type") != "tool_call" or event.get("subtype") != "completed":
+            continue
+        kind, call = next(iter((event.get("tool_call") or {}).items()), (None, {}))
+        result = call.get("result") or {}
+        if "success" not in result:
+            continue
+        if kind not in CURSOR_SAFE_TOOLS:
+            raise SandboxBreach(f"cursor tool {kind} succeeded: {json.dumps(call.get('args'))[:200]}")
+        if kind != "webSearchToolCall":
+            continue
+        term = normalize_query((call.get("args") or {}).get("searchTerm", ""))
+        cid = by_query.get(term)
+        if cid is None:
+            hits = [c for c, n in names.items() if normalize_query(n) in term]
+            cid = hits[0] if len(hits) == 1 else None
+        if cid is None:
+            log.warning("search term %r matches no composer in the batch", term)
+            continue
+        if cid in found:
+            continue
+        links = [link for ref in result["success"].get("references") or [] for link in search_links(ref.get("chunk", ""))]
+        found[cid] = [f"{cid}\t{rank}\t{url}\t{title}" for rank, (url, title) in enumerate(links[:top], 1)]
+        found[cid] = found[cid] or [f"{cid}\t0\t\t"]
+    return found, usage
+
+
+def run_cursor(prompt: str, timeout: float, model: str) -> list[str]:
+    with tempfile.TemporaryDirectory() as tmp:
+        (Path(tmp) / ".cursor").mkdir()
+        (Path(tmp) / ".cursor" / "cli.json").write_text(json.dumps(CURSOR_PERMISSIONS), encoding="utf-8")
+        cmd = [
+            CURSOR_BIN, "-p", "--model", model, "--force", "--trust", "--workspace", tmp,
+            "--output-format", "stream-json", prompt,
+        ]
+        try:
+            proc = subprocess.run(cmd, cwd=tmp, capture_output=True, text=True, timeout=timeout)
+        except subprocess.TimeoutExpired as exc:
+            log.warning("cursor-agent timed out after %.0fs", timeout)
+            out = exc.stdout or b""
+            return (out.decode("utf-8", "replace") if isinstance(out, bytes) else out).splitlines()
+        if proc.returncode != 0:
+            log.warning("cursor-agent exit %s: %s", proc.returncode, proc.stderr[-500:])
+        return proc.stdout.splitlines()
+
+
+def run_batch_cursor(batch: pd.DataFrame, out_dir: Path, args: argparse.Namespace) -> Path:
+    queries = {r.composer_id: query_for(r.name_display, args.query) for r in batch.itertuples()}
+    names = {r.composer_id: r.name_display for r in batch.itertuples()}
+    key = hashlib.sha1(f"cursor|{args.model}|{args.top}|{json.dumps(queries)}".encode()).hexdigest()[:12]
+    out = out_dir / f"batch_{key}.txt"
+    if STOP.is_set() or (out.exists() and not (args.retry_missing and "# missing=" in out.read_text(encoding="utf-8"))):
+        return out
+    found: dict[str, list[str]] = {}
+    tokens = {"inputTokens": 0, "outputTokens": 0, "cacheReadTokens": 0}
+    for _ in range(2):
+        todo = {cid: q for cid, q in queries.items() if cid not in found}
+        prompt = CURSOR_PROMPT.format(lines="\n".join(f"{cid}\t{q}" for cid, q in todo.items()))
+        try:
+            got, usage = parse_cursor_stream(run_cursor(prompt, args.timeout, args.model), todo, names, args.top)
+        except SandboxBreach:
+            STOP.set()
+            raise
+        found.update(got)
+        for k in tokens:
+            tokens[k] += int(usage.get(k) or 0)
+        if len(found) == len(queries):
+            break
+    missing = [cid for cid in queries if cid not in found]
+    header = f"# tokens_used={tokens['inputTokens'] + tokens['outputTokens']}\n# cache_read_tokens={tokens['cacheReadTokens']}\n"
+    if missing:
+        header += f"# missing={','.join(missing)}\n"
+        log.warning("batch %s: no search ran for %d of %d composers", key, len(missing), len(queries))
+    out.write_text(header + "".join(line + "\n" for cid in queries for line in found.get(cid, [])), encoding="utf-8")
+    log.info("batch %s: %d composers, tokens %s", key, len(batch), header.split("\n")[0].split("=")[1])
+    return out
+
+
 def run_batch(batch: pd.DataFrame, out_dir: Path, args: argparse.Namespace) -> Path:
+    if args.agent == "cursor":
+        return run_batch_cursor(batch, out_dir, args)
     lines = "\n".join(f"{r.composer_id}\t{query_for(r.name_display, args.query)}" for r in batch.itertuples())
     prompt = PROMPT.format(top=args.top, lines=lines)
     key = hashlib.sha1(f"{args.model}|{prompt}".encode()).hexdigest()[:12]
@@ -115,7 +258,7 @@ def run(args: argparse.Namespace) -> None:
     out_dir = Path(args.out_dir) / args.dump
     out_dir.mkdir(parents=True, exist_ok=True)
     batches = [chosen.iloc[i : i + args.batch_size] for i in range(0, len(chosen), args.batch_size)]
-    log.info("%s: %d composers in %d batches (model %s @%s)", args.dump, len(chosen), len(batches), args.model, args.effort)
+    log.info("%s: %d composers in %d batches (%s %s @%s)", args.dump, len(chosen), len(batches), args.agent, args.model, args.effort)
 
     with ThreadPoolExecutor(max_workers=args.parallel) as pool:
         paths = list(pool.map(lambda b: run_batch(b, out_dir, args), batches))
@@ -152,13 +295,17 @@ def main() -> None:
     p.add_argument("--batch-size", type=int, default=25)
     p.add_argument("--top", type=int, default=10)
     p.add_argument("--query", default=DEFAULT_QUERY, help="Query template with {name} (default: %(default)s)")
-    p.add_argument("--parallel", type=int, default=1, help="Concurrent codex batches")
-    p.add_argument("--model", default="gpt-6.1-sol")
+    p.add_argument("--parallel", type=int, default=1, help="Concurrent agent batches")
+    p.add_argument("--agent", choices=["codex", "cursor"], default="codex")
+    p.add_argument("--model", help="Default: gpt-6.1-sol for codex, auto for cursor")
     p.add_argument("--effort", default="low")
     p.add_argument("--timeout", type=float, default=1800)
     p.add_argument("--tag", default="", help="Suffix for the merged TSV (e.g. _pilot)")
     p.add_argument("--out-dir", default=str(REPO_ROOT / "build" / "open_licence" / "search"))
-    run(p.parse_args())
+    p.add_argument("--retry-missing", action="store_true", help="Re-run cursor batches with composers left unsearched")
+    args = p.parse_args()
+    args.model = args.model or ("auto" if args.agent == "cursor" else "gpt-6.1-sol")
+    run(args)
 
 
 if __name__ == "__main__":
