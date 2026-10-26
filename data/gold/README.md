@@ -1,6 +1,6 @@
 # Gold set: annotation guide
 
-A hand-checked, stratified sample of the dump that turns agreement between sources into measured error rates. One annotator labels every item; a 10% re-check measures intra-annotator consistency.
+A hand-checked, stratified sample of the dump that turns agreement between sources into measured error rates. One annotator labels every item; a 10% re-check measures intra-annotator consistency, and a second annotator's overlap subset measures inter-annotator agreement ([below](#second-annotator)).
 
 ## Files (`data/gold/<dump>/`)
 
@@ -33,6 +33,15 @@ Use `unsure` sparingly; write the reason in `notes`. Leave a cell empty only if 
 
 - `gold_form.html` is the claude.ai Artifact page (r018: [the published form](https://claude.ai/artifact/KB6qqcJ7fqTGZcirwWyuNw), private to its owner; the r016 pilot form is a separate artifact, because item ids repeat across samples). Answers go to the artifact's store (collections `answers`, `recheck`, `practice`, one document per item). To export, Claude saves `answers` and `recheck` with `ArtifactData list` (`out_dir`), then `python scripts/gold_set.py import-form --dump r018 --store <out_dir>` writes them into the sheets; an item in the store replaces all its answer cells, and invalid values are listed.
 - `gold_form_local.html` opens in any browser. Answers stay in that browser's storage; copy each sheet into `data/gold/<dump>/` from Progress & export.
+
+### Second annotator
+
+A second annotator checks a subset of the sample independently, so that agreement between two people shows how far the gold answers themselves can be trusted.
+
+1. `python scripts/gold_set.py subset --dump r018` drew `data/gold/r018_overlap/`: 20 composers and 30 works, square-root allocation over the r018 sample's strata with at least one item per stratum, new item ids and order. The design keeps the population stratum sizes and maps each item back (`source_item`). There is no re-check, and the form hides its tabs.
+2. `python scripts/gold_set.py kit --dump r018_overlap` writes the files for the annotator's private GitHub repo to `build/annotator_kit/r018_overlap/`: [annotator_guide.md](annotator_guide.md) as `README.md`, the rule sections of this page as `RULES.md`, the local form and the blank sheets. Design and meta files stay out, because their strata name PD status and rights.
+3. The annotator commits the sheets exported from the form to that repo. The first annotator finishes the overlap items before opening them, then copies them into `data/gold/r018_overlap/annotators/<code>/` under a pseudonymous code such as `S01`.
+4. `python scripts/gold_set.py score --dump r018 --gold-dir data/gold/r018_overlap --annotator S01 --compare data/gold/r018 --out data/gold/r018_overlap/annotators/S01/report.md` gives the second annotator's error rates (wide intervals on 50 items) and, joined on `composer_id` / `work_id`, agreement and Cohen's κ per field on the items both annotated.
 
 ## Composers
 
@@ -127,7 +136,7 @@ Judge the composer's original; an arrangement takes the original's form. A piece
 | `overture_tone_poem` | concert overture, symphonic poem or tone poem |
 | `song_cycle` | songs the composer published as one connected cycle |
 | `song` | a song, Lied, mélodie, part-song or set of songs that is not a cycle |
-| `none` | none of these applies (a nocturne, fantasia, motet, caprice…) |
+| `none` | none of these applies (a nocturne, fantasia, motet, caprice, divertimento, serenade…) |
 
 Decided cases:
 

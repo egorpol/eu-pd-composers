@@ -375,3 +375,112 @@ def test_missing_genre_form_column_is_empty(tmp_path):
     scored = gs.score_set("works", sheet, design, dump, gs.work_metrics())
     assert scored["annotated"] >= 1
     assert "genre_form_wrong" in scored["metrics"]
+
+
+def _write_parent(directory, result):
+    directory.mkdir(parents=True, exist_ok=True)
+    for kind in gs.SETS:
+        for part in ("sheet", "recheck", "design"):
+            result[kind][part].to_csv(directory / f"{kind}_{part}.tsv", sep="\t", index=False)
+
+
+def test_subset_is_blind_renumbered_and_keeps_population_sizes(tmp_path):
+    parent = gs.build_sample(_composers(), _works(), seed=7, n_composers=30, n_works=40, minimum=3,
+                             recheck_share=0.1)
+    parent["composers"]["sheet"].loc[0, "notes"] = "an answer that must not leak"
+    sheets = {kind: parent[kind]["sheet"] for kind in gs.SETS}
+    designs = {kind: parent[kind]["design"].astype(str) for kind in gs.SETS}
+    kwargs = dict(seed=3, sizes={"composers": 8, "works": 10}, minimum=1)
+    first, second = gs.build_subset(sheets, designs, **kwargs), gs.build_subset(sheets, designs, **kwargs)
+    for kind in gs.SETS:
+        for part in ("sheet", "recheck", "design"):
+            pd.testing.assert_frame_equal(first[kind][part], second[kind][part])
+    sheet, design = first["composers"]["sheet"], first["composers"]["design"]
+    assert sheet["item"].tolist() == [f"C{i:03d}" for i in range(1, 9)]
+    assert list(sheet.columns) == ["item", *gs.SHOWN["composers"], *gs.GOLD_FIELDS["composers"]]
+    assert (sheet[list(gs.GOLD_FIELDS["composers"])] == "").all().all()
+    assert len(first["composers"]["recheck"]) == 0 and list(first["composers"]["recheck"].columns) == list(sheet.columns)
+    # Every parent stratum keeps at least one item and its population size; ids map back to the parent.
+    parent_design = parent["composers"]["design"].set_index("item")
+    assert set(design["stratum"]) == set(parent_design["stratum"])
+    assert (design["stratum_size"] == design["source_item"].map(parent_design["stratum_size"])).all()
+    assert (design["composer_id"] == design["source_item"].map(parent_design["composer_id"])).all()
+    assert (sheet["composer_id"] == design["composer_id"]).all()
+    assert design.groupby("stratum")["stratum_sample"].first().sum() == 8
+
+
+def test_subset_form_and_inter_annotator_score(tmp_path, monkeypatch):
+    monkeypatch.setattr(common, "DATA_DIR", tmp_path)
+    monkeypatch.setattr(gs, "DATA_DIR", tmp_path)
+    (tmp_path / "gold").mkdir()
+    (tmp_path / "gold" / "practice.json").write_text(gs.FORM_TEMPLATE.parent.parent.joinpath(
+        "data", "gold", "practice.json").read_text(encoding="utf-8"), encoding="utf-8")
+    composers, works = _composers(), _works()
+    works["genre_form"] = ""
+    composers.to_csv(tmp_path / "composers_r900.tsv", sep="\t", index=False)
+    works.to_csv(tmp_path / "works_r900.tsv", sep="\t", index=False)
+    parent = gs.build_sample(composers, works, seed=7, n_composers=30, n_works=40, minimum=3, recheck_share=0.1)
+    _write_parent(tmp_path / "gold" / "r900", parent)
+    gs.run_subset(argparse.Namespace(dump="r900", seed=1, composers=8, works=10, min_per_stratum=1,
+                                     gold_dir=None, out_dir=None))
+    overlap = tmp_path / "gold" / "r900_overlap"
+    meta = json.loads((overlap / "meta.json").read_text(encoding="utf-8"))
+    assert meta["recheck_share"] == 0 and sum(v["stratum_sample"] for v in meta["strata"]["works"].values()) == 10
+    with pytest.raises(FileExistsError):
+        gs.run_subset(argparse.Namespace(dump="r900", seed=1, composers=8, works=10, min_per_stratum=1,
+                                         gold_dir=None, out_dir=None))
+    page, _ = gs.run_form(argparse.Namespace(dump="r900_overlap", gold_dir=None, out_dir=str(tmp_path / "out")))
+    html = page.read_text(encoding="utf-8")
+    start = html.index('<script id="gold-data" type="application/json">')
+    block = html[start:html.index("</script>", start)]
+    data = json.loads(block[block.index(">") + 1:])
+    assert [len(data[k]) for k in ("composers", "works", "composers_recheck", "works_recheck")] == [8, 10, 0, 0]
+
+    # Annotator S01 fills the overlap; the parent annotator agrees on force_family for all but one work.
+    read = dict(sep="\t", dtype=str, keep_default_na=False)
+    mine = overlap / "annotators" / "S01"
+    mine.mkdir(parents=True)
+    for kind in gs.SETS:
+        pd.read_csv(overlap / f"{kind}_sheet.tsv", **read).to_csv(mine / f"{kind}_sheet.tsv", sep="\t", index=False)
+    student = pd.read_csv(mine / "works_sheet.tsv", **read)
+    student["force_family"], student["has_files"] = "choral", "yes"
+    student.to_csv(mine / "works_sheet.tsv", sep="\t", index=False)
+    parent_works = pd.read_csv(tmp_path / "gold" / "r900" / "works_sheet.tsv", **read)
+    shared = parent_works["work_id"].isin(student["work_id"])
+    parent_works.loc[shared, ["force_family", "has_files"]] = ["choral", "yes"]
+    parent_works.loc[parent_works.index[shared][0], "force_family"] = "organ"
+    parent_works.to_csv(tmp_path / "gold" / "r900" / "works_sheet.tsv", sep="\t", index=False)
+    report = gs.run_score(argparse.Namespace(dump="r900", gold_dir=str(overlap), out=str(mine / "report.md"),
+                                             json=None, annotator="S01", compare=str(tmp_path / "gold" / "r900")))
+    inter = report["works"]["inter_annotator"]
+    assert inter["force_family"]["pairs"] == 10 and inter["force_family"]["agree"] == pytest.approx(0.9)
+    assert inter["has_files"] == {"pairs": 10, "agree": 1.0, "kappa": 1.0}
+    assert report["composers"]["inter_annotator"]["death_status"]["pairs"] == 0
+    assert "recheck" not in report["works"] and report["works"]["annotated"] == 10
+    markdown = (mine / "report.md").read_text(encoding="utf-8")
+    assert "annotator S01" in markdown and "Inter-annotator agreement with" in markdown
+
+
+def test_kit_holds_guide_rules_form_and_blank_sheets_only(tmp_path):
+    parent = gs.build_sample(_composers(), _works(), seed=7, n_composers=30, n_works=40, minimum=3, recheck_share=0.1)
+    subset = gs.build_subset({k: parent[k]["sheet"] for k in gs.SETS},
+                             {k: parent[k]["design"].astype(str) for k in gs.SETS},
+                             seed=3, sizes={"composers": 8, "works": 10}, minimum=1)
+    _write_parent(tmp_path / "r900_overlap", subset)
+    out = gs.run_kit(argparse.Namespace(dump="r900_overlap", gold_dir=str(tmp_path / "r900_overlap"),
+                                        out_dir=str(tmp_path / "kit")))
+    files = sorted(str(p.relative_to(out)) for p in out.rglob("*") if p.is_file())
+    assert files == ["README.md", "RULES.md", "data/gold/r900_overlap/composers_sheet.tsv",
+                     "data/gold/r900_overlap/works_sheet.tsv", "gold_form.html"]
+    guide = (out / "README.md").read_text(encoding="utf-8")
+    assert guide.startswith("# Second-annotator guide") and "__" not in guide
+    assert "check 8 composers and 10 works" in guide and "`data/gold/r900_overlap/composers_sheet.tsv`" in guide
+    rules = (out / "RULES.md").read_text(encoding="utf-8")
+    assert "## Composers" in rules and "### Rights basis" in rules and "What the scores mean" not in rules
+    assert (out / "gold_form.html").read_text(encoding="utf-8").startswith("<!doctype html>")
+    sheet = tmp_path / "r900_overlap" / "works_sheet.tsv"
+    filled = pd.read_csv(sheet, sep="\t", dtype=str, keep_default_na=False).assign(notes="answered")
+    filled.to_csv(sheet, sep="\t", index=False)
+    with pytest.raises(ValueError, match="holds answers"):
+        gs.run_kit(argparse.Namespace(dump="r900_overlap", gold_dir=str(tmp_path / "r900_overlap"),
+                                      out_dir=str(tmp_path / "kit2")))
