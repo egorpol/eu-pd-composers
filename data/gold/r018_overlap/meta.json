@@ -1,0 +1,84 @@
+{
+  "dump_id": "r018",
+  "subset_of": "data/gold/r018",
+  "seed": 20261010,
+  "tool_version": "3.6.0",
+  "created_at_utc": "2026-10-26T20:26:38.319551+00:00",
+  "allocation": "square-root of the parent sample's stratum counts, floor --min-per-stratum; stratum_size stays the population size",
+  "min_per_stratum": 1,
+  "recheck_share": 0,
+  "strata": {
+    "composers": {
+      "imslp_rejected_or_unverified": {
+        "stratum_size": 16,
+        "stratum_sample": 1
+      },
+      "not_pd/name": {
+        "stratum_size": 208,
+        "stratum_sample": 2
+      },
+      "not_pd/not_found": {
+        "stratum_size": 1242,
+        "stratum_sample": 3
+      },
+      "not_pd/p839": {
+        "stratum_size": 311,
+        "stratum_sample": 2
+      },
+      "pd/name": {
+        "stratum_size": 41,
+        "stratum_sample": 1
+      },
+      "pd/not_found": {
+        "stratum_size": 91,
+        "stratum_sample": 2
+      },
+      "pd/p839": {
+        "stratum_size": 601,
+        "stratum_sample": 2
+      },
+      "qa_flagged": {
+        "stratum_size": 159,
+        "stratum_sample": 2
+      },
+      "unknown_death/name": {
+        "stratum_size": 15,
+        "stratum_sample": 1
+      },
+      "unknown_death/not_found": {
+        "stratum_size": 669,
+        "stratum_sample": 3
+      },
+      "unknown_death/p839": {
+        "stratum_size": 16,
+        "stratum_sample": 1
+      }
+    },
+    "works": {
+      "imslp/eu_warning": {
+        "stratum_size": 4510,
+        "stratum_sample": 6
+      },
+      "imslp/none": {
+        "stratum_size": 20569,
+        "stratum_sample": 9
+      },
+      "imslp/other_rights": {
+        "stratum_size": 3426,
+        "stratum_sample": 6
+      },
+      "llm": {
+        "stratum_size": 364,
+        "stratum_sample": 4
+      },
+      "title": {
+        "stratum_size": 108,
+        "stratum_sample": 3
+      },
+      "unlabelled": {
+        "stratum_size": 56,
+        "stratum_sample": 2
+      }
+    }
+  }
+}

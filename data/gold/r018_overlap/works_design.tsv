@@ -1,0 +1,31 @@
+item	work_id	stratum	stratum_size	stratum_sample	weight	recheck	source_item
+W001	Rhapsodie (Harsányi, Tibor)	imslp/none	20569	9	2285.4444	false	W299
+W002	2 Organ Sonatas (Callaerts, Joseph)	imslp/none	20569	9	2285.4444	false	W221
+W003	Variations for Strings and Piano (Barvinski, Vassili)	imslp/eu_warning	4510	6	751.6667	false	W210
+W004	Scherzo-fantaisie (Renié, Henriette)	imslp/eu_warning	4510	6	751.6667	false	W031
+W005	Marche Solennelle, Op.4 (Jongen, Joseph)	llm	364	4	91.0	false	W176
+W006	L'enfant roi (Bruneau, Alfred)	imslp/none	20569	9	2285.4444	false	W097
+W007	A Finland Love Song (White, Maude Valérie)	imslp/none	20569	9	2285.4444	false	W069
+W008	Piano Sonata No.1 (Eckhardt-Gramatté, Sophie-Carmen)	imslp/other_rights	3426	6	571.0	false	W165
+W009	Who Cares? (Gershwin, George)	imslp/none	20569	9	2285.4444	false	W213
+W010	Suite for Cello Solo, Op.39 (Wellesz, Egon)	imslp/other_rights	3426	6	571.0	false	W084
+W011	Die Seejungfrau (Zemlinsky, Alexander von)	unlabelled	56	2	28.0	false	W205
+W012	Symphonie de chambre No.2, Op.49 (Milhaud, Darius)	imslp/other_rights	3426	6	571.0	false	W257
+W013	In terra pax (Martin, Frank)	llm	364	4	91.0	false	W098
+W014	3 Songs, Op.55 (Foote, Arthur)	imslp/none	20569	9	2285.4444	false	W191
+W015	Suite en valse, Op.39 (Dohnányi, Ernő)	imslp/eu_warning	4510	6	751.6667	false	W193
+W016	Vêpres du commun des fêtes de la Sainte Vierge, Op.18 (Dupré, Marcel)	imslp/other_rights	3426	6	571.0	false	W190
+W017	Song of the Cyclops (Dyson, George)	imslp/eu_warning	4510	6	751.6667	false	W290
+W018	Nuorten lauluja I, Op.4 (Melartin, Erkki)	unlabelled	56	2	28.0	false	W049
+W019	2 Cadenzas to Beethoven's Piano Concerto No.4 (Feinberg, Samuil)	title	108	3	36.0	false	W122
+W020	Nocturno 'Poema de una calle' (Barradas, Carmen)	imslp/eu_warning	4510	6	751.6667	false	W232
+W021	Sov ind, mit søde Nusseben, CNW 210 (Nielsen, Carl)	llm	364	4	91.0	false	W076
+W022	Divertimento for Chamber Orchestra (Rawsthorne, Alan)	llm	364	4	91.0	false	W020
+W023	Grotesque passacaglia (Kaprálová, Vítězslava)	imslp/none	20569	9	2285.4444	false	W055
+W024	Serenade for Horn, String Orchestra and Timpani (Børresen, Hakon)	title	108	3	36.0	false	W040
+W025	The Great Gatsby Ballet (Nichifor, Serban)	title	108	3	36.0	false	W277
+W026	4 Poems by Rabindranath Tagore, Op.68 (Ippolitov-Ivanov, Mikhail)	imslp/other_rights	3426	6	571.0	false	W300
+W027	Wichtelmännchen, Op.27 (Haas, Joseph)	imslp/eu_warning	4510	6	751.6667	false	W004
+W028	Ever of Thee (Denza, Luigi)	imslp/none	20569	9	2285.4444	false	W164
+W029	String Quartet No.7 (Taneyev, Sergey)	imslp/none	20569	9	2285.4444	false	W101
+W030	For Erhu and Violin (Sydeman, William Jay)	imslp/other_rights	3426	6	571.0	false	W294

@@ -5,6 +5,10 @@
   python scripts/gold_set.py form --dump r016          # annotation form → build/gold_form/r016/
   python scripts/gold_set.py import-form --dump r016 --store DIR   # form answers → sheets
   python scripts/gold_set.py score --dump r016 --out data/gold/r016/report.md
+  python scripts/gold_set.py subset --dump r018 --composers 20 --works 30   # second-annotator overlap
+  python scripts/gold_set.py score --dump r018 --gold-dir data/gold/r018_overlap --annotator S01 \
+      --compare data/gold/r018                            # adds inter-annotator agreement
+  python scripts/gold_set.py kit --dump r018_overlap      # second annotator's repo → build/annotator_kit/
 
 Offline. `sample` is deterministic for a dump and seed, and refuses to overwrite
 existing files because they hold annotations. Sheets show identifiers and links
@@ -21,6 +25,7 @@ import html
 import json
 import math
 import re
+import shutil
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -215,13 +220,44 @@ def build_sample(
     return out
 
 
-def run_sample(args: argparse.Namespace) -> None:
-    read = dict(sep="\t", dtype=str, keep_default_na=False)
-    composers = pd.read_csv(dump_tsv_path("composers", args.dump), **read)
-    works = pd.read_csv(dump_tsv_path("works", args.dump), **read)
-    result = build_sample(composers, works, seed=args.seed, n_composers=args.composers, n_works=args.works,
-                          minimum=args.min_per_stratum, recheck_share=args.recheck_share)
-    directory = Path(args.out_dir) if args.out_dir else gold_dir(args.dump)
+def build_subset(
+    sheets: dict[str, pd.DataFrame], designs: dict[str, pd.DataFrame], *, seed: int, sizes: dict[str, int],
+    minimum: int,
+) -> dict[str, dict[str, pd.DataFrame]]:
+    """Stratified subset of a drawn sample for a second annotator: blank sheets, new item ids and order.
+
+    Allocation is square-root over the parent sample's stratum counts; the design keeps each stratum's
+    population size, so the subset scores like any gold dir, and `source_item` maps back to the parent.
+    The re-check sheets stay empty.
+    """
+    rng = np.random.default_rng(seed)
+    out: dict[str, dict[str, pd.DataFrame]] = {}
+    for kind in SETS:
+        key = ID_COLUMN[kind]
+        parent = designs[kind].sort_values("item").reset_index(drop=True)
+        population = parent.groupby("stratum")["stratum_size"].first().astype(int)
+        picked = stratified_sample(parent[["item", key]], parent["stratum"], sizes[kind], minimum, rng)
+        picked = picked.iloc[rng.permutation(len(picked))].reset_index(drop=True)
+        width = max(3, len(str(len(picked))))
+        items = [f"{ITEM_PREFIX[kind]}{i + 1:0{width}d}" for i in range(len(picked))]
+        shown = sheets[kind].set_index("item").reindex(columns=list(SHOWN[kind]), fill_value="")
+        sheet = shown.loc[picked["item"]].reset_index(drop=True)
+        sheet.insert(0, "item", items)
+        for col in GOLD_FIELDS[kind]:
+            sheet[col] = ""
+        size = picked["stratum"].map(population)
+        design = pd.DataFrame({
+            "item": items, key: picked[key].to_numpy(), "stratum": picked["stratum"].to_numpy(),
+            "stratum_size": size.to_numpy(), "stratum_sample": picked["stratum_sample"].to_numpy(),
+            "weight": (size / picked["stratum_sample"]).round(4).to_numpy(), "recheck": "false",
+            "source_item": picked["item"].to_numpy(),
+        })
+        out[kind] = {"sheet": sheet, "recheck": sheet.iloc[0:0], "design": design}
+    return out
+
+
+def write_gold_dir(directory: Path, result: dict[str, dict[str, pd.DataFrame]], meta: dict[str, Any]) -> None:
+    """Write sheets, designs and meta.json (with per-stratum counts); never overwrites."""
     paths = {(kind, part): directory / f"{kind}_{part}.tsv" for kind in SETS for part in ("sheet", "recheck", "design")}
     meta_path = directory / "meta.json"
     existing = [p for p in [*paths.values(), meta_path] if p.exists()]
@@ -231,20 +267,45 @@ def run_sample(args: argparse.Namespace) -> None:
     directory.mkdir(parents=True, exist_ok=True)
     for (kind, part), path in paths.items():
         result[kind][part].to_csv(path, sep="\t", index=False)
-    meta = {
-        "dump_id": args.dump, "seed": args.seed, "tool_version": TOOL_VERSION,
-        "created_at_utc": datetime.now(timezone.utc).isoformat(),
-        "allocation": "square-root of stratum size, floor --min-per-stratum, capped at stratum size",
-        "min_per_stratum": args.min_per_stratum, "recheck_share": args.recheck_share,
-        "strata": {kind: result[kind]["design"].groupby("stratum")[["stratum_size", "stratum_sample"]].first()
-                   .astype(int).to_dict(orient="index") for kind in SETS},
-    }
+    meta["strata"] = {kind: result[kind]["design"].groupby("stratum")[["stratum_size", "stratum_sample"]].first()
+                      .astype(int).to_dict(orient="index") for kind in SETS}
     meta_path.write_text(json.dumps(meta, indent=2) + "\n", encoding="utf-8")
     for kind in SETS:
         print(f"{kind}: {len(result[kind]['sheet'])} items, {len(result[kind]['recheck'])} recheck → "
               f"{paths[(kind, 'sheet')]}")
         for stratum, row in meta["strata"][kind].items():
             print(f"  {stratum}: {row['stratum_sample']} of {row['stratum_size']}")
+
+
+def run_sample(args: argparse.Namespace) -> None:
+    read = dict(sep="\t", dtype=str, keep_default_na=False)
+    composers = pd.read_csv(dump_tsv_path("composers", args.dump), **read)
+    works = pd.read_csv(dump_tsv_path("works", args.dump), **read)
+    result = build_sample(composers, works, seed=args.seed, n_composers=args.composers, n_works=args.works,
+                          minimum=args.min_per_stratum, recheck_share=args.recheck_share)
+    write_gold_dir(Path(args.out_dir) if args.out_dir else gold_dir(args.dump), result, {
+        "dump_id": args.dump, "seed": args.seed, "tool_version": TOOL_VERSION,
+        "created_at_utc": datetime.now(timezone.utc).isoformat(),
+        "allocation": "square-root of stratum size, floor --min-per-stratum, capped at stratum size",
+        "min_per_stratum": args.min_per_stratum, "recheck_share": args.recheck_share,
+    })
+
+
+def run_subset(args: argparse.Namespace) -> None:
+    read = dict(sep="\t", dtype=str, keep_default_na=False)
+    source = Path(args.gold_dir) if args.gold_dir else gold_dir(args.dump)
+    sheets = {kind: pd.read_csv(source / f"{kind}_sheet.tsv", **read) for kind in SETS}
+    designs = {kind: pd.read_csv(source / f"{kind}_design.tsv", **read) for kind in SETS}
+    result = build_subset(sheets, designs, seed=args.seed, minimum=args.min_per_stratum,
+                          sizes={"composers": args.composers, "works": args.works})
+    source_name = source.resolve().relative_to(REPO_ROOT) if source.resolve().is_relative_to(REPO_ROOT) else source
+    write_gold_dir(Path(args.out_dir) if args.out_dir else gold_dir(f"{args.dump}_overlap"), result, {
+        "dump_id": args.dump, "subset_of": str(source_name), "seed": args.seed, "tool_version": TOOL_VERSION,
+        "created_at_utc": datetime.now(timezone.utc).isoformat(),
+        "allocation": "square-root of the parent sample's stratum counts, floor --min-per-stratum; "
+                      "stratum_size stays the population size",
+        "min_per_stratum": args.min_per_stratum, "recheck_share": 0,
+    })
 
 
 # --- Annotation form ------------------------------------------------------
@@ -292,6 +353,39 @@ def run_form(args: argparse.Namespace) -> list[Path]:
     paths[1].write_text(LOCAL_PAGE.format(page=page), encoding="utf-8")
     print(f"artifact page → {paths[0]}\nlocal copy (open in a browser) → {paths[1]}")
     return paths
+
+
+# A second annotator's private repo gets the guide, the rule sections of the README, the local form and the
+# blank sheets; never design or meta files, whose strata name PD status and rights.
+GUIDE = DATA_DIR / "gold" / "annotator_guide.md"
+RULES_SPAN = ("## Composers\n", "## What the scores mean\n")
+
+
+def run_kit(args: argparse.Namespace) -> Path:
+    read = dict(sep="\t", dtype=str, keep_default_na=False)
+    directory = Path(args.gold_dir) if args.gold_dir else gold_dir(args.dump)
+    out = Path(args.out_dir) if args.out_dir else REPO_ROOT / "build" / "annotator_kit" / args.dump
+    sheets = {kind: ensure_gold_columns(kind, pd.read_csv(directory / f"{kind}_sheet.tsv", **read)) for kind in SETS}
+    for kind, sheet in sheets.items():
+        if sheet[list(GOLD_FIELDS[kind])].ne("").any().any():
+            raise ValueError(f"{directory / f'{kind}_sheet.tsv'} holds answers; a kit gets blank sheets only")
+    readme = (DATA_DIR / "gold" / "README.md").read_text(encoding="utf-8")
+    rules = readme[readme.index(RULES_SPAN[0]):readme.index(RULES_SPAN[1])]
+    guide = GUIDE.read_text(encoding="utf-8")
+    guide = guide[guide.index("# "):]
+    for key, value in (("__GOLD_DIR__", f"data/gold/{args.dump}"), ("__N_COMPOSERS__", len(sheets["composers"])),
+                       ("__N_WORKS__", len(sheets["works"]))):
+        guide = guide.replace(key, str(value))
+    target = out / "data" / "gold" / args.dump
+    target.mkdir(parents=True, exist_ok=True)
+    for kind in SETS:
+        shutil.copyfile(directory / f"{kind}_sheet.tsv", target / f"{kind}_sheet.tsv")
+    (out / "README.md").write_text(guide, encoding="utf-8")
+    (out / "RULES.md").write_text("# Annotation rules\n\n" + rules.rstrip() + "\n", encoding="utf-8")
+    page = render_form(form_data(directory, args.dump), FORM_TEMPLATE.read_text(encoding="utf-8"))
+    (out / "gold_form.html").write_text(LOCAL_PAGE.format(page=page), encoding="utf-8")
+    print(f"annotator repo files → {out}")
+    return out
 
 
 # Form store collection → sheet part it fills.
@@ -525,10 +619,11 @@ def score_set(kind: str, sheet: pd.DataFrame, design: pd.DataFrame, dump: pd.Dat
     return out
 
 
-def agreement(kind: str, sheet: pd.DataFrame, recheck: pd.DataFrame) -> dict[str, Any]:
-    """Intra-annotator agreement between the first pass and the re-check, per gold field."""
+def agreement(kind: str, sheet: pd.DataFrame, recheck: pd.DataFrame, on: str = "item") -> dict[str, Any]:
+    """Agreement per gold field between two passes over the same items: the first pass and the re-check
+    (joined on item), or two annotators (joined on the composer or work id, since item ids differ)."""
     fields = [f for f in GOLD_FIELDS[kind] if f in VOCAB or f == "death_year"]
-    joined = sheet.merge(recheck, on="item", suffixes=("", "_re"))
+    joined = sheet.merge(recheck, on=on, suffixes=("", "_re"))
     out = {}
     for field in fields:
         pairs = [(a, b) for a, b in zip(joined[field], joined[f"{field}_re"]) if a and b]
@@ -547,8 +642,18 @@ def _fmt_rate(rate: float | None, ci: tuple[float, float] | None) -> str:
     return f"{100 * rate:.1f}% [{100 * ci[0]:.1f}, {100 * ci[1]:.1f}]"
 
 
+def _agreement_table(title: str, result: dict[str, Any]) -> list[str]:
+    lines = [title, "", "| Field | Pairs | Agreement | κ |", "|---|---:|---:|---:|"]
+    for field, a in result.items():
+        agree = "—" if a["agree"] is None else f"{100 * a['agree']:.0f}%"
+        kappa = "—" if a["kappa"] is None else f"{a['kappa']:.2f}"
+        lines.append(f"| {field} | {a['pairs']} | {agree} | {kappa} |")
+    return [*lines, ""]
+
+
 def to_markdown(report: dict[str, Any]) -> str:
-    lines = [f"# Gold set scores ({report['dump_id']}, reference year {report['reference_year']})", "",
+    who = f", annotator {report['annotator']}" if report.get("annotator") else ""
+    lines = [f"# Gold set scores ({report['dump_id']}{who}, reference year {report['reference_year']})", "",
              "Error rates with 95% Wilson intervals. *Sample* is the share among checked items; *population* "
              "weights each stratum by its size (square-root allocation oversamples small strata).", ""]
     for kind in SETS:
@@ -567,34 +672,42 @@ def to_markdown(report: dict[str, Any]) -> str:
             lines.append(f"- `{name}`: " + (", ".join(cells) or "—"))
         lines += ["", "</details>", ""]
         if result.get("recheck"):
-            lines += ["Intra-annotator re-check:", "", "| Field | Pairs | Agreement | κ |", "|---|---:|---:|---:|"]
-            for field, a in result["recheck"].items():
-                agree = "—" if a["agree"] is None else f"{100 * a['agree']:.0f}%"
-                kappa = "—" if a["kappa"] is None else f"{a['kappa']:.2f}"
-                lines.append(f"| {field} | {a['pairs']} | {agree} | {kappa} |")
-            lines.append("")
+            lines += _agreement_table("Intra-annotator re-check:", result["recheck"])
+        if result.get("inter_annotator"):
+            lines += _agreement_table(f"Inter-annotator agreement with `{report['compare_dir']}` "
+                                      f"(items both annotated):", result["inter_annotator"])
     return "\n".join(lines)
 
 
 def run_score(args: argparse.Namespace) -> dict[str, Any]:
     read = dict(sep="\t", dtype=str, keep_default_na=False)
     directory = Path(args.gold_dir) if args.gold_dir else gold_dir(args.dump)
+    # A second annotator's sheets live in annotators/<code>/ and share the gold dir's design.
+    sheets = directory / "annotators" / args.annotator if args.annotator else directory
     meta_path = dump_meta_path(args.dump)
     meta = json.loads(meta_path.read_text(encoding="utf-8")) if meta_path.exists() else {}
     reference_year = int(meta.get("pd_reference_year") or 2026)
     report: dict[str, Any] = {"dump_id": args.dump, "reference_year": reference_year}
+    if args.annotator:
+        report["annotator"] = args.annotator
+    if args.compare:
+        report["compare_dir"] = args.compare
     for kind, metrics in (("composers", composer_metrics(reference_year)), ("works", work_metrics())):
-        sheet = ensure_gold_columns(kind, pd.read_csv(directory / f"{kind}_sheet.tsv", **read))
+        sheet = ensure_gold_columns(kind, pd.read_csv(sheets / f"{kind}_sheet.tsv", **read))
         design = pd.read_csv(directory / f"{kind}_design.tsv", **read)
         design["stratum_size"] = design["stratum_size"].astype(int)
         dump = pd.read_csv(dump_tsv_path(kind, args.dump), **read)
         if set(sheet["item"]) != set(design["item"]):
             raise ValueError(f"{kind}_sheet.tsv items do not match {kind}_design.tsv")
         report[kind] = score_set(kind, sheet, design, dump, metrics)
-        recheck_path = directory / f"{kind}_recheck.tsv"
+        recheck_path = sheets / f"{kind}_recheck.tsv"
         if recheck_path.exists():
             recheck = ensure_gold_columns(kind, pd.read_csv(recheck_path, **read))
-            report[kind]["recheck"] = agreement(kind, sheet, recheck)
+            if len(recheck):
+                report[kind]["recheck"] = agreement(kind, sheet, recheck)
+        if args.compare:
+            other = ensure_gold_columns(kind, pd.read_csv(Path(args.compare) / f"{kind}_sheet.tsv", **read))
+            report[kind]["inter_annotator"] = agreement(kind, sheet, other, on=ID_COLUMN[kind])
     markdown = to_markdown(report)
     if args.out:
         Path(args.out).write_text(markdown, encoding="utf-8")
@@ -616,10 +729,22 @@ def main() -> None:
     sample.add_argument("--min-per-stratum", type=int, default=8)
     sample.add_argument("--recheck-share", type=float, default=0.10)
     sample.add_argument("--out-dir", help="Default: data/gold/<dump>/")
+    subset = commands.add_parser("subset", help="Draw a blank overlap subset of a gold dir for a second annotator")
+    subset.add_argument("--dump", required=True)
+    subset.add_argument("--seed", type=int, default=DEFAULT_SEED)
+    subset.add_argument("--composers", type=int, default=20)
+    subset.add_argument("--works", type=int, default=30)
+    subset.add_argument("--min-per-stratum", type=int, default=1)
+    subset.add_argument("--gold-dir", help="Parent sample. Default: data/gold/<dump>/")
+    subset.add_argument("--out-dir", help="Default: data/gold/<dump>_overlap/")
     form = commands.add_parser("form", help="Build the annotation form page from the sheets")
     form.add_argument("--dump", required=True)
     form.add_argument("--gold-dir", help="Default: data/gold/<dump>/")
     form.add_argument("--out-dir", help="Default: build/gold_form/<dump>/")
+    kit = commands.add_parser("kit", help="Files for a second annotator's private repo (no design files)")
+    kit.add_argument("--dump", required=True, help="Gold dir name, e.g. r018_overlap")
+    kit.add_argument("--gold-dir", help="Default: data/gold/<dump>/")
+    kit.add_argument("--out-dir", help="Default: build/annotator_kit/<dump>/")
     imp = commands.add_parser("import-form", help="Write answers saved by the form into the sheets")
     imp.add_argument("--dump", required=True)
     imp.add_argument("--store", required=True, help="Directory with answers/ and recheck/, one <item>.json each")
@@ -629,11 +754,17 @@ def main() -> None:
     score.add_argument("--gold-dir", help="Default: data/gold/<dump>/")
     score.add_argument("--out", help="Markdown report path (default: stdout)")
     score.add_argument("--json", help="Optional JSON report path")
+    score.add_argument("--annotator", help="Score <gold-dir>/annotators/<code>/ sheets against <gold-dir>'s design")
+    score.add_argument("--compare", help="Gold dir of another annotator; adds inter-annotator agreement")
     args = parser.parse_args()
     if args.command == "sample":
         run_sample(args)
+    elif args.command == "subset":
+        run_subset(args)
     elif args.command == "form":
         run_form(args)
+    elif args.command == "kit":
+        run_kit(args)
     elif args.command == "import-form":
         run_import(args)
     else:

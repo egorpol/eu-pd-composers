@@ -198,7 +198,7 @@ const GENRES = [
   ["overture_tone_poem", "concert overture, symphonic poem or tone poem"],
   ["song_cycle", "songs the composer published as one connected cycle"],
   ["song", "a song, Lied, mélodie, part-song or set of songs that is not a cycle"],
-  ["none", "none of these applies (a nocturne, fantasia, motet, caprice…)"],
+  ["none", "none of these applies (a nocturne, fantasia, motet, caprice, divertimento, serenade…)"],
 ];
 const BASES = [
   ["eu_warning", "WorkNonPD-EU, WorkNonPD-USandEU"],
@@ -217,6 +217,8 @@ const TABS = [
   { id: "export", label: "Progress & export" },
 ];
 const COLLS = ["answers", "recheck", "practice"];
+// A sample without re-check items (a second annotator's overlap set) has no re-check tabs.
+const shownTabs = () => TABS.filter(t => !t.lockOf || !S.data || S.data[t.src].length);
 const DAY = 86400000;
 const $ = (s, el = document) => el.querySelector(s);
 const kindOf = it => (it.composer_id ? "c" : "w");
@@ -349,7 +351,7 @@ function lockState(tab) {
 // ---------- rendering ----------
 function renderTabs() {
   const nav = $("#tabs"); nav.textContent = "";
-  for (const t of TABS) {
+  for (const t of shownTabs()) {
     const b = document.createElement("button");
     b.className = "tab"; b.id = "tab-" + t.id; b.setAttribute("role", "tab");
     b.setAttribute("aria-selected", String(S.tab === t.id));
@@ -363,7 +365,7 @@ function renderTabs() {
   }
 }
 function persist() { store.set("view", { tab: S.tab, pos: S.pos }); }
-function curTab() { return TABS.find(t => t.id === S.tab) || TABS[0]; }
+function curTab() { return shownTabs().find(t => t.id === S.tab) || TABS[0]; }
 
 function render() {
   renderTabs();
@@ -670,7 +672,7 @@ function renderExport(main) {
   wrap.append(el("p", { text: "On claude.ai, Claude reads your answers from this page's store and writes them into data/gold/" + S.data.dump + "/. In a local copy, paste each sheet over its file there. Each button copies a full sheet as TSV in the original row order." }));
   const box = el("textarea", { class: "dump", id: "tsvbox", readonly: "", "aria-label": "Copied TSV" }); box.hidden = true;
   const ex = el("div", { class: "exports" });
-  for (const [src, coll, file] of [["composers", "answers", "composers_sheet.tsv"], ["works", "answers", "works_sheet.tsv"], ["composers_recheck", "recheck", "composers_recheck.tsv"], ["works_recheck", "recheck", "works_recheck.tsv"]]) {
+  for (const [src, coll, file] of [["composers", "answers", "composers_sheet.tsv"], ["works", "answers", "works_sheet.tsv"], ["composers_recheck", "recheck", "composers_recheck.tsv"], ["works_recheck", "recheck", "works_recheck.tsv"]].filter(([src]) => S.data[src].length)) {
     const msg = el("span", { class: "help", text: "" });
     const b = el("button", { class: "nav", type: "button", id: "copy-" + src, text: "Copy" });
     b.onclick = () => {
