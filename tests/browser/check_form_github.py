@@ -25,6 +25,7 @@ MOCK = r"""<script>
   const cfg = window.__MOCK = __CFG__;
   const log = [];
   let putN = 0;
+  const getN = {};
   window.fetch = async (url, opts = {}) => {
     const method = (opts.method || "GET").toUpperCase();
     const entry = { url: String(url), method, auth: (opts.headers || {}).Authorization || null, keepalive: !!opts.keepalive };
@@ -34,26 +35,36 @@ MOCK = r"""<script>
     if (method === "GET") {
       const st = cfg.getStatus || 200;
       if (st !== 200) return new Response('{"message":"no"}', { status: st, headers: cfg.getHeaders || {} });
-      return new Response(JSON.stringify({ sha: "sha0-" + file, content: cfg.sheets[file] }), { status: 200 });
+      const seq = (cfg.getSeq || {})[file];
+      let content;
+      if (seq) {
+        const i = getN[file] || 0;
+        content = seq[Math.min(i, seq.length - 1)];
+        getN[file] = i + 1;
+      } else content = cfg.sheets[file];
+      return new Response(JSON.stringify({ sha: "sha0-" + file, content }), { status: 200 });
     }
     const st = (cfg.putStatuses || [])[putN++] || 200;
     entry.status = st;
+    if (cfg.putDelay) await new Promise(r => setTimeout(r, cfg.putDelay));
     if (st !== 200) return new Response('{"message":"no"}', { status: st, headers: cfg.putHeaders || {} });
     return new Response(JSON.stringify({ content: { sha: "sha" + putN + "-" + file } }), { status: 200 });
   };
   if (cfg.click) setTimeout(() => { const b = document.getElementById(cfg.click); if (b) b.click(); else window.__noclick = true; }, 1500);
+  if (cfg.click2) setTimeout(() => { const b = document.getElementById(cfg.click2.id); if (b) b.click(); else window.__noclick = true; }, cfg.click2.at);
   setTimeout(() => {
     const pre = document.createElement("pre"); pre.id = "mocklog";
     pre.textContent = JSON.stringify({
       log, conn: document.getElementById("conn").textContent,
       banner: document.getElementById("banner").hidden ? "" : document.getElementById("bannerText").textContent,
       href: location.href, ls: Object.keys(localStorage), noclick: !!window.__noclick,
+      dirty: Object.keys(localStorage).filter(k => k.startsWith("goldset.dirty.")).map(k => k.split(".").pop()).sort(),
       notes: document.getElementById("t-notes")?.value ?? null,
       pressed: [...document.querySelectorAll('[aria-pressed="true"]')].map(b => b.id),
       links: [...document.querySelectorAll(".top-links a")].map(a => a.getAttribute("href")),
     }).replace(/</g, "\\u003c");
     document.body.append(pre);
-  }, 9000);
+  }, cfg.reportAt || 9000);
 })();
 </script>
 """
@@ -95,7 +106,7 @@ def run_all(urls: dict[str, str], work: Path) -> dict:
             time.sleep(0.2)
         port, path = port_file.read_text().split()
         out = subprocess.run(["node", str(Path(__file__).parent / "cdp_run.mjs"), f"ws://127.0.0.1:{port}{path}",
-                              *(f"{n}={u}" for n, u in urls.items())], capture_output=True, text=True, timeout=120)
+                              *(f"{n}={u}" for n, u in urls.items())], capture_output=True, text=True, timeout=180)
         if out.returncode:
             raise SystemExit("cdp_run failed: " + out.stderr[-600:])
         return json.loads(out.stdout)
@@ -117,10 +128,15 @@ def main() -> None:
     sheets = {f: (KIT / "data/gold/r020" / f).read_text(encoding="utf-8") for f in ("composers_sheet.tsv", "works_sheet.tsv")}
     blank = {f: b64(t) for f, t in sheets.items()}
     # Load-back: the repository already holds an answer for the first composer.
-    head, first, *rest = sheets["composers_sheet.tsv"].split("\n")
+    head, first, second, *rest = sheets["composers_sheet.tsv"].split("\n")
     cols = head.split("\t"); row = first.split("\t")
     row[cols.index("wikidata_same_person")] = "no"; row[cols.index("notes")] = "given elsewhere"
-    answered = {**blank, "composers_sheet.tsv": b64("\n".join([head, "\t".join(row), *rest]))}
+    answered = {**blank, "composers_sheet.tsv": b64("\n".join([head, "\t".join(row), second, *rest]))}
+    # Same shape, but the answer is on the second composer row (conflict_merge / drafts remote).
+    row2 = second.split("\t")
+    row2[cols.index("wikidata_same_person")] = "no"; row2[cols.index("notes")] = "given elsewhere"
+    answered2 = {**blank, "composers_sheet.tsv": b64("\n".join([head, first, "\t".join(row2), *rest]))}
+    item1 = first.split("\t")[cols.index("item")]
     # Quotes: the repository sheet as pandas writes it, a note holding quotes for the first composer.
     import pandas as pd
     frame = pd.read_csv(KIT / "data/gold/r020/composers_sheet.tsv", sep="\t", dtype=str, keep_default_na=False)
@@ -134,9 +150,22 @@ def main() -> None:
         "nokey": ({"sheets": blank, "click": "o-wikidata_same_person-yes"}, ""),
         "badkey": ({"sheets": blank, "getStatus": 401, "click": "o-wikidata_same_person-yes"}, "#key=" + KEY),
         "conflict": ({"sheets": blank, "putStatuses": [409], "click": "o-wikidata_same_person-yes"}, "#key=" + KEY),
+        "conflict_merge": ({"sheets": blank, "putStatuses": [409],
+                            "getSeq": {"composers_sheet.tsv": [blank["composers_sheet.tsv"], answered2["composers_sheet.tsv"]]},
+                            "click": "o-wikidata_same_person-yes"}, "#key=" + KEY),
         "loadback": ({"sheets": answered}, "#key=" + KEY),
         "ratelimit": ({"sheets": blank, "putStatuses": [403], "putHeaders": {"x-ratelimit-remaining": "0"},
                        "click": "o-wikidata_same_person-yes"}, "#key=" + KEY),
+        "ratelimit2": ({"sheets": blank, "putStatuses": [403], "putHeaders": {"x-ratelimit-remaining": "0"},
+                        "click": "o-wikidata_same_person-yes",
+                        "click2": {"id": "o-wikidata_same_person-no", "at": 7000}, "reportAt": 14000}, "#key=" + KEY),
+        # A slow PUT that succeeds, a second click during it, then a failing PUT: that row must stay marked.
+        "editduringput": ({"sheets": blank, "putStatuses": [200, 500], "putDelay": 3000, "click": "o-wikidata_same_person-yes",
+                           "click2": {"id": "o-wikidata_same_person-no", "at": 7000}, "reportAt": 16000}, "#key=" + KEY),
+        # A slow PUT: the second click lands while the rate-limited PUT is still in flight.
+        "ratelimit3": ({"sheets": blank, "putStatuses": [403], "putHeaders": {"x-ratelimit-remaining": "0"}, "putDelay": 3000,
+                        "click": "o-wikidata_same_person-yes",
+                        "click2": {"id": "o-wikidata_same_person-no", "at": 7000}, "reportAt": 14000}, "#key=" + KEY),
     }
     work = Path(tempfile.mkdtemp(prefix="formcheck-"))
     root = work / "site"; root.mkdir()
@@ -148,7 +177,11 @@ def main() -> None:
     try:
         for name, (cfg, _) in scenarios.items():
             write_page(name, cfg, root)
-        r = run_all({name: f"http://127.0.0.1:{port}/{name}.html{h}" for name, (_, h) in scenarios.items()}, work)
+        write_page("drafts1", {"sheets": blank, "click": "o-wikidata_same_person-yes"}, root)
+        write_page("drafts2", {"sheets": answered2}, root)
+        urls = {name: f"http://127.0.0.1:{port}/{name}.html{h}" for name, (_, h) in scenarios.items()}
+        urls["drafts"] = f"http://127.0.0.1:{port}/drafts1.html|http://127.0.0.1:{port}/drafts2.html#key={KEY}"
+        r = run_all(urls, work)
     finally:
         server.terminate()
         shutil.rmtree(work, ignore_errors=True)
@@ -188,6 +221,7 @@ def main() -> None:
         check("save", "#" not in s["href"] and "goldset.key.r020.S01" in s["ls"], "key moved from the URL into localStorage")
         check("save", s["links"] == ["README.html", "RULES.html"], "header links to the guide and rules")
         check("save", s["banner"] == "", "no banner")
+        check("save", s["dirty"] == [], f"no row left marked after the commit (got {len(s['dirty'])})")
 
     s = r["nokey"]
     if "error" not in s:
@@ -195,6 +229,7 @@ def main() -> None:
         check("nokey", "Open this page from your personal link" in s["banner"], "banner asks for the personal link")
         check("nokey", s["conn"] == "Saving in this browser", f"top bar: '{s['conn']}'")
         check("nokey", "o-wikidata_same_person-yes" in s["pressed"], "the answer is kept in the browser")
+        check("nokey", s["dirty"] == ["answers/" + item1], "the answer is marked to send once the key arrives")
 
     s = r["badkey"]
     if "error" not in s:
@@ -208,8 +243,23 @@ def main() -> None:
         seq = [(e["method"], e["url"].split("?")[0].split("/")[-1], e.get("status")) for e in s["log"]]
         tail = seq[2:]
         check("conflict", tail == [("PUT", "composers_sheet.tsv", 409), ("GET", "composers_sheet.tsv", None),
-                                   ("PUT", "composers_sheet.tsv", 200)], f"409 → fresh sha → one retry (got {tail})")
+                                   ("GET", "works_sheet.tsv", None), ("PUT", "composers_sheet.tsv", 200)],
+              f"409 → load both → one retry (got {tail})")
         check("conflict", s["conn"].startswith("Saved to GitHub"), f"top bar: '{s['conn']}'")
+
+    s = r["conflict_merge"]
+    if "error" not in s:
+        puts = [e for e in s["log"] if e["method"] == "PUT"]
+        check("conflict_merge", len(puts) == 2 and puts[0].get("status") == 409 and puts[1].get("status") == 200,
+              f"one 409 then one 200 PUT (got {len(puts)})")
+        if len(puts) >= 2:
+            text = base64.b64decode(puts[1]["body"]["content"]).decode("utf-8")
+            lines = text.split("\n")
+            r1 = dict(zip(lines[0].split("\t"), lines[1].split("\t")))
+            r2 = dict(zip(lines[0].split("\t"), lines[2].split("\t")))
+            check("conflict_merge", r1.get("wikidata_same_person") == "yes" and r2.get("wikidata_same_person") == "no",
+                  "retried PUT keeps local row 1 and remote row 2")
+        check("conflict_merge", s["conn"].startswith("Saved to GitHub"), f"top bar: '{s['conn']}'")
 
     s = r["loadback"]
     if "error" not in s:
@@ -226,6 +276,40 @@ def main() -> None:
     if "error" not in s:
         check("ratelimit", s["banner"] == "", "a rate limit shows no key banner")
         check("ratelimit", s["conn"] == "Not saved to GitHub yet, retrying", f"top bar: '{s['conn']}'")
+
+    s = r["ratelimit2"]
+    if "error" not in s:
+        puts = [e for e in s["log"] if e["method"] == "PUT"]
+        check("ratelimit2", len(puts) == 1, f"exactly 1 PUT (backoff not cut short; got {len(puts)})")
+        check("ratelimit2", s["dirty"] == ["answers/" + item1], "the row stays marked after the failed push")
+
+    s = r["ratelimit3"]
+    if "error" not in s:
+        puts = [e for e in s["log"] if e["method"] == "PUT"]
+        check("ratelimit3", len(puts) == 1, f"an edit during a failing PUT doesn't cut the backoff short (got {len(puts)} PUTs)")
+        check("ratelimit3", s["dirty"] == ["answers/" + item1], "the row stays marked after the failed push")
+
+    s = r["editduringput"]
+    if "error" not in s:
+        st = [e.get("status") for e in s["log"] if e["method"] == "PUT"]
+        check("editduringput", st == [200, 500], f"one PUT succeeds, the next fails (got {st})")
+        check("editduringput", s["dirty"] == ["answers/" + item1], "an edit made during the successful PUT stays marked")
+
+    s = r["drafts"]
+    if "error" not in s:
+        puts = [e for e in s["log"] if e["method"] == "PUT"]
+        check("drafts", len(puts) == 1 and puts[0]["url"] == api + "composers_sheet.tsv",
+              f"exactly one PUT to composers_sheet.tsv (got {len(puts)})")
+        if puts:
+            body = puts[0]["body"]
+            check("drafts", item1 in body.get("message", ""), "commit message names row 1's item")
+            text = base64.b64decode(body["content"]).decode("utf-8")
+            lines = text.split("\n")
+            r1 = dict(zip(lines[0].split("\t"), lines[1].split("\t")))
+            r2 = dict(zip(lines[0].split("\t"), lines[2].split("\t")))
+            check("drafts", r1.get("wikidata_same_person") == "yes" and r2.get("wikidata_same_person") == "no",
+                  "PUT holds draft row 1 and remote row 2")
+        check("drafts", s["dirty"] == [], f"no row left marked after the commit (got {len(s['dirty'])})")
 
     print(f"{FAILS} failure(s)")
     sys.exit(1 if FAILS else 0)
