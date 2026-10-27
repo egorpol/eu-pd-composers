@@ -1,6 +1,8 @@
 # Gold set: annotation guide
 
-A hand-checked, stratified sample of the dump that turns agreement between sources into measured error rates. One annotator labels every item; a 10% re-check measures intra-annotator consistency, and a second annotator's overlap subset measures inter-annotator agreement ([below](#second-annotator)).
+A hand-checked, stratified sample of the dump that turns agreement between sources into measured error rates. It grows: each gold version is a new sample, and several contributors add answers to it. A shared core of items, which every contributor answers, measures how far people agree ([contributors](#contributors)); a 10% re-check measures one annotator's consistency over time.
+
+**Gold v2** (sample `r020`) adds the composer's **style**, so the LLM style labels get a human check ([Style](#style-gold-v2)). Gold v1 (`r016` pilot, `r018`) has no style; its partly done r018 pass stays as it is and still scores.
 
 ## Files (`data/gold/<dump>/`)
 
@@ -8,40 +10,47 @@ A hand-checked, stratified sample of the dump that turns agreement between sourc
 |---|---|---|
 | `composers_sheet.tsv`, `works_sheet.tsv` | Annotator | Items to check: identifiers and links only, then empty answer columns |
 | `composers_recheck.tsv`, `works_recheck.tsv` | Annotator, later | About 10% of the same items in a new order, for the re-check |
-| `composers_design.tsv`, `works_design.tsv` | Scorer only | Stratum, stratum size, sample size and weight of each item |
-| `meta.json` | — | Dump, seed, allocation |
+| `composers_design.tsv`, `works_design.tsv` | Scorer only | Stratum, stratum size, sample size and weight of each item; in v2 also its package |
+| `meta.json` | — | Gold version, dump, seed, allocation |
+| `annotators/<code>/` | Scorer | Each contributor's sheets, under a pseudonymous code such as `S01` |
 
-`data/gold/practice.json` holds four practice items outside any sample, with worked answers, for trying the rules and the form.
+`data/gold/practice.json` holds four practice items outside any sample, with worked answers, for trying the rules and the form. [`style_definitions.tsv`](style_definitions.tsv) defines the style tags; the form and the contributors' rules show it.
 
-The current sample is r018: 200 composers and 300 works, drawn with `python scripts/gold_set.py sample --dump r018` (seed 20261010). The r016 sample was the pilot; its few answers score against r016 only. Small strata are oversampled (square-root allocation, at least 8 items each), and the scorer weights them back.
+The current sample is **r020 (gold v2)**: 100 composers and 150 works, drawn with `python scripts/gold_set.py sample --dump r020` (seed 20261010). Small strata are oversampled (square-root allocation, at least 6 items each), and the scorer weights them back.
 
-**Composer strata.** Composers with `qa_flags`; rejected or unverified IMSLP matches; then EU PD status (`pd`, `not_pd`, `unknown_death`) × IMSLP link (Wikidata P839, confirmed name match, not found).
+**Packages.** The v2 sample is dealt into 5 packages of 20 composers and 30 works, about 3 hours each. Each stratum is dealt round-robin across the packages, so any set of finished packages is itself a stratified subsample. Item ids run in package order: package 1 (`C001`–`C020`, `W001`–`W030`) is the **core** every contributor answers; packages 2–5 are batches that contributors take one at a time. The re-check items come from the core.
+
+**Composer strata (v2).** Composers with `qa_flags` or a rejected or unverified IMSLP match; then the dump's style source (a Wikidata movement; LLM consensus only; neither) × EU PD status (`pd`, `not_pd`, `unknown_death`). Within a stratum, composers are spread across the LLM's primary periods in proportion.
 **Work strata.** Force-label source (IMSLP categories, title rule, LLM, unlabelled); IMSLP-labelled works also split by rights basis (EU warning, other rights category, none). Within a stratum, works are spread across instrumentation families in proportion.
+
+**Gold v1.** r018 has 200 composers and 300 works, drawn with `python scripts/gold_set.py sample --dump r018 --gold-version 1`; its composer strata are `qa_flags`, rejected or unverified IMSLP matches, then EU PD status × IMSLP link (Wikidata P839, confirmed name match, not found). The r016 sample was the pilot; its few answers score against r016 only.
 
 ## Workflow
 
-1. Fill `composers_sheet.tsv` and `works_sheet.tsv` in a spreadsheet (keep TSV, UTF-8; do not reorder or delete rows), or in the annotation form (below). Budget about 3 minutes per composer and 1 minute per work, so roughly 15 hours.
-2. **Stay blind.** While annotating, do not open the dump, the viewer, the design files or this repo's labels for these items. The sheets deliberately omit death years, PD status, instrumentation and rights labels.
+1. Fill `composers_sheet.tsv` and `works_sheet.tsv` in a spreadsheet (keep TSV, UTF-8; do not reorder or delete rows), or in the annotation form (below). Budget about 8 minutes per composer with style (3 without) and 1 minute per work: about 3 hours per v2 package. Work through the packages in order, core first.
+2. **Stay blind.** While annotating, do not open the dump, the viewer, the design files or this repo's labels for these items. The sheets deliberately omit death years, PD status, instrumentation, rights and style labels (the dump's LLM and Wikidata style tags, IMSLP periods).
 3. At least **7 days** after finishing an item set, fill its `*_recheck.tsv` without looking at your first answers.
-4. Score: `python scripts/gold_set.py score --dump r018 --out data/gold/r018/report.md --json data/gold/r018/report.json`. Partly filled sheets score fine; blank rows are skipped, and invalid values are listed and ignored. Score only after finishing a pass: with few items filled, the rates show whether single answers matched the dump, which unblinds the rest. The sample stays r018 after later dumps ship: restore it with `git show v3.6.0:data/works_r018.tsv > data/works_r018.tsv` (likewise `composers_r018.tsv`, `dump_meta_r018.json`). To score a later dump's rules on the same items, pass `--dump r019 --gold-dir data/gold/r018`; ids are stable across derives.
+4. Score: `python scripts/gold_set.py score --dump r020 --out data/gold/r020/report.md --json data/gold/r020/report.json` (r018: `--dump r018`). Partly filled sheets score fine; blank rows are skipped, and invalid values are listed and ignored. Score only after finishing a pass: with few items filled, the rates show whether single answers matched the dump, which unblinds the rest. The sample stays r018 after later dumps ship: restore it with `git show v3.6.0:data/works_r018.tsv > data/works_r018.tsv` (likewise `composers_r018.tsv`, `dump_meta_r018.json`). To score a later dump's rules on the same items, pass `--dump r019 --gold-dir data/gold/r018`; ids are stable across derives.
 
 Use `unsure` sparingly; write the reason in `notes`. Leave a cell empty only if you have not checked it yet.
 
 ### Annotation form
 
-`python scripts/gold_set.py form --dump r018` builds the form from the sheets into `build/gold_form/r018/`. The page holds only what the sheets show, plus the practice items. It shows one item at a time with its links (including the GND record at `d-nb.info` and the VIAF cluster the Wikidata item names) and name searches (IMSLP, GND, LoC, BnF, Grove), offers only valid values, has a *Use GND <id>* button that fills `death_source` from that record (the year stays typed), and keeps the re-check tabs locked until 7 days after a set's last answer.
+`python scripts/gold_set.py form --dump r020` builds the form from the sheets into `build/gold_form/r020/`. The page holds only what the sheets show, plus the practice items. It shows one item at a time with its links (including the GND record at `d-nb.info` and the VIAF cluster the Wikidata item names) and name searches (IMSLP, GND, LoC, BnF, Grove), offers only valid values, has a *Use GND <id>* button that fills `death_source` from that record (the year stays typed), and keeps the re-check tabs locked until 7 days after a set's last answer.
 
-- `gold_form.html` is the claude.ai Artifact page (r018: [the published form](https://claude.ai/artifact/KB6qqcJ7fqTGZcirwWyuNw), private to its owner; the r016 pilot form is a separate artifact, because item ids repeat across samples). Answers go to the artifact's store (collections `answers`, `recheck`, `practice`, one document per item). To export, Claude saves `answers` and `recheck` with `ArtifactData list` (`out_dir`), then `python scripts/gold_set.py import-form --dump r018 --store <out_dir>` writes them into the sheets; an item in the store replaces all its answer cells, and invalid values are listed.
+- `gold_form.html` is the claude.ai Artifact page (r018: [the published form](https://claude.ai/artifact/KB6qqcJ7fqTGZcirwWyuNw), private to its owner; the r016 pilot form is a separate artifact, because item ids repeat across samples). Answers go to the artifact's store (collections `answers`, `recheck`, `practice`, one document per item). To export, Claude saves `answers` and `recheck` with `ArtifactData list` (`out_dir`), then `python scripts/gold_set.py import-form --dump <dump> --store <out_dir>` writes them into the sheets; an item in the store replaces all its answer cells, and invalid values are listed.
 - `gold_form_local.html` opens in any browser. Answers stay in that browser's storage; copy each sheet into `data/gold/<dump>/` from Progress & export.
 
-### Second annotator
+### Contributors
 
-A second annotator checks a subset of the sample independently, so that agreement between two people shows how far the gold answers themselves can be trusted.
+Other people answer packages of the same sample independently. The core, which everyone answers, shows how far careful people agree; the batches add items, so the gold set grows with each contributor. Each contributor gets a pseudonymous code (`S01`, `S02`, …); only the maintainer keeps the link between code and person, outside this repository.
 
-1. `python scripts/gold_set.py subset --dump r018` drew `data/gold/r018_overlap/`: 20 composers and 30 works, square-root allocation over the r018 sample's strata with at least one item per stratum, new item ids and order. The design keeps the population stratum sizes and maps each item back (`source_item`). There is no re-check, and the form hides its tabs.
-2. `python scripts/gold_set.py kit --dump r018_overlap` writes the files for the annotator's private GitHub repo to `build/annotator_kit/r018_overlap/`: [annotator_guide.md](annotator_guide.md) as `README.md`, the rule sections of this page as `RULES.md`, the local form and the blank sheets. Design and meta files stay out, because their strata name PD status and rights.
-3. The annotator commits the sheets exported from the form to that repo. The first annotator finishes the overlap items before opening them, then copies them into `data/gold/r018_overlap/annotators/<code>/` under a pseudonymous code such as `S01`.
-4. `python scripts/gold_set.py score --dump r018 --gold-dir data/gold/r018_overlap --annotator S01 --compare data/gold/r018 --out data/gold/r018_overlap/annotators/S01/report.md` gives the second annotator's error rates (wide intervals on 50 items) and, joined on `composer_id` / `work_id`, agreement and Cohen's κ per field on the items both annotated.
+1. `python scripts/gold_set.py kit --dump r020 --annotator S02 --packages 1` writes the contributor's files to `build/annotator_kit/r020/S02/`: [annotator_guide.md](annotator_guide.md) as `README.md`, the rule sections of this page plus the style definitions as `RULES.md`, a local form and blank sheets holding only those packages. Design and meta files stay out, because their strata name PD status, rights and style sources. A later batch is a new kit (`--packages 3`).
+2. **Submission.** By default each contributor gets a private GitHub repository with the kit and commits the sheets exported from the form at the end of each sitting (the commits are also their backup). Someone without GitHub downloads the sheets from the form (*Progress & export* → *Download*) and sends them by email.
+3. The maintainer finishes the core before opening anyone's answers, then copies each contributor's sheets into `data/gold/r020/annotators/<code>/`.
+4. `python scripts/gold_set.py score --dump r020 --pool --out data/gold/r020/report.md` scores every contributor's answers together, one per item (the maintainer's first, then the contributors in code order), and adds Krippendorff's α per field across contributors on the items two or more of them answered (`unknown` is an answer like any other, so two `unknown`s agree). When several contributors answered an item, the pooled score takes the first complete answer in that order. `--annotator S02` scores one contributor alone; `--compare <gold dir>` gives pairwise agreement and Cohen's κ.
+
+**Gold v1 overlap (r018).** `python scripts/gold_set.py subset --dump r018` drew `data/gold/r018_overlap/` (20 composers and 30 works, at least one per r018 stratum, `source_item` maps back) for a second annotator; v2 packages replace it.
 
 ## Composers
 
@@ -54,6 +63,9 @@ A second annotator checks a subset of the sample independently, so that agreemen
 | `death_status` | `dead` / `living` / `unknown` | `living` needs positive evidence of life after 2020 (recent activity, an institutional page, an interview). If you cannot tell, use `unknown` |
 | `death_year` | `YYYY` | With `dead`. Leave empty if the person died but no source gives the year |
 | `death_source` | GND number, or short name + URL or id | The source you relied on (see the hierarchy). A bare number is a GND id (`118776312`, written to the sheet as `GND 118776312`); name any other source (`LoC n92085993`, `Wikidata Q10274029`, `Grove https://…`) |
+| `styles` (v2) | 1–3 style tags joined by `\|`, or `unknown` | The composer's style, most characteristic tag first ([Style](#style-gold-v2)) |
+| `primary_period` (v2) | a period tag, or `unknown` | The period where the bulk of the output sits |
+| `style_source` (v2) | short name + URL | The source you relied on for the style |
 | `notes` | free text | Conflicts between sources, doubts, page changes |
 
 ### Source hierarchy for life dates
@@ -72,6 +84,20 @@ When sources disagree, take the year most independent authorities give, and writ
 Decided cases:
 
 - **The list row links the wrong article** (a namesake's page, such as a physicist's): `wikidata_same_person` = `no`. Answer the IMSLP and death columns for the composer the list row means (its nationality and dates identify him), and write the mix-up in `notes`. The scorer then counts the identity error and the death-year or PD errors it causes.
+
+### Style (gold v2)
+
+Style describes the composer's music as a whole, in the same terms the dataset's LLM labellers used, so their labels can be checked. The tags are the dataset's style vocabulary: the IMSLP periods plus `late_romantic`, and 15 movements and traditions from Wikidata and IMSLP. Each is defined, with its dates, typical composers and nearest neighbour, in [style_definitions.tsv](style_definitions.tsv) (contributors find the same table at the end of `RULES.md` and in the form).
+
+- **`styles`**: up to 3 tags, the most characteristic first. A period tag and movement tags combine (`romantic|national_folk`). Give a movement tag only when a source places the composer in that movement, or the music clearly uses its technique; otherwise give the period tag alone. When the style changed over a career, tag the phases that are best known, in order of weight (`neoclassicism|national_folk|serialism`).
+- **`primary_period`**: one period tag (`ancient` … `modern`), where the bulk of the output sits. Judge by musical language more than by date: a composer writing in a post-Wagnerian idiom in the 1930s is `late_romantic`. Language decides both ways: a tonal, lyrical idiom without post-Wagnerian chromaticism or very large forms stays `romantic` after 1880, and a composer who keeps a plainly 19th-century idiom after 1900 is `romantic` or `late_romantic`, in `styles` and here. When the language does not decide, use IMSLP's dates (Romantic 1815–1910, Early 20th century 1900–1945, Modern from 1945).
+- **`unknown`**: only when no source lets you place the composer at all; then `primary_period` is `unknown` too. If you can name the period, its tag is the style.
+- **`early_20th_century` and `modern`** are fallbacks for 1900–1945 and post-1945 music in a 20th-century idiom that no movement tag fits.
+- **Ragtime is not `jazz`**: tag its period, mostly `early_20th_century`. `jazz` is for stride and jazz as a main part of the output.
+
+**Sources for style**, highest first: (1) reference works: Grove / Oxford Music Online, MGG, Baker's, national music encyclopaedias and music information centres; (2) scholarly writing, publishers' composer pages, signed programme or liner notes; (3) the scores on IMSLP, to confirm a technique (a twelve-tone row, tape parts); (4) Wikipedia, only when nothing above covers the composer, and then say so in `style_source`. **Do not use** Wikidata's movement or genre statements, IMSLP's *Piece Style* line or the project's viewer: they are the labels under test.
+
+Spend about 5 minutes on style. If that is not enough to place the composer in a movement, give the period tag and say why in `notes`.
 
 ## Works
 
@@ -166,3 +192,5 @@ The **Copyright** line in a file's box ("Public Domain - Non-PD US, Non-PD EU") 
 ## What the scores mean
 
 Composers: wrong Wikidata person; wrong IMSLP link; missed IMSLP link; wrong death year (exact, and off by two years or more); missing death year; **false PD** (the dump says PD now, but the composer died too recently or is alive); missed PD. Works: wrong instrumentation family; form differs; no form in the dump although the original has one; dump gives a form but none of the listed forms applies; dump says arrangement while the original has a listed form; wrong `has_files`; wrong rights basis. Each rate has a 95% Wilson interval, for the checked items and weighted to the whole dump. The re-check reports agreement and Cohen's κ per field.
+
+**Style (v2)** is a table of sources against the annotators: the dump's LLM consensus, each labeller in the LLM ledger (model, effort, condition, prompt), Wikidata movements and IMSLP work periods. The dump's crosswalk maps Wikidata's broad "Romantic music" (Q207591) and "Romanticism" (Q37068) to `late_romantic`, as it does post-romanticism; in r020 all 22 Wikidata `late_romantic` tags come from the two broad items. A second Wikidata row reads them as `romantic`, so the crosswalk can be fixed from the gold answers. It needs the Wikidata entity cache (the dump keeps tags, not QIDs) and is left out without it. Per source: tag precision (its tags the annotator also gave), tag recall (the annotator's tags, within that source's vocabulary, that it gave; no consensus or abstaining counts as no tags), the share of composers where they share a tag, mean Jaccard, and primary-period agreement with κ. Composers marked `unknown` are left out of the tag measures. Agreement on `styles` between two passes or contributors is exact set agreement, mean Jaccard and Krippendorff's α with MASI distance (Passonneau 2006), which gives partial credit when tag sets overlap.

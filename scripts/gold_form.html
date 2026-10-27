@@ -109,6 +109,13 @@ details.ref summary { cursor: pointer; }
 .worked dt { font-family: var(--f-mono); font-size: 13px; }
 .worked dd { margin: 0; color: var(--ink); overflow-wrap: anywhere; }
 details.ref ol { margin: 6px 0 0; padding-left: 20px; display: grid; gap: 2px; max-width: 70ch; }
+.multi { display: grid; gap: 6px; }
+.multi .grid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 230px), 1fr)); }
+.multi .sublabel { margin: 4px 0 0; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+.defs-wrap { overflow-x: auto; margin-top: 6px; }
+table.defs { border-collapse: collapse; font-size: 13px; color: var(--ink); min-width: 640px; }
+table.defs th, table.defs td { text-align: left; vertical-align: top; padding: 4px 8px; border-bottom: 1px solid var(--line); }
+table.defs th { color: var(--muted); font-weight: 600; }
 .warns { list-style: none; margin: 0; padding: 0 20px; display: grid; gap: 4px; }
 .warns:not(:empty) { padding: 12px 20px; border-bottom: 1px solid var(--line); }
 .warns li { font-size: 14px; color: var(--warn); }
@@ -251,6 +258,11 @@ function complete(kind, v, it) {
   if (!v.wikidata_same_person || !v.imslp_check || !v.death_status) return false;
   if (v.imslp_check === "found" && !(v.imslp_found_url || "").trim()) return false;
   if (v.death_status !== "unknown" && !(v.death_source || "").trim()) return false;
+  if (S.data.style) {
+    if (!v.styles || !v.primary_period) return false;
+    if (v.styles === "unknown" && v.primary_period !== "unknown") return false;
+    if (v.styles !== "unknown" && !(v.style_source || "").trim()) return false;
+  }
   return true;
 }
 function anyUnsure(kind, v) { return FIELDS[kind].some(f => v[f] === "unsure"); }
@@ -278,6 +290,11 @@ function warnings(kind, v, it) {
     if (v.death_status && v.death_status !== "unknown" && !(v.death_source || "").trim()) w.push(v.death_status === "living"
       ? "Living needs dated evidence of life after 2020 (a recent premiere, staff page, interview). Name it in the source, with its URL."
       : "Name the source you relied on, with its URL.");
+    if (S.data.style) {
+      if (v.styles && v.styles !== "unknown" && !(v.style_source || "").trim()) w.push("Name the source for the style: Grove, MGG, a publisher's page… with its URL.");
+      if (v.styles === "unknown" && v.primary_period && v.primary_period !== "unknown") w.push("You can name the period, so add its period tag to the style instead of unknown.");
+      if (/wikidata/i.test(v.style_source || "")) w.push("Wikidata's movement statements are what the style is checked against: use another source.");
+    }
   }
   return w;
 }
@@ -519,6 +536,41 @@ function renderCard(tab, items, i) {
     groups.push(() => { const cur = v()[field] || ""; btns.forEach((b, k) => b.setAttribute("aria-pressed", String(opts[k].v === cur))); });
     return wrap;
   }
+  // Ordered multi-select stored as "a|b|c"; `unknown` excludes the tags.
+  function multi(field, sections, max) {
+    const wrap = el("div", { class: "multi", role: "group", "aria-label": field });
+    const tip = el("p", { class: "help", text: "Selected tags show their rank. At most " + max + "." });
+    const cur = () => (v()[field] || "").split("|").filter(Boolean);
+    const btns = [];
+    for (const [label, opts] of sections) {
+      if (label) wrap.append(el("p", { class: "sublabel", text: label }));
+      const grid = el("div", { class: "grid" });
+      for (const o of opts) {
+        const b = el("button", { class: "opt" + (o.v === "unknown" ? " u" : ""), id: "o-" + field + "-" + o.v, type: "button", "aria-pressed": "false" });
+        const rank = el("span", { class: "n" });
+        b.append(rank, el("b", { text: o.v }));
+        if (o.hint) b.append(el("small", { text: o.hint }));
+        b.onclick = () => {
+          let tags = cur();
+          if (o.v === "unknown") tags = tags[0] === "unknown" ? [] : ["unknown"];
+          else if (tags.includes(o.v)) tags = tags.filter(t => t !== o.v);
+          else if (tags.filter(t => t !== "unknown").length >= max) { tip.textContent = "Already " + max + " tags: click one to remove it first."; return; }
+          else tags = [...tags.filter(t => t !== "unknown"), o.v];
+          tip.textContent = "Selected tags show their rank. At most " + max + ".";
+          edit(coll, id, field, tags.join("|")); sync();
+        };
+        btns.push({ b, rank, v: o.v });
+        grid.append(b);
+      }
+      wrap.append(grid);
+    }
+    wrap.append(tip);
+    groups.push(() => {
+      const tags = cur();
+      for (const x of btns) { const k = tags.indexOf(x.v); x.b.setAttribute("aria-pressed", String(k >= 0)); x.rank.textContent = k >= 0 && x.v !== "unknown" ? String(k + 1) : ""; }
+    });
+    return wrap;
+  }
   function text(field, label, attrs = {}, area = false) {
     const { grow, ...rest } = attrs;
     const inp = el(area ? "textarea" : "input", { id: "t-" + field, ...rest });
@@ -566,6 +618,22 @@ function renderCard(tab, items, i) {
           el("li", { text: "Institutions and press: music information centres, publishers, obituaries." }),
           el("li", { text: "Wikipedia or Wikidata, only when nothing above has the date. Say so in the source." })),
         el("p", { class: "help", style: "margin-top:6px", text: "Use two independent sources when they are quick to find. When they disagree, take the year most authorities give and write the conflict in notes." }))));
+    if (S.data.style) {
+      const defs = S.data.styles;
+      const opt = d => ({ v: d.slug, hint: d.definition });
+      const full = el("table", { class: "defs" }, el("tr", {}, ...["Tag", "Period", "Definition", "Typical composers", "Not this"].map(h => el("th", { text: h }))),
+        ...defs.map(d => el("tr", {}, el("td", { class: "mono", text: d.slug }), ...[d.period, d.definition, d.typical, d.not].map(x => el("td", { text: x || "" })))));
+      card.append(q("Style: up to 3 tags, most characteristic first", "styles",
+        el("p", { class: "help", text: "Describe the composer's music as a whole, from reference works and the composer's scores, not from Wikidata's movement statements or IMSLP's Piece Style. A movement tag needs a source that places the composer in it, or music that clearly uses its technique; otherwise give the period. Click a selected tag to remove it." }),
+        multi("styles", [["Periods", defs.filter(d => d.era).map(opt)], ["Movements and traditions", defs.filter(d => !d.era).map(opt)],
+          ["", [{ v: "unknown", hint: "no source lets you place this composer at all" }]]], 3),
+        el("details", { class: "ref" }, el("summary", { text: "Definitions in full" }), el("div", { class: "defs-wrap" }, full))));
+      const ssrc = text("style_source", "Source for the style: short name + URL", { placeholder: "Grove https://…, or MGG Online", grow: "1" });
+      card.append(q("Primary period", "primary_period",
+        el("p", { class: "help", text: "The period where the bulk of the composer's output sits, judged by its musical language more than the calendar." }),
+        seg("primary_period", [...S.data.eras.map(x => ({ v: x })), { v: "unknown", hint: "" }]),
+        el("div", { class: "row" }, ssrc.box)));
+    }
   } else {
     card.append(q("Instrumentation of the original version", "force_family",
       el("p", { class: "help", text: "Judge the composer's original scoring and ignore arrangements by others. If the composer made several versions, pick the one later in this list." }),
@@ -660,16 +728,18 @@ function renderExport(main) {
   wrap.append(el("h2", { text: "Progress" }));
   const stats = el("div", { class: "stats" });
   const C = setProgress("composers"), W = setProgress("works");
-  const mins = C.left * 3 + W.left;
+  const perComposer = S.data.style ? 8 : 3;
+  const mins = C.left * perComposer + W.left;
   stats.append(
     el("div", { class: "stat" }, el("span", { class: "k", text: "Composers" }), el("span", { class: "v" }, String(C.done), el("small", { text: " / " + C.total }))),
     el("div", { class: "stat" }, el("span", { class: "k", text: "Works" }), el("span", { class: "v" }, String(W.done), el("small", { text: " / " + W.total }))),
     el("div", { class: "stat" }, el("span", { class: "k", text: "With unsure" }), el("span", { class: "v", text: String(C.unsure + W.unsure) })),
     el("div", { class: "stat" }, el("span", { class: "k", text: "Time left, est." }), el("span", { class: "v" }, String(Math.floor(mins / 60)), el("small", { text: " h " + (mins % 60) + " min" }))));
   wrap.append(stats);
-  wrap.append(el("p", { class: "help", text: "Estimate: 3 minutes per composer, 1 per work. Done means every required answer is filled; started items count as not done." }));
+  wrap.append(el("p", { class: "help", text: "Estimate: " + perComposer + " minutes per composer, 1 per work. Done means every required answer is filled; started items count as not done." }));
   wrap.append(el("h2", { text: "Export" }));
-  wrap.append(el("p", { text: "On claude.ai, Claude reads your answers from this page's store and writes them into data/gold/" + S.data.dump + "/. In a local copy, paste each sheet over its file there. Each button copies a full sheet as TSV in the original row order." }));
+  const local = !window.claude?.use;
+  wrap.append(el("p", { text: "On claude.ai, Claude reads your answers from this page's store and writes them into data/gold/" + S.data.dump + "/. In a local copy, Copy a sheet to paste it over its file in your repository, or Download it to send by email. Each sheet is complete, as TSV in the original row order." }));
   const box = el("textarea", { class: "dump", id: "tsvbox", readonly: "", "aria-label": "Copied TSV" }); box.hidden = true;
   const ex = el("div", { class: "exports" });
   for (const [src, coll, file] of [["composers", "answers", "composers_sheet.tsv"], ["works", "answers", "works_sheet.tsv"], ["composers_recheck", "recheck", "composers_recheck.tsv"], ["works_recheck", "recheck", "works_recheck.tsv"]].filter(([src]) => S.data[src].length)) {
@@ -680,7 +750,14 @@ function renderExport(main) {
       const fallback = () => { box.hidden = false; box.value = t; box.focus(); box.select(); msg.textContent = "Copying is blocked here. The text is selected below; press Ctrl+C."; };
       try { navigator.clipboard.writeText(t).then(() => { msg.textContent = "Copied " + S.data[src].length + " rows."; }, fallback); } catch { fallback(); }
     };
-    ex.append(el("div", { class: "exp" }, el("span", { class: "mono", text: file }), b, msg));
+    const d = local ? el("button", { class: "nav", type: "button", id: "dl-" + src, text: "Download" }) : null;
+    if (d) d.onclick = () => {
+      const url = URL.createObjectURL(new Blob([tsvFor(src, coll)], { type: "text/tab-separated-values" }));
+      const a = el("a", { href: url, download: file }); document.body.append(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      msg.textContent = "Saved " + file + " to your downloads.";
+    };
+    ex.append(el("div", { class: "exp" }, el("span", { class: "mono", text: file }), b, d, msg));
   }
   wrap.append(ex, box);
   main.append(wrap);
@@ -728,6 +805,8 @@ async function boot() {
   try {
     S.data = JSON.parse($("#gold-data").textContent);
     $("#dumpid").textContent = S.data.dump;
+    // Gold v2 sheets carry style answers on composers, before notes (as in the TSV).
+    if (S.data.style) FIELDS.c.splice(FIELDS.c.indexOf("notes"), 0, "styles", "primary_period", "style_source");
   } catch (e) {
     $("#main").innerHTML = ""; $("#main").append(el("div", { class: "panel" }, el("h2", { text: "No items in this page" }), el("p", { text: "Build it from the sheets: python scripts/gold_set.py form --dump <dump>." })));
     return;

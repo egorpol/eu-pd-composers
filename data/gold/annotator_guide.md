@@ -1,45 +1,53 @@
-<!-- Template: `python scripts/gold_set.py kit --dump <subset>` copies it as README.md into a second annotator's
-     private repo and fills in __GOLD_DIR__, __N_COMPOSERS__ and __N_WORKS__. -->
-# Second-annotator guide
+<!-- Template: `python scripts/gold_set.py kit --dump <gold dir> --annotator <code> --packages <n,...>` copies it as
+     README.md into a contributor's kit and fills in __GOLD_DIR__, __N_COMPOSERS__, __N_WORKS__ and __HOURS__. -->
+# Contributor guide
 
-Thank you for helping. This page tells you everything you need: what the project is, the one rule that matters most, and the steps from first click to upload. The detailed answer rules are in [RULES.md](RULES.md).
+Thank you for helping. This page tells you everything you need: what the project is, the one rule that matters most, and the steps from first click to sending your answers. The detailed answer rules and the style definitions are in [RULES.md](RULES.md).
 
 ## The project in one paragraph
 
-*eu-pd-composers* is an open dataset of composers and their works on IMSLP (the Petrucci Music Library). For each composer it estimates whether their music is in the public domain in the EU (in general, 70 years after the composer's death). It also labels each work's instrumentation, its form and the rights notices on its IMSLP page. These labels come from automatic matching between Wikipedia, Wikidata, IMSLP and library authority files, so some of them are wrong. To measure how often, a sample of items is checked by hand. You are the **second annotator**: you check __N_COMPOSERS__ composers and __N_WORKS__ works that the first annotator also checks, independently. Comparing the two of you shows how far two careful people agree on these questions, and so how much the measured error rates can be trusted.
+*eu-pd-composers* is an open dataset of composers and their works on IMSLP (the Petrucci Music Library). For each composer it estimates whether their music is in the public domain in the EU (in general, 70 years after the composer's death) and describes their style. It also labels each work's instrumentation, its form and the rights notices on its IMSLP page. These labels come from automatic matching between Wikipedia, Wikidata, IMSLP and library authority files, and the styles partly from language models, so some of them are wrong. To measure how often, people check a random sample of items by hand. Several people check the same core items independently, which shows how far careful people agree, and each further package adds new items to the evidence.
+
+## What you check
+
+You check **__N_COMPOSERS__ composers** and **__N_WORKS__ works**:
+
+- for each **composer**: whether the Wikidata item is the right person, whether IMSLP has their composer page, when they died (from library authority files), and their **style** (up to three tags from a fixed list, plus the main period);
+- for each **work**: the instrumentation and form of the original, whether its IMSLP page has files, and IMSLP's rights category.
+
+The form offers only valid answers and explains each one. Style takes longest: a composer takes about 8 minutes, a work about 1.
 
 ## Time
 
-About **1.5 hours**: roughly 3 minutes per composer and 1 minute per work, plus 15 minutes of practice. You can split it over several sittings, because the form remembers your answers.
+About **__HOURS__ hours**, including 15 minutes of practice. You can split it over several sittings, because the form remembers your answers.
 
 ## The blindness rule
 
 While you annotate, do **not** open:
 
 - the project's website or dataset viewer, its data files, or its public GitHub repository (they contain the labels you are checking);
-- any notes or answers of the first annotator.
+- Wikidata's *movement* or *genre* statements and IMSLP's *Piece Style* line as a basis for the style (they are labels under test too; the Wikidata page itself is fine for checking the person);
+- any other contributor's answers.
 
 Use the links and searches in the form and the sources named in [RULES.md](RULES.md). Questions about a *rule* are welcome; ask the person who invited you. Don't ask anyone about a *specific item*: if a rule leaves you unsure for an item, pick your best answer and explain the doubt in `notes`.
 
 ## Steps
 
-1. **Get the form.** Open `gold_form.html` in this repository and download it (the *Download raw file* button). Save it somewhere you will find again and open it in a desktop browser (Firefox or Chrome). It needs no installation and no account.
-2. **Keep one browser.** Your answers are saved in that browser only. Always open the same file from the same place in the same browser. Don't use a private window, and don't clear the browser's data until you have uploaded. To test it, answer one practice item, reload the page and check that the answer is still there.
-3. **Practice first.** Open the *Practice* tab, answer the practice items, then open each worked answer and compare it with yours. Practice answers are never exported.
+1. **Get the form.** Open `gold_form.html` in this repository (or in the files you were sent) and download it (on GitHub: the *Download raw file* button). Save it somewhere you will find again and open it in a desktop browser (Firefox or Chrome). It needs no installation and no account.
+2. **Keep one browser.** Your answers are saved in that browser only. Always open the same file from the same place in the same browser. Don't use a private window, and don't clear the browser's data until you have sent your answers. To test it, answer one practice item, reload the page and check that the answer is still there.
+3. **Practice first.** Open the *Practice* tab, answer the practice items, then open each worked answer and compare it with yours. Practice answers are never exported. Read the style definitions once (the *Definitions in full* link under the style question, or the end of [RULES.md](RULES.md)).
 4. **Annotate.** Work through the *Composers* and *Works* tabs. Each field offers only valid values; the short help under each field and [RULES.md](RULES.md) explain them. Keys: `j` next, `k` previous, `n` next unanswered.
-   - Spend about 3 minutes per composer and 1 per work, 5 at most. Then answer `unsure` and write why in `notes`.
+   - Spend about 3 minutes on a composer's identity and death date, 5 on the style, and 1 on a work. If that is not enough, answer `unsure` (or, for style, the period tag alone) and write why in `notes`.
    - Use `unsure` sparingly. Leave a field empty only if you haven't checked it yet.
    - `living` needs dated evidence of life after 2020. If you find no death date and no such evidence, answer `unknown` and add a note.
-5. **Upload.** At the end of **each** sitting (partly filled sheets are fine, and they are your backup):
-   1. In the form, open *Progress & export* and press **Copy** next to `composers_sheet.tsv`.
-   2. In this repository, open `__GOLD_DIR__/composers_sheet.tsv`, click the pencil (*Edit this file*), select all the text (Ctrl+A), paste (Ctrl+V), then *Commit changes…* → *Commit directly to the main branch* → *Commit changes*.
-   3. Do the same for `works_sheet.tsv`.
-   4. Check that the uploaded file still shows as a table on GitHub. If it doesn't, tell the person who invited you.
-6. **Finish.** When both tabs show every item done (*Progress & export* counts them), upload one last time and send a short message to the person who invited you, with the rough time you spent.
+5. **Send your answers** at the end of **each** sitting (partly filled sheets are fine, and they are your backup). Use the way the person who invited you set up:
+   - **GitHub repository.** In the form, open *Progress & export* and press **Copy** next to `composers_sheet.tsv`. In this repository, open `__GOLD_DIR__/composers_sheet.tsv`, click the pencil (*Edit this file*), select all the text (Ctrl+A), paste (Ctrl+V), then *Commit changes…* → *Commit directly to the main branch* → *Commit changes*. Do the same for `works_sheet.tsv`. Check that the uploaded file still shows as a table on GitHub; if it doesn't, tell the person who invited you.
+   - **Email.** In the form, open *Progress & export* and press **Download** next to each sheet. Attach both files to an email to the person who invited you. Don't rename or edit them.
+6. **Finish.** When both tabs show every item done (*Progress & export* counts them), send your answers one last time with a short message saying roughly how long you spent.
 
 ## Your data
 
-- Your answers are recorded under a pseudonymous code (such as `S01`), not your name. Only the person who invited you keeps the link between the code and you.
-- This repository is private: only you, the person who invited you and GitHub can see it.
+- Your answers are recorded under a pseudonymous code (such as `S02`), not your name. Only the person who invited you keeps the link between the code and you.
+- A repository made for you is private: only you, the person who invited you and GitHub can see it.
 - The answers may be published with the dataset or in a paper under that code. Your name appears (for example in the acknowledgements) only if you agree. You can withdraw your answers at any time before they are published.
 - Taking part is voluntary and has no effect on any grade.

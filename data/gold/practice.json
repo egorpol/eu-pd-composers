@@ -1,5 +1,5 @@
 {
-  "note": "Practice items for the annotation form. None is in a gold sample; worked answers checked on 2026-10-10.",
+  "note": "Practice items for the annotation form. None is in a gold sample; worked answers checked on 2026-10-10; style answers on 2026-10-27.",
   "composers": [
     {
       "item": "P-C1",
@@ -15,9 +15,12 @@
         "imslp_check": "same",
         "death_status": "dead",
         "death_year": "1942",
-        "death_source": "GND https://d-nb.info/gnd/124446809; LoC https://id.loc.gov/authorities/names/n92085993"
+        "death_source": "GND https://d-nb.info/gnd/124446809; LoC https://id.loc.gov/authorities/names/n92085993",
+        "styles": "national_folk|late_romantic",
+        "primary_period": "late_romantic",
+        "style_source": "Gran Enciclopèdia de la Música https://www.enciclopedia.cat/gran-enciclopedia-de-la-musica/enric-morera-i-viura"
       },
-      "why": "Wikidata: Catalan composer, born 22 May 1865, as in the article. IMSLP has the same dates, lists \"Enric (Enrique) Morera i Viura\" and the same VIAF cluster (44491201). GND, LoC and BnF all give 1942; the day differs (11 or 12 March), which does not matter. The GND search also returns a namesake born 1959: choose the record by dates and occupation. The Identifiers section of the Wikidata page links GND, LoC, BnF and VIAF; cite the record you opened, not Wikidata."
+      "why": "Wikidata: Catalan composer, born 22 May 1865, as in the article. IMSLP has the same dates, lists \"Enric (Enrique) Morera i Viura\" and the same VIAF cluster (44491201). GND, LoC and BnF all give 1942; the day differs (11 or 12 March), which does not matter. The GND search also returns a namesake born 1959: choose the record by dates and occupation. The Identifiers section of the Wikidata page links GND, LoC, BnF and VIAF; cite the record you opened, not Wikidata. Style: the Gran Enciclopèdia de la Música, a national music encyclopaedia, says he built on Catalan folk song, \"sempre reinterpretat, mai copiat\", and that his sardanas and choral works were played everywhere: national_folk first. His harmony began under Wagner's influence, La fada is \"de clara influència wagneriana\", and his lowered scale degrees are a \"recurs propi del Romanticisme tardà\": late_romantic, which by language is also the period. Modernisme here is the Catalan art movement of about 1890–1910, not musical modernism; he was \"refractari a les innovacions tècniques\", so no 20th-century movement tag."
     },
     {
       "item": "P-C2",
@@ -35,9 +38,12 @@
         "death_status": "dead",
         "death_year": "1951",
         "death_source": "Dictionnaire universel des créatrices https://dictionnaire-creatrices.com/fiche-ernestina-lecuona-casado",
-        "notes": "No dates in GND or LoC; Wikipedia, Wikidata and IMSLP agree on 3 Sep 1951."
+        "notes": "No dates in GND or LoC; Wikipedia, Wikidata and IMSLP agree on 3 Sep 1951.",
+        "styles": "national_folk|early_20th_century",
+        "primary_period": "early_20th_century",
+        "style_source": "EcuRed (a wiki; no reference-level entry is free online) https://www.ecured.cu/Ernestina_Lecuona"
       },
-      "why": "IMSLP files her under the first surname only (Spanish double surname); the category lists \"Lecuona y Casado\" as an alternate name, the same dates and the same Wikidata item. Category:Lecuona,_Ernesto is her brother. GND has no record and LoC one without dates, so the date comes from level 2: the Dictionnaire universel des créatrices, which cites the New Grove Dictionary of Women Composers."
+      "why": "IMSLP files her under the first surname only (Spanish double surname); the category lists \"Lecuona y Casado\" as an alternate name, the same dates and the same Wikidata item. Category:Lecuona,_Ernesto is her brother. GND has no record and LoC one without dates, so the date comes from level 2: the Dictionnaire universel des créatrices, which cites the New Grove Dictionary of Women Composers. Style: her output is Cuban song genres (habaneras, criollas, guajiras, danzones, sones and \"sobre todo, boleros\", EcuRed, which cites Giro's Diccionario enciclopédico de la música en Cuba): national_folk. The dated boleros are from 1932 and 1936, and the bolero is a 20th-century idiom, so the period is early_20th_century, not romantic; her first piece (Luisa, 1897) does not carry the bulk. EcuRed is a wiki, so say so in style_source; with library access, the Norton/Grove Dictionary of Women Composers (1994) is the level-1 source."
     }
   ],
   "works": [

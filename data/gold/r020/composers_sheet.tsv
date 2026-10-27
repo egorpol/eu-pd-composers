@@ -1,0 +1,101 @@
+item	composer_id	name	wikipedia_url	wikidata_url	imslp_url	gnd_id	viaf_id	wikidata_same_person	imslp_check	imslp_found_url	death_status	death_year	death_source	styles	primary_period	style_source	notes
+C001	Q316427	Morton Feldman	https://en.wikipedia.org/wiki/Morton_Feldman	https://www.wikidata.org/wiki/Q316427	https://imslp.org/wiki/Category:Feldman,_Morton	118817124	5120580										
+C002	Q7146675	Patrick Hawes	https://en.wikipedia.org/wiki/Patrick_Hawes	https://www.wikidata.org/wiki/Q7146675		135313171	26778459										
+C003	Q229613	Carlos Gardel	https://en.wikipedia.org/wiki/Carlos_Gardel	https://www.wikidata.org/wiki/Q229613	https://imslp.org/wiki/Category:Gardel,_Carlos	118865188	56618280										
+C004	Q312638	Franco Alfano	https://en.wikipedia.org/wiki/Franco_Alfano	https://www.wikidata.org/wiki/Q312638	https://imslp.org/wiki/Category:Alfano,_Franco	122788346	85150886										
+C005	Q1825044	Niels Viggo Bentzon	https://en.wikipedia.org/wiki/Niels_Viggo_Bentzon	https://www.wikidata.org/wiki/Q1825044		124058132	105524298										
+C006	Q463194	Alexander Arutiunian	https://en.wikipedia.org/wiki/Alexander_Arutiunian	https://www.wikidata.org/wiki/Q463194	https://imslp.org/wiki/Category:Arutyunyan,_Alexander	103848622	114202100										
+C007	Q7964371	Walter Bricht	https://en.wikipedia.org/wiki/Walter_Bricht	https://www.wikidata.org/wiki/Q7964371		130123153	15868348										
+C008	Q673278	Roger Reynolds	https://en.wikipedia.org/wiki/Roger_Reynolds	https://www.wikidata.org/wiki/Q673278		121414558	114834544										
+C009	Q191499	Scott Joplin	https://en.wikipedia.org/wiki/Scott_Joplin	https://www.wikidata.org/wiki/Q191499	https://imslp.org/wiki/Category:Joplin,_Scott	119174030	56796614										
+C010	Q322256	Antonio Scontrino	https://en.wikipedia.org/wiki/Antonio_Scontrino	https://www.wikidata.org/wiki/Q322256	https://imslp.org/wiki/Category:Scontrino,_Antonio	117453404	50003292										
+C011	Q1066248	Charles Malherbe	https://en.wikipedia.org/wiki/Charles_Malherbe	https://www.wikidata.org/wiki/Q1066248	https://imslp.org/wiki/Category:Malherbe,_Charles	116694475	103647764										
+C012	Q189534	Arvo Pärt	https://en.wikipedia.org/wiki/Arvo_Pärt	https://www.wikidata.org/wiki/Q189534	https://imslp.org/wiki/Category:Pärt,_Arvo	119359979	111612090										
+C013	Q2074455	David Ashkenazi	https://en.wikipedia.org/wiki/David_Ashkenazi	https://www.wikidata.org/wiki/Q2074455			326144782723866567501										
+C014	Q532363	Christopher Gunning	https://en.wikipedia.org/wiki/Christopher_Gunning	https://www.wikidata.org/wiki/Q532363		13547499X	7598281										
+C015	Q5039771	Carl-Olof Anderberg	https://en.wikipedia.org/wiki/Carl-Olof_Anderberg	https://www.wikidata.org/wiki/Q5039771			29129965										
+C016	Q921023	Sem Dresden	https://en.wikipedia.org/wiki/Sem_Dresden	https://www.wikidata.org/wiki/Q921023	https://imslp.org/wiki/Category:Dresden,_Sem	133645606	49535018										
+C017	Q1391669	Farid El-Atrache	https://en.wikipedia.org/wiki/Farid_al-Atrash	https://www.wikidata.org/wiki/Q1391669		119080834	64191605										
+C018	Q294225	Enrique Granados	https://en.wikipedia.org/wiki/Enrique_Granados	https://www.wikidata.org/wiki/Q294225	https://imslp.org/wiki/Category:Granados,_Enrique	118639315	59269676										
+C019	Q8057855	Young-ja Lee	https://en.wikipedia.org/wiki/Young-ja_Lee	https://www.wikidata.org/wiki/Q8057855		1089229275	7312142										
+C020	Q6311579	Jun Yamaguchi	https://en.wikipedia.org/wiki/Jun_Yamaguchi	https://www.wikidata.org/wiki/Q6311579			257043866										
+C021	Q3131948	Walford Davies	https://en.wikipedia.org/wiki/Walford_Davies	https://www.wikidata.org/wiki/Q3131948	https://imslp.org/wiki/Category:Davies,_Henry_Walford	129290440	69130870										
+C022	Q6397282	Kevin Puts	https://en.wikipedia.org/wiki/Kevin_Puts	https://www.wikidata.org/wiki/Q6397282		139142991	68591756										
+C023	Q4830306	Axel Jørgensen	https://en.wikipedia.org/wiki/Axel_Jørgensen	https://www.wikidata.org/wiki/Q4830306	https://imslp.org/wiki/Category:Jørgensen,_Axel	142449237	19324813										
+C024	Q4701761	Aksel Agerby	https://en.wikipedia.org/wiki/Aksel_Agerby	https://www.wikidata.org/wiki/Q4701761	https://imslp.org/wiki/Category:Agerby,_Aksel	1011448556	170622849										
+C025	Q7793393	Thomas Rajna	https://en.wikipedia.org/wiki/Thomas_Rajna	https://www.wikidata.org/wiki/Q7793393		1089225415	10272008										
+C026	Q6668808	Lola Castegnaro	https://en.wikipedia.org/wiki/Lola_Castegnaro	https://www.wikidata.org/wiki/Q6668808			49056816										
+C027	Q1153170	Karel Goeyvaerts	https://en.wikipedia.org/wiki/Karel_Goeyvaerts	https://www.wikidata.org/wiki/Q1153170		11854036X	69224747										
+C028	Q1541977	Graham Waterhouse	https://en.wikipedia.org/wiki/Graham_Waterhouse	https://www.wikidata.org/wiki/Q1541977		12380678X	77231770										
+C029	Q705340	Menachem Avidom	https://en.wikipedia.org/wiki/Menachem_Avidom	https://www.wikidata.org/wiki/Q705340		132678470	117149464										
+C030	Q185040	Mily Balakirev	https://en.wikipedia.org/wiki/Mily_Balakirev	https://www.wikidata.org/wiki/Q185040	https://imslp.org/wiki/Category:Balakirev,_Mily	118652036	61730949										
+C031	Q4769404	Annie Patterson	https://en.wikipedia.org/wiki/Annie_Patterson	https://www.wikidata.org/wiki/Q4769404	https://imslp.org/wiki/Category:Patterson,_Annie		4501817										
+C032	Q2640499	Vladimir Martynov	https://en.wikipedia.org/wiki/Vladimir_Martynov	https://www.wikidata.org/wiki/Q2640499		129495395	116687749										
+C033	Q6425920	Koharik Gazarossian	https://en.wikipedia.org/wiki/Koharik_Gazarossian	https://www.wikidata.org/wiki/Q6425920		1047786915	1908856										
+C034	Q504743	Louis Andriessen	https://en.wikipedia.org/wiki/Louis_Andriessen	https://www.wikidata.org/wiki/Q504743		118503022	111315943										
+C035	Q6082771	Vakhtang Kakhidze	https://en.wikipedia.org/wiki/Vakhtang_Kakhidze	https://www.wikidata.org/wiki/Q6082771		130892238	14473885										
+C036	Q8079908	Đuro Živković	https://en.wikipedia.org/wiki/Đuro_Živković	https://www.wikidata.org/wiki/Q8079908		1054432929	296587036										
+C037	Q2827481	Ahmed Achour	https://en.wikipedia.org/wiki/Ahmed_Achour	https://www.wikidata.org/wiki/Q2827481													
+C038	Q88318	Heinrich Reimann	https://en.wikipedia.org/wiki/Heinrich_Reimann	https://www.wikidata.org/wiki/Q88318	https://imslp.org/wiki/Category:Reimann,_Heinrich	116414138	5195261										
+C039	Q7345682	Robert Hughes	https://en.wikipedia.org/wiki/Robert_Hughes_(composer,_born_1912)	https://www.wikidata.org/wiki/Q7345682		13441263X	119720553										
+C040	Q361762	Terig Tucci	https://en.wikipedia.org/wiki/Terig_Tucci	https://www.wikidata.org/wiki/Q361762			75571071										
+C041	Q8074481	Zorko Prelovec	https://en.wikipedia.org/wiki/Zorko_Prelovec	https://www.wikidata.org/wiki/Q8074481			171177923										
+C042	Q5622702	Guy d'Hardelot	https://en.wikipedia.org/wiki/Guy_d'Hardelot	https://www.wikidata.org/wiki/Q5622702	https://imslp.org/wiki/Category:Hardelot,_Guy_d'	138298416	196393										
+C043	Q690846	Giselher Klebe	https://en.wikipedia.org/wiki/Giselher_Klebe	https://www.wikidata.org/wiki/Q690846		118723405	84959538										
+C044	Q377032	Simeon ten Holt	https://en.wikipedia.org/wiki/Simeon_ten_Holt	https://www.wikidata.org/wiki/Q377032		103801359	117517801										
+C045	Q213905	Stefan Wolpe	https://en.wikipedia.org/wiki/Stefan_Wolpe	https://www.wikidata.org/wiki/Q213905	https://imslp.org/wiki/Category:Wolpe,_Stefan	119242141	49415628										
+C046	Q236438	Cécile Chaminade	https://en.wikipedia.org/wiki/Cécile_Chaminade	https://www.wikidata.org/wiki/Q236438	https://imslp.org/wiki/Category:Chaminade,_Cécile	118870912	76579842										
+C047	Q15505174	Huib Emmer	https://en.wikipedia.org/wiki/Huib_Emmer	https://www.wikidata.org/wiki/Q15505174		1146782357	42262743										
+C048	Q7373543	Roy Zu-Arets	https://en.wikipedia.org/wiki/Roy_Zu-Arets	https://www.wikidata.org/wiki/Q7373543													
+C049	Q7369050	Roslyn Brogue	https://en.wikipedia.org/wiki/Roslyn_Brogue	https://www.wikidata.org/wiki/Q7369050			34878601										
+C050	Q869751	George Dreyfus	https://en.wikipedia.org/wiki/George_Dreyfus	https://www.wikidata.org/wiki/Q869751		122130928	118416206										
+C051	Q312857	Eugène Ysaÿe	https://en.wikipedia.org/wiki/Eugène_Ysaÿe	https://www.wikidata.org/wiki/Q312857	https://imslp.org/wiki/Category:Ysaÿe,_Eugène	119306476	198011										
+C052	Q1170199	Heinz Werner Zimmermann	https://en.wikipedia.org/wiki/Heinz_Werner_Zimmermann	https://www.wikidata.org/wiki/Q1170199		121714306	35319428										
+C053	Q162113	Akira Miyoshi	https://en.wikipedia.org/wiki/Akira_Miyoshi	https://www.wikidata.org/wiki/Q162113		134464230	108838119										
+C054	Q206647	Henning Christiansen	https://en.wikipedia.org/wiki/Henning_Christiansen	https://www.wikidata.org/wiki/Q206647		120574675	57035219										
+C055	Q451495	Elfrida Andrée	https://en.wikipedia.org/wiki/Elfrida_Andrée	https://www.wikidata.org/wiki/Q451495	https://imslp.org/wiki/Category:Andrée,_Elfrida	123615615	69130046										
+C056	Q189729	Philip Glass	https://en.wikipedia.org/wiki/Philip_Glass	https://www.wikidata.org/wiki/Q189729	https://imslp.org/wiki/Category:Glass,_Philip	11895864X	64191786										
+C057	Q1611373	Hermann Haller	https://en.wikipedia.org/wiki/Hermann_Haller_(composer)	https://www.wikidata.org/wiki/Q1611373		121382753	116978076										
+C058	Q5955864	Thomas Pitfield	https://en.wikipedia.org/wiki/Thomas_Pitfield	https://www.wikidata.org/wiki/Q5955864		1089822758	224890929										
+C059	Q51859	Conrado del Campo	https://en.wikipedia.org/wiki/Conrado_del_Campo	https://www.wikidata.org/wiki/Q51859		1025616596	34722649										
+C060	Q78524	Alexander von Zemlinsky	https://en.wikipedia.org/wiki/Alexander_von_Zemlinsky	https://www.wikidata.org/wiki/Q78524	https://imslp.org/wiki/Category:Zemlinsky,_Alexander_von	11863643X	59271270										
+C061	Q2059201	Paul Corder	https://en.wikipedia.org/wiki/Paul_Corder	https://www.wikidata.org/wiki/Q2059201	https://imslp.org/wiki/Category:Corder,_Paul		21498048										
+C062	Q887846	Bob Chilcott	https://en.wikipedia.org/wiki/Bob_Chilcott	https://www.wikidata.org/wiki/Q887846		135343674	119561597										
+C063	Q151084	Joaquín Rodrigo	https://en.wikipedia.org/wiki/Joaquín_Rodrigo	https://www.wikidata.org/wiki/Q151084	https://imslp.org/wiki/Category:Rodrigo,_Joaquín	118866966	59270736										
+C064	Q323757	Jack Beeson	https://en.wikipedia.org/wiki/Jack_Beeson	https://www.wikidata.org/wiki/Q323757		10378845X	42262893										
+C065	Q6115732	Jack Westrup	https://en.wikipedia.org/wiki/Jack_Westrup	https://www.wikidata.org/wiki/Q6115732		118807056	95301414										
+C066	Q345876	Jules Mouquet	https://en.wikipedia.org/wiki/Jules_Mouquet	https://www.wikidata.org/wiki/Q345876	https://imslp.org/wiki/Category:Mouquet,_Jules	11714469X	19945538										
+C067	Q6264892	John Worley	https://en.wikipedia.org/wiki/John_Worley	https://www.wikidata.org/wiki/Q6264892		1139055577	50513096										
+C068	Q1507794	George Lloyd	https://en.wikipedia.org/wiki/George_Lloyd_(composer)	https://www.wikidata.org/wiki/Q1507794		135344514	94871203										
+C069	Q4424894	Reginald Smith Brindle	https://en.wikipedia.org/wiki/Reginald_Smith_Brindle	https://www.wikidata.org/wiki/Q4424894		119543389	19719251										
+C070	Q80621	Edvard Grieg	https://en.wikipedia.org/wiki/Edvard_Grieg	https://www.wikidata.org/wiki/Q80621	https://imslp.org/wiki/Category:Grieg,_Edvard	118697641	46946549										
+C071	Q5271266	Diana Pereira Hay	https://en.wikipedia.org/wiki/Diana_Pereira_Hay	https://www.wikidata.org/wiki/Q5271266													
+C072	Q219551	Ferruccio Busoni	https://en.wikipedia.org/wiki/Ferruccio_Busoni	https://www.wikidata.org/wiki/Q219551	https://imslp.org/wiki/Category:Busoni,_Ferruccio	118518011	44484509										
+C073	Q292350	Jeanne Demessieux	https://en.wikipedia.org/wiki/Jeanne_Demessieux	https://www.wikidata.org/wiki/Q292350	https://imslp.org/wiki/Category:Demessieux,_Jeanne	121911179	59271551										
+C074	Q83182	Ludovico Einaudi	https://en.wikipedia.org/wiki/Ludovico_Einaudi	https://www.wikidata.org/wiki/Q83182		128441100	85864760										
+C075	Q2066096	Josef Bardanashvili	https://en.wikipedia.org/wiki/Josef_Bardanashvili	https://www.wikidata.org/wiki/Q2066096		1061642933	479144782727021464216										
+C076	Q5598478	Graziella Concas	https://en.wikipedia.org/wiki/Graziella_Concas	https://www.wikidata.org/wiki/Q5598478													
+C077	Q7299190	Raymond Torres-Santos	https://en.wikipedia.org/wiki/Raymond_Torres-Santos	https://www.wikidata.org/wiki/Q7299190		1129266079	36508450										
+C078	Q1356854	Ernesto De Curtis	https://en.wikipedia.org/wiki/Ernesto_De_Curtis	https://www.wikidata.org/wiki/Q1356854	https://imslp.org/wiki/Category:De_Curtis,_Ernesto	129057487	59269184										
+C079	Q15485321	John Lambert	https://en.wikipedia.org/wiki/John_Lambert_(composer)	https://www.wikidata.org/wiki/Q15485321		134652045	75545500										
+C080	Q523464	André Wormser	https://en.wikipedia.org/wiki/André_Wormser	https://www.wikidata.org/wiki/Q523464	https://imslp.org/wiki/Category:Wormser,_André	117424277	19800026										
+C081	Q4857559	Bappa Mazumder	https://en.wikipedia.org/wiki/Bappa_Mazumder	https://www.wikidata.org/wiki/Q4857559			11976530										
+C082	Q1398795	Fausto Romitelli	https://en.wikipedia.org/wiki/Fausto_Romitelli	https://www.wikidata.org/wiki/Q1398795	https://imslp.org/wiki/Category:Romitelli,_Fausto	131864483	61774574										
+C083	Q163122	Ross Edwards	https://en.wikipedia.org/wiki/Ross_Edwards_(composer)	https://www.wikidata.org/wiki/Q163122		131584774	71587364										
+C084	Q187192	Erik Satie	https://en.wikipedia.org/wiki/Erik_Satie	https://www.wikidata.org/wiki/Q187192	https://imslp.org/wiki/Category:Satie,_Erik	118605690	88805508										
+C085	Q5372888	Emma Lomax	https://en.wikipedia.org/wiki/Emma_Lomax	https://www.wikidata.org/wiki/Q5372888													
+C086	Q432822	La Monte Young	https://en.wikipedia.org/wiki/La_Monte_Young	https://www.wikidata.org/wiki/Q432822		119352990	5464112										
+C087	Q7147350	Patrick Nunn	https://en.wikipedia.org/wiki/Patrick_Nunn	https://www.wikidata.org/wiki/Q7147350		1017468982	108051513										
+C088	Q5046241	Carrie Jacobs-Bond	https://en.wikipedia.org/wiki/Carrie_Jacobs-Bond	https://www.wikidata.org/wiki/Q5046241	https://imslp.org/wiki/Category:Jacobs-Bond,_Carrie	118988352	27258710										
+C089	Q6141143	James Penberthy	https://en.wikipedia.org/wiki/James_Penberthy	https://www.wikidata.org/wiki/Q6141143			41093562										
+C090	Q1290210	Eduard Toldrà	https://en.wikipedia.org/wiki/Eduard_Toldrà	https://www.wikidata.org/wiki/Q1290210	https://imslp.org/wiki/Category:Toldrà,_Eduard	119400812	19867267										
+C091	Q4994193	Svend S. Schultz	https://en.wikipedia.org/wiki/Svend_S._Schultz	https://www.wikidata.org/wiki/Q4994193		120889080	53173302										
+C092	Q1368007	Richard Arnell	https://en.wikipedia.org/wiki/Richard_Arnell	https://www.wikidata.org/wiki/Q1368007		134792491	91236559										
+C093	Q314867	Hermann Reutter	https://en.wikipedia.org/wiki/Hermann_Reutter	https://www.wikidata.org/wiki/Q314867		118744739	114986009										
+C094	Q7607136	Stella Stocker	https://en.wikipedia.org/wiki/Stella_Stocker	https://www.wikidata.org/wiki/Q7607136			46140503										
+C095	Q1183745	Naji Hakim	https://en.wikipedia.org/wiki/Naji_Hakim	https://www.wikidata.org/wiki/Q1183745		12853642X	34647090										
+C096	Q347030	Eduard Strauss	https://en.wikipedia.org/wiki/Eduard_Strauss	https://www.wikidata.org/wiki/Q347030	https://imslp.org/wiki/Category:Strauss,_Eduard	118755838	69116921										
+C097	Q5498371	Frederick May	https://en.wikipedia.org/wiki/Frederick_May_(composer)	https://www.wikidata.org/wiki/Q5498371			46643070										
+C098	Q267170	Meredith Monk	https://en.wikipedia.org/wiki/Meredith_Monk	https://www.wikidata.org/wiki/Q267170		119293188	39563831										
+C099	Q707300	Otakar Ostrčil	https://en.wikipedia.org/wiki/Otakar_Ostrčil	https://www.wikidata.org/wiki/Q707300	https://imslp.org/wiki/Category:Ostrčil,_Otakar	12497032X	54340655										
+C100	Q619319	Alberto Jonás	https://en.wikipedia.org/wiki/Alberto_Jonás	https://www.wikidata.org/wiki/Q619319	https://imslp.org/wiki/Category:Jonás,_Alberto	173905684	9418098										

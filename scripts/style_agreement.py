@@ -71,6 +71,43 @@ def cohens_kappa(pairs: list[tuple[str, str]]) -> float | None:
     return (po - pe) / (1.0 - pe)
 
 
+def masi_distance(a: Iterable[str], b: Iterable[str]) -> float:
+    """MASI distance for set-valued labels (Passonneau 2006): 1 − Jaccard × monotonicity.
+
+    Monotonicity is 1 for equal sets, 2/3 when one contains the other, 1/3 when they only
+    overlap, 0 when disjoint. Two empty sets (both abstain) are identical.
+    """
+    sa, sb = set(a), set(b)
+    if sa == sb:
+        return 0.0
+    if not sa & sb:
+        return 1.0
+    monotonicity = 2 / 3 if sa <= sb or sb <= sa else 1 / 3
+    return 1.0 - jaccard(sa, sb) * monotonicity
+
+
+def krippendorff_alpha(units: list[list[Any]], distance: Any = None) -> float | None:
+    """Krippendorff's α for any number of coders, missing values allowed.
+
+    `units` holds the values coders gave each unit; units with fewer than two values are not
+    pairable and drop out. `distance(a, b)` defaults to nominal (0 if equal, else 1).
+    """
+    delta = distance or (lambda a, b: 0.0 if a == b else 1.0)
+    pairable = [u for u in units if len(u) >= 2]
+    values = [v for u in pairable for v in u]
+    n = len(values)
+    if n < 2:
+        return None
+    observed = sum(
+        sum(delta(a, b) for i, a in enumerate(u) for j, b in enumerate(u) if i != j) / (len(u) - 1)
+        for u in pairable
+    ) / n
+    expected = sum(delta(a, b) for i, a in enumerate(values) for j, b in enumerate(values) if i != j) / (n * (n - 1))
+    if expected == 0:
+        return 1.0 if observed == 0 else None
+    return 1.0 - observed / expected
+
+
 def micro_pr(
     preds: list[set[str]], refs: list[set[str]]
 ) -> tuple[float | None, float | None, float | None]:
