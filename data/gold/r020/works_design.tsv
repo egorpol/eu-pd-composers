@@ -1,0 +1,151 @@
+item	work_id	stratum	stratum_size	stratum_sample	weight	recheck	package
+W001	Schwanensang, Op.11 (Schreker, Franz)	imslp/none	20569	69	298.1014	false	1
+W002	Pastoral Suite (Scott, Cyril)	imslp/eu_warning	4510	32	140.9375	false	1
+W003	Le Fuseau, Op.48 (Ferrari, Gabrielle)	llm	364	9	40.4444	false	1
+W004	3 Little Negro Dances (Price, Florence)	imslp/none	20569	69	298.1014	true	1
+W005	Melodies of the Heart, Op.5 (Grieg, Edvard)	imslp/none	20569	69	298.1014	true	1
+W006	Paean (Fine, Vivian)	imslp/other_rights	3426	28	122.3571	true	1
+W007	String Quartet No.6 (Hindemith, Paul)	imslp/eu_warning	4510	32	140.9375	false	1
+W008	Chant des bateliers du Volga, KN15 (Stravinsky, Igor)	unlabelled	56	6	9.3333	true	1
+W009	Piano Sonata in D major (Sauguet, Henri)	imslp/other_rights	3426	28	122.3571	true	1
+W010	Ring Out Your Bells (Vaughan Williams, Ralph)	imslp/eu_warning	4510	32	140.9375	true	1
+W011	Našim hrdinům, Op.289 (Fučík, Julius)	imslp/none	20569	69	298.1014	false	1
+W012	Entrata e Scherzetto (Ropartz, Guy)	imslp/none	20569	69	298.1014	true	1
+W013	Serenata, for Solo Piano (Falla, Manuel de)	title	108	6	18.0	true	1
+W014	Clarinet Quintet, Op.10 (Coleridge-Taylor, Samuel)	imslp/none	20569	69	298.1014	true	1
+W015	Schwur im Rütli, WoO 9 (Draeseke, Felix)	imslp/none	20569	69	298.1014	false	1
+W016	Suite No.2, Op.38 (Bernard, Émile)	imslp/none	20569	69	298.1014	false	1
+W017	Symphony in B-flat (Hindemith, Paul)	imslp/eu_warning	4510	32	140.9375	true	1
+W018	Herod, Op.47 (Coleridge-Taylor, Samuel)	imslp/none	20569	69	298.1014	false	1
+W019	Tune Thy Music (Howells, Herbert)	imslp/other_rights	3426	28	122.3571	true	1
+W020	Magyar népi muzsika, Op.42 (Weiner, Leó)	imslp/eu_warning	4510	32	140.9375	true	1
+W021	4 Waltzes, Op.9 (Knorr, Iwan)	imslp/none	20569	69	298.1014	false	1
+W022	Häi Yàn Zhī Gê (Wong, Fu Tong)	llm	364	9	40.4444	false	1
+W023	Afterwards, love (Hardelot, Guy d')	imslp/none	20569	69	298.1014	true	1
+W024	Rimbaud-Gedicht (Eisler, Hanns)	imslp/eu_warning	4510	32	140.9375	true	1
+W025	Snöfrid (Andrée, Elfrida)	imslp/none	20569	69	298.1014	false	1
+W026	Les malheurs d'Orphée, Op.85 (Milhaud, Darius)	imslp/other_rights	3426	28	122.3571	false	1
+W027	3 Anthems for Church Service, Op.6 (Chadwick, George Whitefield)	imslp/none	20569	69	298.1014	true	1
+W028	String Quartet No.8, WVE-180 (Kan-no, Shigeru)	imslp/other_rights	3426	28	122.3571	false	1
+W029	3 Pièces, Op.21 (Widor, Charles-Marie)	imslp/none	20569	69	298.1014	false	1
+W030	Divertimento No.1, Op.20 (Weiner, Leó)	imslp/eu_warning	4510	32	140.9375	false	1
+W031	Musique pour les soupers du Roi Ubu (Zimmermann, Bernd Alois)	llm	364	9	40.4444	false	2
+W032	Suite No.2 for Solo Cello, B.94 (Bloch, Ernest)	imslp/eu_warning	4510	32	140.9375	false	2
+W033	Le ruisseau, Op.29 (Carreño, Teresa)	imslp/none	20569	69	298.1014	false	2
+W034	Tonerna (Haquinius, Algot)	imslp/eu_warning	4510	32	140.9375	false	2
+W035	2 Morceaux, Op.37 (Hubay, Jenő)	imslp/none	20569	69	298.1014	false	2
+W036	Overture for Small Orchestra (Krása, Hans)	imslp/other_rights	3426	28	122.3571	false	2
+W037	Foxtrot for Orchestra (Ostijn, Willy)	imslp/none	20569	69	298.1014	false	2
+W038	Violin Sonata No.2 (Martin, Frank)	title	108	6	18.0	false	2
+W039	5 Chorale Preludes, Op.1 (Raphael, Günter)	imslp/eu_warning	4510	32	140.9375	false	2
+W040	2 Songs by Laura for the Second Scene of 'The Stone Guest', Op.51 (Gnesin, Mikhail)	imslp/eu_warning	4510	32	140.9375	false	2
+W041	Amparito Roca (Teixidor, Jaime)	unlabelled	56	6	9.3333	false	2
+W042	3 Songs, Op.19 (Aulin, Tor)	imslp/none	20569	69	298.1014	false	2
+W043	2 Pieces, Op.53 (Blumenfeld, Felix)	imslp/none	20569	69	298.1014	false	2
+W044	2 Nocturnes, Op.55 (Pedrell, Felipe)	imslp/none	20569	69	298.1014	false	2
+W045	Meditation for Violin and Piano (Sydeman, William Jay)	imslp/other_rights	3426	28	122.3571	false	2
+W046	Prelude in A-flat major (Cui, César)	imslp/none	20569	69	298.1014	false	2
+W047	7 Short Pieces in the First Position, Op.112 (Nölck, August)	imslp/none	20569	69	298.1014	false	2
+W048	På floden, EM 197 (Melartin, Erkki)	imslp/none	20569	69	298.1014	false	2
+W049	Clair de lune (Debussy, Claude)	llm	364	9	40.4444	false	2
+W050	Sonata for Violin and Double Bass (Lourié, Arthur)	imslp/eu_warning	4510	32	140.9375	false	2
+W051	Links g'schaut!, Op.185 (Ziehrer, Karl Michael)	imslp/none	20569	69	298.1014	false	2
+W052	15 Lieder, Op.55 (Reger, Max)	imslp/none	20569	69	298.1014	false	2
+W053	En prière (Fauré, Gabriel)	imslp/other_rights	3426	28	122.3571	false	2
+W054	Anacaona (Blacher, Boris)	imslp/other_rights	3426	28	122.3571	false	2
+W055	Dialoge (Zimmermann, Bernd Alois)	imslp/other_rights	3426	28	122.3571	false	2
+W056	The Enchanted Garden (Coates, Eric)	imslp/eu_warning	4510	32	140.9375	false	2
+W057	Viola Sonata (Labey, Marcel)	imslp/eu_warning	4510	32	140.9375	false	2
+W058	Petit prélude No.2 (Cui, César)	imslp/none	20569	69	298.1014	false	2
+W059	Violin Sonata No.1, Op.12 (Gédalge, André)	imslp/none	20569	69	298.1014	false	2
+W060	Symphony No.1, Op.10 (Shostakovich, Dmitry)	imslp/other_rights	3426	28	122.3571	false	2
+W061	Piano Sonata No.3, KSS 29 (Sorabji, Kaikhosru Shapurji)	imslp/other_rights	3426	28	122.3571	false	3
+W062	Rimembranza, Op.88 (Chaminade, Cécile)	imslp/none	20569	69	298.1014	false	3
+W063	4 Impromptus, SO 300a (Ornstein, Leo)	imslp/other_rights	3426	28	122.3571	false	3
+W064	Horn Concerto (Hindemith, Paul)	imslp/eu_warning	4510	32	140.9375	false	3
+W065	Champagne-valse (Albéniz, Isaac)	imslp/none	20569	69	298.1014	false	3
+W066	3 Easy Impromptus, Op.86 (Mackenzie, Alexander Campbell)	imslp/none	20569	69	298.1014	false	3
+W067	3 Morceaux for Piano, Op.9 (Kosenko, Viktor)	imslp/none	20569	69	298.1014	false	3
+W068	Cello Sonata (Jaëll, Marie)	imslp/none	20569	69	298.1014	false	3
+W069	Symphony No.3, H.186 (Honegger, Arthur)	imslp/none	20569	69	298.1014	false	3
+W070	Travel's End (Price, Florence)	imslp/none	20569	69	298.1014	false	3
+W071	Ne tu pecché mo faie? (Denza, Luigi)	imslp/none	20569	69	298.1014	false	3
+W072	Auraria de Turda (Nichifor, Serban)	unlabelled	56	6	9.3333	false	3
+W073	Sextet (Etler, Alvin)	title	108	6	18.0	false	3
+W074	Peut-être (Saint-Saëns, Camille)	imslp/none	20569	69	298.1014	false	3
+W075	8 Instrumental Miniatures, K037 (Stravinsky, Igor)	llm	364	9	40.4444	false	3
+W076	Canto e ballo sardo (Casella, Alfredo)	imslp/none	20569	69	298.1014	false	3
+W077	Alla campagna, Op.5 (Floridia, Pietro)	imslp/none	20569	69	298.1014	false	3
+W078	Litanies à la Vierge Noire, FP 82 (Poulenc, Francis)	imslp/eu_warning	4510	32	140.9375	false	3
+W079	Tristesse au jardin, Op.52 (Schmitt, Florent)	imslp/eu_warning	4510	32	140.9375	false	3
+W080	3 Morceaux, Op.4-6, BV 197 (Busoni, Ferruccio)	imslp/none	20569	69	298.1014	false	3
+W081	Incantations I (Alexandra, Liana)	imslp/other_rights	3426	28	122.3571	false	3
+W082	Visual Modulation of a Musical Structural Motive (Alexandra, Liana)	llm	364	9	40.4444	false	3
+W083	6 Gedichte, Op.10 (Bronsart, Ingeborg)	imslp/none	20569	69	298.1014	false	3
+W084	Chopsticks Tango Fantastico (Manookian, Jeff)	imslp/other_rights	3426	28	122.3571	false	3
+W085	Bach's 300th (Sydeman, William Jay)	imslp/other_rights	3426	28	122.3571	false	3
+W086	Suite brève pour de jeunes pianistes (Desenclos, Alfred)	imslp/eu_warning	4510	32	140.9375	false	3
+W087	A Musing for Violin and Piano (Sydeman, William Jay)	imslp/other_rights	3426	28	122.3571	false	3
+W088	Lyric Poem, Op.35 (Goossens, Eugene)	imslp/eu_warning	4510	32	140.9375	false	3
+W089	Petite caprice (Ketèlbey, Albert William)	imslp/eu_warning	4510	32	140.9375	false	3
+W090	La naissance de la lyre, Op.24 (Roussel, Albert)	imslp/none	20569	69	298.1014	false	3
+W091	Cadenzas to Haydn's Keyboard Concerto in C major (Manookian, Jeff)	title	108	6	18.0	false	4
+W092	Skærsommerduft, Op.4 (Nielsen, Ludolf)	imslp/none	20569	69	298.1014	false	4
+W093	Spre stele (Nichifor, Serban)	imslp/other_rights	3426	28	122.3571	false	4
+W094	Klang-Meditation VII for Organ solo (Kan-no, Shigeru)	title	108	6	18.0	false	4
+W095	Happy Heart (Carse, Adam)	imslp/eu_warning	4510	32	140.9375	false	4
+W096	Piano Pieces, Op.67 (Scott, Cyril)	imslp/eu_warning	4510	32	140.9375	false	4
+W097	Don Juan Marana (Enna, August)	imslp/none	20569	69	298.1014	false	4
+W098	Violin Concerto No.2, Op.63 (Prokofiev, Sergey)	imslp/none	20569	69	298.1014	false	4
+W099	Chants d'Espagne, Op.232 (Albéniz, Isaac)	imslp/other_rights	3426	28	122.3571	false	4
+W100	Dayosh' i Dayosh' (Roslavets, Nikolay)	imslp/none	20569	69	298.1014	false	4
+W101	Piano Sonata No.5 in D minor, Op.12 (Mosolov, Alexander)	imslp/other_rights	3426	28	122.3571	false	4
+W102	5 Irish Folk Tunes (Ferguson, Howard)	imslp/other_rights	3426	28	122.3571	false	4
+W103	3 Études transcendantes (Tansman, Alexandre)	imslp/other_rights	3426	28	122.3571	false	4
+W104	Concerto for Oboe and Chamber Ensemble (Maderna, Bruno)	imslp/none	20569	69	298.1014	false	4
+W105	8 Romances after Pushkin, Op.26 (Feinberg, Samuil)	imslp/eu_warning	4510	32	140.9375	false	4
+W106	Gurre-Lieder (Schoenberg, Arnold)	imslp/none	20569	69	298.1014	false	4
+W107	En Pastel, Op.30 (Noskowski, Zygmunt)	imslp/none	20569	69	298.1014	false	4
+W108	Sempre Scherzando (Sauer, Emil von)	imslp/none	20569	69	298.1014	false	4
+W109	Minuetto Serio (Kodály, Zoltán)	imslp/eu_warning	4510	32	140.9375	false	4
+W110	Dramatic Dances (Bantock, Granville)	imslp/none	20569	69	298.1014	false	4
+W111	The Smugglers (Sousa, John Philip)	imslp/none	20569	69	298.1014	false	4
+W112	Canoeing (Pryor, Arthur)	unlabelled	56	6	9.3333	false	4
+W113	Epitaph for a Martyr without Tomb (Nichifor, Serban)	imslp/other_rights	3426	28	122.3571	false	4
+W114	Den gamle Skovvei huer mig vel, CNW 281 (Nielsen, Carl)	imslp/none	20569	69	298.1014	false	4
+W115	Galileo (Eisler, Hanns)	imslp/eu_warning	4510	32	140.9375	false	4
+W116	Ulvens søn, CNW 11 (Nielsen, Carl)	imslp/none	20569	69	298.1014	false	4
+W117	Las Mañanitas (Ponce, Manuel)	llm	364	9	40.4444	false	4
+W118	Søvnen, Op.18 (Nielsen, Carl)	imslp/none	20569	69	298.1014	false	4
+W119	Aleluya (Bernal Jiménez, Miguel)	imslp/none	20569	69	298.1014	false	4
+W120	Confortare (Dyson, George)	imslp/eu_warning	4510	32	140.9375	false	4
+W121	In the Shadow of St Paul's (Ketèlbey, Albert William)	imslp/eu_warning	4510	32	140.9375	false	5
+W122	Avril est amoureux (Massenet, Jules)	imslp/none	20569	69	298.1014	false	5
+W123	String Quartet No.5, Op.33 (Kallstenius, Edvin)	imslp/eu_warning	4510	32	140.9375	false	5
+W124	5 Poèmes de Max Jacob, FP 59 (Poulenc, Francis)	imslp/eu_warning	4510	32	140.9375	false	5
+W125	Trilogia piccola, Op.1 (Leifs, Jón)	unlabelled	56	6	9.3333	false	5
+W126	Danmark, Op.39 (Nielsen, Ludolf)	llm	364	9	40.4444	false	5
+W127	3 Songs, Op.20 (Melartin, Erkki)	title	108	6	18.0	false	5
+W128	Fugue in E-flat major (Ravel, Maurice)	imslp/none	20569	69	298.1014	false	5
+W129	Studentenball-Tänze, Op.101 (Strauss, Eduard)	imslp/none	20569	69	298.1014	false	5
+W130	Etude (Roslavets, Nikolay)	imslp/none	20569	69	298.1014	false	5
+W131	2 Pieces for Piano, Op.42 (Foote, Arthur)	imslp/none	20569	69	298.1014	false	5
+W132	Prélude et Fugue, Op.25 (Catoire, Georgy)	imslp/none	20569	69	298.1014	false	5
+W133	La bataille des éperons d'or (Gevaert, François-Auguste)	imslp/none	20569	69	298.1014	false	5
+W134	3 Mélodies, IES 33 (Satie, Erik)	imslp/none	20569	69	298.1014	false	5
+W135	Allegretto, Op.1 (Vierne, Louis)	imslp/other_rights	3426	28	122.3571	false	5
+W136	Bunte Reihe, Op.61 (Fetrás, Oscar)	imslp/none	20569	69	298.1014	false	5
+W137	Dumka and Furiant, Op.12 (Dvořák, Antonín)	imslp/none	20569	69	298.1014	false	5
+W138	2 Serenades for Violin and Orchestra, Op.69 (Sibelius, Jean)	imslp/eu_warning	4510	32	140.9375	false	5
+W139	Yɛn Ara Asaase Ni (Amu, Ephraim)	imslp/other_rights	3426	28	122.3571	false	5
+W140	Symphony No.14 'Canti Mariani' (Nichifor, Serban)	imslp/other_rights	3426	28	122.3571	false	5
+W141	6 Morceaux pour 2 Pianos, Op.41 (Glière, Reinhold)	imslp/eu_warning	4510	32	140.9375	false	5
+W142	Jazz Sonata, W.43 (Antheil, George)	imslp/eu_warning	4510	32	140.9375	false	5
+W143	Gaúcho (Gonzaga, Chiquinha)	imslp/none	20569	69	298.1014	false	5
+W144	Bénédiction nuptiale, Op.9 (Saint-Saëns, Camille)	imslp/none	20569	69	298.1014	false	5
+W145	Jocuri (Tăutu, Cornelia)	imslp/other_rights	3426	28	122.3571	false	5
+W146	The Snow Lay on the Ground (Sowerby, Leo)	unlabelled	56	6	9.3333	false	5
+W147	Courante and Trio (Sauer, Emil von)	imslp/none	20569	69	298.1014	false	5
+W148	String Quartet 'Dances of St. Gregory' (Manookian, Jeff)	imslp/other_rights	3426	28	122.3571	false	5
+W149	Ud går du nu på livets vej (Nielsen, Carl)	llm	364	9	40.4444	false	5
+W150	Trombone Concerto (Rimsky-Korsakov, Nikolay)	imslp/none	20569	69	298.1014	false	5
