@@ -224,6 +224,8 @@ const TABS = [
   { id: "export", label: "Progress & export" },
 ];
 const COLLS = ["answers", "recheck", "practice"];
+// Sheet source in S.data → store collection → file in data/gold/<dump>/.
+const SHEETS = [["composers", "answers", "composers_sheet.tsv"], ["works", "answers", "works_sheet.tsv"], ["composers_recheck", "recheck", "composers_recheck.tsv"], ["works_recheck", "recheck", "works_recheck.tsv"]];
 // A sample without re-check items (a second annotator's overlap set) has no re-check tabs.
 const shownTabs = () => TABS.filter(t => !t.lockOf || !S.data || S.data[t.src].length);
 const DAY = 86400000;
@@ -718,7 +720,9 @@ function renderLock(main, tab, L) {
 function tsvFor(src, coll) {
   const kind = src.startsWith("composers") ? "c" : "w";
   const cols = [...SHEET_COLS[kind], ...FIELDS[kind]];
-  const clean = s => String(s ?? "").replace(/[\t\r\n]+/g, " ").trim();
+  // A cell holding a quote is quoted as pandas writes it, so a note opening with an unclosed quote can't swallow
+  // the rows after it when the sheet is read back.
+  const clean = s => { const t = String(s ?? "").replace(/[\t\r\n]+/g, " ").trim(); return t.includes('"') ? '"' + t.replace(/"/g, '""') + '"' : t; };
   const lines = [cols.join("\t")];
   for (const it of S.data[src]) { const v = val(coll, it.item); lines.push(cols.map(c => clean(c in it ? it[c] : v[c])).join("\t")); }
   return lines.join("\n") + "\n";
@@ -739,10 +743,12 @@ function renderExport(main) {
   wrap.append(el("p", { class: "help", text: "Estimate: " + perComposer + " minutes per composer, 1 per work. Done means every required answer is filled; started items count as not done." }));
   wrap.append(el("h2", { text: "Export" }));
   const local = !window.claude?.use;
-  wrap.append(el("p", { text: "On claude.ai, Claude reads your answers from this page's store and writes them into data/gold/" + S.data.dump + "/. In a local copy, Copy a sheet to paste it over its file in your repository, or Download it to send by email. Each sheet is complete, as TSV in the original row order." }));
+  wrap.append(el("p", { text: S.gh
+    ? "Your answers are saved to GitHub a few seconds after each change, so there is nothing to send. Copy and Download below are only a backup. Practice answers stay in this browser."
+    : "On claude.ai, Claude reads your answers from this page's store and writes them into data/gold/" + S.data.dump + "/. In a local copy, Copy a sheet to paste it over its file in your repository, or Download it to send by email. Each sheet is complete, as TSV in the original row order." }));
   const box = el("textarea", { class: "dump", id: "tsvbox", readonly: "", "aria-label": "Copied TSV" }); box.hidden = true;
   const ex = el("div", { class: "exports" });
-  for (const [src, coll, file] of [["composers", "answers", "composers_sheet.tsv"], ["works", "answers", "works_sheet.tsv"], ["composers_recheck", "recheck", "composers_recheck.tsv"], ["works_recheck", "recheck", "works_recheck.tsv"]].filter(([src]) => S.data[src].length)) {
+  for (const [src, coll, file] of SHEETS.filter(([src]) => S.data[src].length)) {
     const msg = el("span", { class: "help", text: "" });
     const b = el("button", { class: "nav", type: "button", id: "copy-" + src, text: "Copy" });
     b.onclick = () => {
@@ -789,15 +795,125 @@ function onServer() {
 }
 // Outside claude.ai (a local build opened in a browser) answers live in localStorage,
 // behind the same calls the page makes on the artifact's store.
-function localDb(dump) {
-  const key = c => "goldset." + dump + "." + c, subs = {};
+function localDb(name) {
+  const key = c => "goldset." + name + "." + c, subs = {};
   const read = c => { try { return JSON.parse(localStorage.getItem(key(c))) || {}; } catch { return {}; } };
   const snap = c => ({ docs: Object.entries(read(c)).map(([id, d]) => ({ id, exists: true, data: () => d })) });
+  const write = (c, m) => { localStorage.setItem(key(c), JSON.stringify(m)); (subs[c] || []).forEach(f => f(snap(c))); };
   localStorage.setItem(key("probe"), "{}"); localStorage.removeItem(key("probe"));
   return {
+    all: read, replace: write,
     collection: c => ({
-      doc: id => ({ async set(body) { const m = read(c); m[id] = body; localStorage.setItem(key(c), JSON.stringify(m)); (subs[c] || []).forEach(f => f(snap(c))); } }),
+      doc: id => ({ async set(body) { const m = read(c); m[id] = body; write(c, m); } }),
       onSnapshot(next) { (subs[c] ||= []).push(next); setTimeout(() => next(snap(c)), 0); return () => {}; },
+    }),
+  };
+}
+// A contributor's hosted page (kit --repo) keeps answers in this browser first and commits the sheets to the
+// contributor's repository a few seconds after each change, with the key from their personal link (#key=…).
+// It loads the repository's sheets before its first commit, so a new browser never overwrites answers given
+// elsewhere; unsent changes here win over the repository's copy of the same item.
+function githubSync(gh, db) {
+  const name = S.data.dump + "." + gh.annotator;
+  const m = location.hash.match(/(?:^#|&)key=([\w-]+)/);
+  if (m) { store.set("key." + name, m[1]); history.replaceState(null, "", location.pathname + location.search); }
+  const key = store.get("key." + name);
+  if (!key) return null;
+  const api = "https://api.github.com/repos/" + gh.repo + "/contents/" + gh.dir + "/";
+  const headers = { Authorization: "Bearer " + key, Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" };
+  const sheets = SHEETS.filter(([src]) => S.data[src].length);
+  const sha = {}, sent = {}, changed = new Set();
+  let timer = null, busy = false, again = false, loaded = false, dead = false, wait = 0;
+  const pending = v => v === undefined ? store.get("pending." + name) : store.set("pending." + name, v);
+  const time = () => new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  const b64 = text => {
+    const bytes = new TextEncoder().encode(text); let s = "";
+    for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+    return btoa(s);
+  };
+  const unb64 = s => new TextDecoder().decode(Uint8Array.from(atob(s.replace(/\s/g, "")), c => c.charCodeAt(0)));
+  async function get(file) {
+    const res = await fetch(api + file + "?ref=" + enc(gh.branch), { headers, cache: "no-store" });
+    if (!res.ok) throw res;
+    const body = await res.json();
+    sha[file] = body.sha;
+    return unb64(body.content);
+  }
+  async function put(file, text, message, keepalive) {
+    const res = await fetch(api + file, { method: "PUT", headers, keepalive, body: JSON.stringify({ message, content: b64(text), sha: sha[file], branch: gh.branch }) });
+    if (!res.ok) throw res;
+    sha[file] = (await res.json()).content.sha;
+  }
+  async function load() {
+    const unsent = pending();
+    for (const [src, coll, file] of sheets) {
+      const text = await get(file);
+      const fields = FIELDS[src.startsWith("composers") ? "c" : "w"];
+      const known = new Set(S.data[src].map(it => it.item));
+      const cell = c => /^".*"$/.test(c) ? c.slice(1, -1).replace(/""/g, '"') : c;
+      const [head, ...rows] = text.split(/\r?\n/).filter(Boolean).map(l => l.split("\t").map(cell));
+      const have = db.all(coll);
+      for (const r of rows) {
+        const row = Object.fromEntries(head.map((h, i) => [h, r[i] ?? ""]));
+        if (!known.has(row.item) || (unsent && have[row.item])) continue;
+        const body = { item: row.item };
+        for (const f of fields) body[f] = row[f] ?? "";
+        if (fields.some(f => body[f])) have[row.item] = { ...(have[row.item] || {}), ...body };
+      }
+      db.replace(coll, have);
+      sent[file] = text;
+    }
+    loaded = true;
+  }
+  function fail(res) {
+    const denied = res && (res.status === 401 || res.status === 404 || (res.status === 403 && res.headers.get("x-ratelimit-remaining") !== "0" && !res.headers.get("retry-after")));
+    if (denied) {
+      dead = true; conn("Not saving to GitHub", true);
+      banner("The key in your link doesn't work. Your answers are safe in this browser: keep working, and ask the person who invited you for a new link.");
+      return;
+    }
+    wait = Math.min((wait || 7.5) * 2, 300);
+    conn("Not saved to GitHub yet, retrying", true);
+    schedule(wait * 1000);
+  }
+  function schedule(ms = 4000) { if (!dead) { clearTimeout(timer); timer = setTimeout(push, ms); } }
+  async function push(keepalive = false) {
+    clearTimeout(timer); timer = null;
+    if (dead) return;
+    if (busy) { again = true; return; }
+    busy = true;
+    const ids = [...changed]; changed.clear();
+    const message = gh.annotator + ": " + (ids.length ? ids.slice(0, 8).join(", ") + (ids.length > 8 ? " and " + (ids.length - 8) + " more" : "") : "answers");
+    try {
+      if (!loaded) { conn("Loading from GitHub…"); await load(); }
+      for (const [src, coll, file] of sheets) {
+        const text = tsvFor(src, coll);
+        if (text === sent[file]) continue;
+        conn("Saving to GitHub…");
+        try { await put(file, text, message, keepalive); }
+        catch (res) { if (!(res instanceof Response) || ![409, 422].includes(res.status)) throw res; await get(file); await put(file, text, message, keepalive); }
+        sent[file] = text;
+      }
+      wait = 0; pending(false);
+      conn(ids.length ? "Saved to GitHub " + time() : "Connected to GitHub");
+    } catch (res) {
+      ids.forEach(id => changed.add(id));
+      fail(res instanceof Response ? res : null);
+    } finally {
+      busy = false;
+      if (again) { again = false; push(); }
+    }
+  }
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden" && loaded && (timer || changed.size)) push(true); });
+  schedule(0);
+  return {
+    collection: c => ({
+      doc: id => ({ async set(body) {
+        await db.collection(c).doc(id).set(body);
+        // Practice answers never leave the browser.
+        if (c !== "practice") { changed.add(id); pending(true); if (!dead) { conn("Saving to GitHub…"); schedule(); } }
+      } }),
+      onSnapshot: (...a) => db.collection(c).onSnapshot(...a),
     }),
   };
 }
@@ -811,7 +927,23 @@ async function boot() {
     $("#main").innerHTML = ""; $("#main").append(el("div", { class: "panel" }, el("h2", { text: "No items in this page" }), el("p", { text: "Build it from the sheets: python scripts/gold_set.py form --dump <dump>." })));
     return;
   }
+  const gh = S.data.github;
+  if (gh) {
+    S.gh = true;
+    $("#conn").after(el("span", { class: "top-links" }, ext(gh.guide, "Guide"), ext(gh.rules, "Rules")));
+  }
   render();
+  if (gh) {
+    let db = null;
+    try { db = localDb(S.data.dump + "." + gh.annotator); } catch {}
+    if (!db) { conn("Not saving", true); banner("This browser blocks saving (private window?). Open your link in a normal window."); S.readOnly = true; return; }
+    S.db = githubSync(gh, db);
+    if (!S.db) {
+      S.db = db; S.gh = false;
+      banner("Open this page from your personal link to save your answers to GitHub. Until then they are saved in this browser only.");
+    }
+    return subscribe(true);
+  }
   if (!window.claude?.use) {
     try { S.db = localDb(S.data.dump); } catch { S.db = null; }
     if (S.db) { banner("Local copy: answers are saved in this browser only. Copy them into data/gold/" + S.data.dump + "/ from Progress & export."); return subscribe(true); }
@@ -838,7 +970,8 @@ function subscribe(local) {
       const m = {};
       for (const d of snap.docs) m[d.id] = d.data();
       S.server[c] = m;
-      if (++first >= COLLS.length) conn(local ? "Saving in this browser" : S.readOnly ? "Read only" : "Saving to this page");
+      // On a hosted page githubSync reports the GitHub state instead.
+      if (++first >= COLLS.length && !S.gh) conn(local ? "Saving in this browser" : S.readOnly ? "Read only" : "Saving to this page");
       onServer();
     }, err => {
       conn("Connection lost", true);

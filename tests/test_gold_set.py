@@ -688,6 +688,75 @@ def test_v2_kit_holds_only_the_packages_and_the_style_rules(tmp_path, monkeypatc
     assert sheet[list(gs.answer_fields("composers", sheet.columns))].eq("").all().all()
 
 
+def _assert_guide_variant(text: str, *, link: bool) -> None:
+    assert "<!--" not in text and "__" not in text
+    body = text[text.index("## Steps"):text.index("## Your data")]
+    steps = [line for line in body.splitlines() if re.match(r"^[1-6]\. ", line)]
+    assert [s[:3] for s in steps] == ["1. ", "2. ", "3. ", "4. ", "5. ", "6. "]
+    numbered = [i for i, line in enumerate(body.splitlines()) if re.match(r"^[1-6]\. ", line)]
+    for a, b in zip(numbered, numbered[1:]):
+        between = body.splitlines()[a + 1:b]
+        # No blank line between a marker's neighbours inside the numbered list.
+        assert not (len(between) == 1 and between[0] == "")
+    if link:
+        assert "Open your personal link" in text
+        assert "Get the form" not in text and "Download raw file" not in text and "Send your answers" not in text
+    else:
+        assert "Get the form" in text and "Download raw file" in text and "Send your answers" in text
+        assert "Open your personal link" not in text
+
+
+def test_guide_variants_keep_contiguous_steps_and_drop_markers(tmp_path, monkeypatch):
+    gold = _v2_gold(tmp_path, monkeypatch)
+    local_out = gs.run_kit(argparse.Namespace(dump="r900", gold_dir=str(gold), out_dir=str(tmp_path / "kit-local"),
+                                              packages="1", annotator="S02"))
+    link_out = gs.run_kit(argparse.Namespace(dump="r900", gold_dir=str(gold), out_dir=str(tmp_path / "kit-link"),
+                                             packages="1", annotator="S09", repo="someone/eu-pd-gold-S09"))
+    _assert_guide_variant((local_out / "README.md").read_text(encoding="utf-8"), link=False)
+    _assert_guide_variant((link_out / "README.md").read_text(encoding="utf-8"), link=True)
+
+
+def test_select_guide_variant_rejects_unclosed_and_unknown_markers():
+    with pytest.raises(ValueError, match="Unclosed"):
+        gs.select_guide_variant("<!-- local -->\nstill open\n", "local")
+    with pytest.raises(ValueError, match="Unknown"):
+        gs.select_guide_variant("<!-- other -->\nx\n<!-- /other -->\n", "local")
+
+
+def test_kit_repo_writes_site_without_local_form(tmp_path, monkeypatch):
+    gold = _v2_gold(tmp_path, monkeypatch)
+    # Rebuilt over a local kit in the same folder: the local form goes.
+    gs.run_kit(argparse.Namespace(dump="r900", gold_dir=str(gold), out_dir=str(tmp_path / "kit-repo"),
+                                  packages="1", annotator="S09"))
+    assert (tmp_path / "kit-repo" / "gold_form.html").exists()
+    out = gs.run_kit(argparse.Namespace(dump="r900", gold_dir=str(gold), out_dir=str(tmp_path / "kit-repo"),
+                                        packages="1", annotator="S09", repo="someone/eu-pd-gold-S09"))
+    site_files = sorted(p.name for p in (out / "site").iterdir() if p.is_file())
+    assert site_files == ["README.md", "RULES.md", "index.html"]
+    assert not (out / "gold_form.html").exists()
+    html = (out / "site" / "index.html").read_text(encoding="utf-8")
+    assert html.startswith("<!doctype html>")
+    head = html[html.index("<head>"):html.index("</head>")]
+    assert '<meta name="robots" content="noindex">' in head
+    start = html.index('<script id="gold-data" type="application/json">')
+    block = html[start:html.index("</script>", start)]
+    data = json.loads(block[block.index(">") + 1:])
+    assert data["github"] == {"repo": "someone/eu-pd-gold-S09", "branch": "main", "dir": "data/gold/r900",
+                              "annotator": "S09", "guide": "README.html", "rules": "RULES.html"}
+    for path in (out / "README.md", out / "site" / "README.md"):
+        text = path.read_text(encoding="utf-8")
+        assert "Open your personal link" in text and "Get the form" not in text
+        assert "<!--" not in text
+    assert (out / "RULES.md").read_text(encoding="utf-8") == (out / "site" / "RULES.md").read_text(encoding="utf-8")
+
+
+def test_kit_repo_requires_annotator(tmp_path, monkeypatch):
+    gold = _v2_gold(tmp_path, monkeypatch)
+    with pytest.raises(SystemExit, match="--annotator"):
+        gs.run_kit(argparse.Namespace(dump="r900", gold_dir=str(gold), out_dir=str(tmp_path / "kit-bad"),
+                                      packages="1", annotator=None, repo="someone/eu-pd-gold-S09"))
+
+
 def test_pool_prefers_a_complete_answer_over_an_earlier_partial_one():
     cols = ["item", "composer_id", *gs.answer_fields("composers", ["styles"])]
     blank = dict.fromkeys(cols, "")
