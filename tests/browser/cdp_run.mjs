@@ -36,6 +36,6 @@ async function one(name, urlSpec) {
   return [name, report];
 }
 const results = await Promise.all(pairs.map(p => { const i = p.indexOf("="); return one(p.slice(0, i), p.slice(i + 1)); }));
-console.log(JSON.stringify(Object.fromEntries(results)));
 ws.close();
-process.exit(0);
+// Exit once stdout has drained: process.exit right after console.log cuts a piped report at 64 KB.
+process.stdout.write(JSON.stringify(Object.fromEntries(results)) + "\n", () => process.exit(0));

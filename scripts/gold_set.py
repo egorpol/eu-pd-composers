@@ -560,20 +560,21 @@ def run_kit(args: argparse.Namespace) -> Path:
     data = form_data(directory, args.dump, keep)
     if repo:
         data["github"] = {"repo": repo, "branch": "main", "dir": f"data/gold/{args.dump}",
-                          "annotator": args.annotator, "guide": "README.html", "rules": "RULES.html"}
+                          "annotator": args.annotator, "guide": "guide.html", "rules": "RULES.html"}
     page = render_form(data, FORM_TEMPLATE.read_text(encoding="utf-8"))
     if repo:
         site = out / "site"
         site.mkdir(parents=True, exist_ok=True)
-        # Pages is public even from a private repo: robots noindex, and the page holds questions only.
+        # A Pages site is public: robots noindex, and the page holds questions only. Pages turns RULES.md into
+        # RULES.html but skips README*.md (jekyll-optional-front-matter), so the guide goes in as guide.md.
         site_page = LOCAL_PAGE.replace("</head>", '<meta name="robots" content="noindex">\n</head>')
         (site / "index.html").write_text(site_page.format(page=page), encoding="utf-8")
-        (site / "README.md").write_text(guide, encoding="utf-8")
+        (site / "guide.md").write_text(guide, encoding="utf-8")
         (site / "RULES.md").write_text(rules_text, encoding="utf-8")
         # A kit rebuilt with --repo in the same folder must not keep a local form whose answers never reach GitHub.
         (out / "gold_form.html").unlink(missing_ok=True)
         print(f"annotator repo files → {out} ({len(sheets['composers'])} composers, {len(sheets['works'])} works)")
-        print(f"Pages site → {site} (serve from a branch that holds only these files)")
+        print(f"Pages site → {site} (publish from a repository or branch that holds only these files)")
     else:
         (out / "gold_form.html").write_text(LOCAL_PAGE.format(page=page), encoding="utf-8")
         print(f"annotator repo files → {out} ({len(sheets['composers'])} composers, {len(sheets['works'])} works)")

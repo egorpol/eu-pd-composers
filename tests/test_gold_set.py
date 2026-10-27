@@ -732,7 +732,7 @@ def test_kit_repo_writes_site_without_local_form(tmp_path, monkeypatch):
     out = gs.run_kit(argparse.Namespace(dump="r900", gold_dir=str(gold), out_dir=str(tmp_path / "kit-repo"),
                                         packages="1", annotator="S09", repo="someone/eu-pd-gold-S09"))
     site_files = sorted(p.name for p in (out / "site").iterdir() if p.is_file())
-    assert site_files == ["README.md", "RULES.md", "index.html"]
+    assert site_files == ["RULES.md", "guide.md", "index.html"]
     assert not (out / "gold_form.html").exists()
     html = (out / "site" / "index.html").read_text(encoding="utf-8")
     assert html.startswith("<!doctype html>")
@@ -742,8 +742,8 @@ def test_kit_repo_writes_site_without_local_form(tmp_path, monkeypatch):
     block = html[start:html.index("</script>", start)]
     data = json.loads(block[block.index(">") + 1:])
     assert data["github"] == {"repo": "someone/eu-pd-gold-S09", "branch": "main", "dir": "data/gold/r900",
-                              "annotator": "S09", "guide": "README.html", "rules": "RULES.html"}
-    for path in (out / "README.md", out / "site" / "README.md"):
+                              "annotator": "S09", "guide": "guide.html", "rules": "RULES.html"}
+    for path in (out / "README.md", out / "site" / "guide.md"):
         text = path.read_text(encoding="utf-8")
         assert "Open your personal link" in text and "Get the form" not in text
         assert "<!--" not in text

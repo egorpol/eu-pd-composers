@@ -17,7 +17,7 @@ with contextlib.redirect_stdout(io.StringIO()):
 
 PLANT = "--plant" in sys.argv
 GH = {"repo": "someone/eu-pd-gold-S09", "branch": "main", "dir": "data/gold/r020", "annotator": "S01",
-      "guide": "README.html", "rules": "RULES.html"}
+      "guide": "guide.html", "rules": "RULES.html"}
 KEY = "github_pat_TEST_0123abc"
 
 MOCK = r"""<script>
@@ -52,6 +52,17 @@ MOCK = r"""<script>
   };
   if (cfg.click) setTimeout(() => { const b = document.getElementById(cfg.click); if (b) b.click(); else window.__noclick = true; }, 1500);
   if (cfg.click2) setTimeout(() => { const b = document.getElementById(cfg.click2.id); if (b) b.click(); else window.__noclick = true; }, cfg.click2.at);
+  // Another tab's save (marker, then row; rowAt splits them), written from this tab so no storage event updates its view.
+  if (cfg.otherTab) {
+    const o = cfg.otherTab, k = "goldset." + o.name + "." + o.coll;
+    setTimeout(() => localStorage.setItem("goldset.dirty." + o.name + "." + o.coll + "/" + o.id, JSON.stringify(Date.now())), o.at);
+    setTimeout(() => { const m = JSON.parse(localStorage.getItem(k) || "{}"); m[o.id] = o.body; localStorage.setItem(k, JSON.stringify(m)); }, o.rowAt ?? o.at);
+  }
+  // The page goes hidden (tab closed or switched) before the edit's 450 ms flush.
+  if (cfg.hideAt) setTimeout(() => {
+    Object.defineProperty(document, "visibilityState", { get: () => "hidden" });
+    document.dispatchEvent(new Event("visibilitychange"));
+  }, cfg.hideAt);
   setTimeout(() => {
     const pre = document.createElement("pre"); pre.id = "mocklog";
     pre.textContent = JSON.stringify({
@@ -137,6 +148,7 @@ def main() -> None:
     row2[cols.index("wikidata_same_person")] = "no"; row2[cols.index("notes")] = "given elsewhere"
     answered2 = {**blank, "composers_sheet.tsv": b64("\n".join([head, first, "\t".join(row2), *rest]))}
     item1 = first.split("\t")[cols.index("item")]
+    item2 = second.split("\t")[cols.index("item")]
     # Quotes: the repository sheet as pandas writes it, a note holding quotes for the first composer.
     import pandas as pd
     frame = pd.read_csv(KIT / "data/gold/r020/composers_sheet.tsv", sep="\t", dtype=str, keep_default_na=False)
@@ -166,6 +178,15 @@ def main() -> None:
         "ratelimit3": ({"sheets": blank, "putStatuses": [403], "putHeaders": {"x-ratelimit-remaining": "0"}, "putDelay": 3000,
                         "click": "o-wikidata_same_person-yes",
                         "click2": {"id": "o-wikidata_same_person-no", "at": 7000}, "reportAt": 14000}, "#key=" + KEY),
+        # Another tab saved row 2 after this tab's last store event; this tab's push must still carry it.
+        "othertab": ({"sheets": blank, "click": "o-wikidata_same_person-yes",
+                      "otherTab": {"at": 3000, "name": "r020.S01", "coll": "answers", "id": item2,
+                                   "body": {"item": item2, "wikidata_same_person": "no"}}}, "#key=" + KEY),
+        # Its marker lands before this tab's push reads storage, its row only during the (slow) PUT.
+        "othertab_late": ({"sheets": blank, "click": "o-wikidata_same_person-yes", "putDelay": 3000, "reportAt": 12000,
+                           "otherTab": {"at": 3000, "rowAt": 7000, "name": "r020.S01", "coll": "answers", "id": item2,
+                                        "body": {"item": item2, "wikidata_same_person": "no"}}}, "#key=" + KEY),
+        "hideunflushed": ({"sheets": blank, "click": "o-wikidata_same_person-yes", "hideAt": 1600}, "#key=" + KEY),
     }
     work = Path(tempfile.mkdtemp(prefix="formcheck-"))
     root = work / "site"; root.mkdir()
@@ -219,7 +240,7 @@ def main() -> None:
         want = "Saved to GitHub" if not PLANT else "Saved to the moon"
         check("save", s["conn"].startswith(want), f"top bar says '{want} …' (got '{s['conn']}')")
         check("save", "#" not in s["href"] and "goldset.key.r020.S01" in s["ls"], "key moved from the URL into localStorage")
-        check("save", s["links"] == ["README.html", "RULES.html"], "header links to the guide and rules")
+        check("save", s["links"] == ["guide.html", "RULES.html"], "header links to the guide and rules")
         check("save", s["banner"] == "", "no banner")
         check("save", s["dirty"] == [], f"no row left marked after the commit (got {len(s['dirty'])})")
 
@@ -294,6 +315,32 @@ def main() -> None:
         st = [e.get("status") for e in s["log"] if e["method"] == "PUT"]
         check("editduringput", st == [200, 500], f"one PUT succeeds, the next fails (got {st})")
         check("editduringput", s["dirty"] == ["answers/" + item1], "an edit made during the successful PUT stays marked")
+
+    s = r["othertab"]
+    if "error" not in s:
+        puts = [e for e in s["log"] if e["method"] == "PUT"]
+        check("othertab", len(puts) == 1, f"one PUT (got {len(puts)})")
+        if puts:
+            lines = base64.b64decode(puts[0]["body"]["content"]).decode("utf-8").split("\n")
+            r1 = dict(zip(lines[0].split("\t"), lines[1].split("\t")))
+            r2 = dict(zip(lines[0].split("\t"), lines[2].split("\t")))
+            check("othertab", r1.get("wikidata_same_person") == "yes" and r2.get("wikidata_same_person") == "no",
+                  "PUT holds this tab's row 1 and the other tab's row 2")
+        check("othertab", s["dirty"] == [], f"no row left marked after the commit (got {len(s['dirty'])})")
+
+    s = r["othertab_late"]
+    if "error" not in s:
+        check("othertab_late", s["dirty"] == ["answers/" + item2], "a row stored after the push read storage stays marked")
+
+    s = r["hideunflushed"]
+    if "error" not in s:
+        puts = [e for e in s["log"] if e["method"] == "PUT"]
+        check("hideunflushed", bool(puts) and puts[0]["keepalive"], "the first PUT goes out on hide, with keepalive")
+        if puts:
+            lines = base64.b64decode(puts[0]["body"]["content"]).decode("utf-8").split("\n")
+            r1 = dict(zip(lines[0].split("\t"), lines[1].split("\t")))
+            check("hideunflushed", r1.get("wikidata_same_person") == "yes", "that PUT holds the unflushed edit")
+        check("hideunflushed", s["dirty"] == [], f"no row left marked (got {len(s['dirty'])})")
 
     s = r["drafts"]
     if "error" not in s:

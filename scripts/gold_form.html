@@ -718,14 +718,18 @@ function renderLock(main, tab, L) {
   main.append(p);
 }
 
-function tsvFor(src, coll) {
+// rows: the answers a push sends, by item; without it, what this tab shows.
+function tsvFor(src, coll, rows) {
   const kind = src.startsWith("composers") ? "c" : "w";
   const cols = [...SHEET_COLS[kind], ...FIELDS[kind]];
   // A cell holding a quote is quoted as pandas writes it, so a note opening with an unclosed quote can't swallow
   // the rows after it when the sheet is read back.
   const clean = s => { const t = String(s ?? "").replace(/[\t\r\n]+/g, " ").trim(); return t.includes('"') ? '"' + t.replace(/"/g, '""') + '"' : t; };
   const lines = [cols.join("\t")];
-  for (const it of S.data[src]) { const v = val(coll, it.item); lines.push(cols.map(c => clean(c in it ? it[c] : v[c])).join("\t")); }
+  for (const it of S.data[src]) {
+    const v = rows ? rows[it.item] || {} : val(coll, it.item);
+    lines.push(cols.map(c => clean(c in it ? it[c] : v[c])).join("\t"));
+  }
   return lines.join("\n") + "\n";
 }
 function renderExport(main) {
@@ -921,16 +925,24 @@ function githubSync(gh, db) {
     if (dead) return;
     if (busy) { again = true; return; }
     busy = true;
+    // What a push sends: the stored rows, read together with the markers rather than this tab's view (which another
+    // tab's save reaches only with its storage event), plus this tab's unflushed edits.
+    const stored = () => Object.fromEntries(sheets.map(([, coll]) => {
+      const m = db.all(coll);
+      for (const [id, v] of Object.entries(S.local[coll])) m[id] = { ...(m[id] || {}), ...v };
+      return [coll, m];
+    }));
     const snap = dirtyNow();
+    let rows = stored();
     const ids = Object.keys(snap).map(k => k.slice(k.indexOf("/") + 1));
     const message = gh.annotator + ": " + (ids.length ? ids.slice(0, 8).join(", ") + (ids.length > 8 ? " and " + (ids.length - 8) + " more" : "") : "answers");
     try {
-      if (!loaded) { conn("Loading from GitHub…"); await load(); }
+      if (!loaded) { conn("Loading from GitHub…"); await load(); rows = stored(); }
       let retried = false;
       for (;;) {
         let conflict = false;
         for (const [src, coll, file] of sheets) {
-          const text = tsvFor(src, coll);
+          const text = tsvFor(src, coll, rows[coll]);
           if (text === sent[file]) continue;
           conn("Saving to GitHub…");
           try { await put(file, text, message, keepalive); }
@@ -945,9 +957,19 @@ function githubSync(gh, db) {
         if (!conflict) break;
         retried = true;
         await load();
+        rows = stored();
       }
       wait = 0;
-      await locked(() => { for (const [k, v] of Object.entries(snap)) if (store.get(dk + k) === v) store.del(dk + k); });
+      // A marker goes only while its stored row still holds what was sent: another tab writes its marker before its row.
+      const fields = [...new Set([...FIELDS.c, ...FIELDS.w])];
+      const same = (a = {}, b = {}) => fields.every(f => (a[f] ?? "") === (b[f] ?? ""));
+      await locked(() => {
+        const now = Object.fromEntries(Object.keys(rows).map(c => [c, db.all(c)]));
+        for (const [k, v] of Object.entries(snap)) {
+          const c = k.slice(0, k.indexOf("/")), id = k.slice(k.indexOf("/") + 1);
+          if (store.get(dk + k) === v && (!rows[c] || same(now[c][id], rows[c][id]))) store.del(dk + k);
+        }
+      });
       conn(ids.length ? "Saved to GitHub " + time() : "Connected to GitHub");
     } catch (res) {
       fail(res instanceof Response ? res : null);
@@ -959,7 +981,9 @@ function githubSync(gh, db) {
   onEdit = () => { if (!dead) { conn("Saving to GitHub…"); schedule(); } };
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "hidden") {
-      if (loaded && Object.keys(dirtyNow()).length && wait === 0) push(true);
+      // An edit still waiting for its flush goes in this push too (push sends this tab's unflushed edits).
+      const unsaved = sheets.some(([, coll]) => Object.keys(S.local[coll]).length);
+      if (loaded && (unsaved || Object.keys(dirtyNow()).length) && wait === 0) push(true);
     } else if (!dead) { loaded = false; schedule(0); }
   });
   schedule(0);
