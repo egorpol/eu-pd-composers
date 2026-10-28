@@ -13,6 +13,7 @@ Dump snapshots: revision `dump_id` (`rNNN`) — see [VERSIONING.md](VERSIONING.m
 - Release gate: unknown `qa_flags` tokens, or a cell out of canonical order, fail
 
 ### Changed
+- Viewer disclaimer now lists what the estimate ignores, as the README does (lyricists and librettists, editions, arrangements, posthumous publication rights, national exceptions), and names Spain's longer term; `data/README.md` caveats explain it (80 years after death for authors who died before 7 December 1987, up to 190 composers marked public domain in r020; no Spanish dates computed).
 - Dump **r020** = r019 + an offline `pipeline.py derive` adding the open-licence axis; EU PD columns unchanged. 5,573 works have an open-licence IMSLP score block (974 `composition`, 4,599 `edition`); 2 composer catalogues (Kyle Gann, Jacques Lenot)
 - Dump **r019** = r018 + an offline `pipeline.py derive` with three `genre_form` rule fixes, decided before the gold set was annotated; composers unchanged, 6,092 works change `genre_form`
 - `genre_form` `other` renamed `song` (it only ever meant IMSLP Songs / Lieder that are not song cycles); its crosswalk row to LCGFT *Songs* is now `broadMatch`, since the LC term also covers song cycles. The gold scorer still reads `other` as `song` for older dumps
