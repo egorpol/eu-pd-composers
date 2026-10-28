@@ -11,6 +11,7 @@ Dump snapshots: revision `dump_id` (`rNNN`) — see [VERSIONING.md](VERSIONING.m
 ### Added
 - Zenodo DOI [10.5281/zenodo.23730119](https://doi.org/10.5281/zenodo.23730119) (all versions; v3.7.0 is [10.5281/zenodo.23730120](https://doi.org/10.5281/zenodo.23730120)) in `CITATION.cff` and README
 - Third LLM style labeller: `scripts/llm_style_pass.py --backend claude` runs Claude Haiku 5.5 (`claude-haiku-5-5`, effort `low`) through the Claude Code CLI with no tools, settings files or MCP servers, in an empty working directory. The ledger gains 6,728 rows on r020 (3,369 closed, 3,359 grounded; 0 failures). Research record only: the replay policy stays GPT-6.1 Sol + Grok 4.7, so r020's `llm_style_*` columns are unchanged. Grounded micro-F1 against Wikidata style tags, on the 153 composers that have them: 0.58 (GPT-6.1 Sol 0.57, Grok 4.7 0.60)
+- `scripts/style_agreement.py --three-way`: the three full-pass labellers on equal terms, only on composers whose input hash all three share (r020: 3,365 closed, 3,356 grounded). It reports each model against Wikidata and IMSLP, each pair, Krippendorff's α over all three, and voting rules (2 of 2, 2 of 3, 3 of 3). Grounded, a 2-of-3 vote leaves 93.1% of composers with tags against 84.6% for the viewer's Sol + Grok consensus, at the same micro-F1 against Wikidata (0.624 and 0.627). Krippendorff's α now sums over distinct values, so thousands of composers take seconds
 
 ## [3.7.0] - 2026-10-28
 

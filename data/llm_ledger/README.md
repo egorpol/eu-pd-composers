@@ -71,5 +71,5 @@ Changing the input record (e.g. a refreshed Wikipedia lead) changes
 - `scripts/fetch_wikipedia_leads.py` — cache Wikipedia leads (`wikipedia_lead`)
 - `scripts/llm_style_pass.py` — labelling runner (ledger writer)
 - `scripts/apply_llm_styles.py` — offline grounded-consensus replay into dumps
-- `scripts/style_agreement.py` — markdown/JSON agreement report
+- `scripts/style_agreement.py` — markdown/JSON agreement report; `--three-way` compares the full-pass labellers on composers whose input hash all of them share
 - `scripts/pilot_sample.py` — stratified pilot id list

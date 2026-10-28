@@ -30,6 +30,17 @@ from style_vocab import (  # noqa: E402
 
 LEDGER_PATH = DATA_DIR / "llm_ledger" / "style_labels.jsonl"
 
+# Three-way comparison: the full-pass labellers and prompt versions (llm_style_pass.PROMPT_VERSIONS).
+THREE_WAY_LABELLERS = ("claude-haiku-5-5@low", "gpt-6.1-sol@low", "grok-4.7-low")
+THREE_WAY_CONDITIONS = ("closed@style-v1", "grounded@style-v2")
+# apply_llm_styles.py: the viewer shows the tags both of these gave in the grounded condition.
+VIEWER_CONSENSUS = ("gpt-6.1-sol@low", "grok-4.7-low")
+
+DISCLAIMER = (
+    "No source is ground truth. Wikidata and IMSLP are independent references "
+    "for measuring agreement/disagreement with LLM labels; disagreement is the finding."
+)
+
 
 def _as_str(value: Any) -> str:
     if value is None:
@@ -94,15 +105,18 @@ def krippendorff_alpha(units: list[list[Any]], distance: Any = None) -> float | 
     """
     delta = distance or (lambda a, b: 0.0 if a == b else 1.0)
     pairable = [u for u in units if len(u) >= 2]
-    values = [v for u in pairable for v in u]
-    n = len(values)
+    # Values must be hashable: expected disagreement runs over distinct values, not all n² pairs.
+    counts = Counter(v for u in pairable for v in u)
+    n = sum(counts.values())
     if n < 2:
         return None
     observed = sum(
         sum(delta(a, b) for i, a in enumerate(u) for j, b in enumerate(u) if i != j) / (len(u) - 1)
         for u in pairable
     ) / n
-    expected = sum(delta(a, b) for i, a in enumerate(values) for j, b in enumerate(values) if i != j) / (n * (n - 1))
+    expected = sum(
+        ca * (cb - (a == b)) * delta(a, b) for a, ca in counts.items() for b, cb in counts.items()
+    ) / (n * (n - 1))
     if expected == 0:
         return 1.0 if observed == 0 else None
     return 1.0 - observed / expected
@@ -194,24 +208,8 @@ def wikidata_styles(row: pd.Series) -> set[str]:
     return out
 
 
-def build_report(
-    ledger: list[dict[str, Any]],
-    composers: pd.DataFrame,
-    works: pd.DataFrame,
-) -> dict[str, Any]:
-    composers = composers.copy()
-    composers["composer_id"] = composers["composer_id"].astype(str)
-    by_cid = composers.set_index("composer_id", drop=False)
-
-    # Dominant IMSLP period per composer
-    imslp_dom: dict[str, set[str]] = {}
-    for cid, grp in works.groupby(works["composer_id"].astype(str)):
-        periods: list[str] = []
-        for val in grp["imslp_style"].tolist():
-            periods.extend(pipe_split(val))
-        imslp_dom[str(cid)] = dominant_imslp_period(periods)
-
-    # Group ledger by (model, condition@prompt_version); keep latest line per composer if duplicates
+def group_ledger(ledger: list[dict[str, Any]]) -> dict[tuple[str, str], dict[str, dict[str, Any]]]:
+    """(labeller, condition@prompt_version) → composer_id → row; the last line per composer wins."""
     groups: dict[tuple[str, str], dict[str, dict[str, Any]]] = defaultdict(dict)
     for row in ledger:
         cond = f"{row.get('condition', '')}@{row.get('prompt_version', '')}"
@@ -219,59 +217,104 @@ def build_report(
         model = str(row.get("model", ""))
         if row.get("effort"):
             model = f"{model}@{row['effort']}"
-        key = (model, cond)
-        cid = str(row.get("composer_id", ""))
-        groups[key][cid] = row
+        groups[(model, cond)][str(row.get("composer_id", ""))] = row
+    return groups
+
+
+def composer_refs(
+    composers: pd.DataFrame, works: pd.DataFrame
+) -> tuple[pd.DataFrame, dict[str, set[str]]]:
+    """Composers indexed by id, and the dominant IMSLP period per composer."""
+    composers = composers.copy()
+    composers["composer_id"] = composers["composer_id"].astype(str)
+    by_cid = composers.set_index("composer_id", drop=False)
+    imslp_dom: dict[str, set[str]] = {}
+    for cid, grp in works.groupby(works["composer_id"].astype(str)):
+        periods: list[str] = []
+        for val in grp["imslp_style"].tolist():
+            periods.extend(pipe_split(val))
+        imslp_dom[str(cid)] = dominant_imslp_period(periods)
+    return by_cid, imslp_dom
+
+
+def wikidata_scores(preds: dict[str, set[str]], by_cid: pd.DataFrame) -> dict[str, Any]:
+    """Style tags vs Wikidata (Wikidata = reference) on composers that have Wikidata styles."""
+    jacs: list[float] = []
+    pred_sets: list[set[str]] = []
+    ref_sets: list[set[str]] = []
+    for cid, pred in preds.items():
+        if cid not in by_cid.index:
+            continue
+        ref = wikidata_styles(by_cid.loc[cid])
+        if not ref:
+            continue
+        jacs.append(jaccard(pred, ref))
+        pred_sets.append(pred)
+        ref_sets.append(ref)
+    prec, rec, f1 = micro_pr(pred_sets, ref_sets) if pred_sets else (None, None, None)
+    return {
+        "n": len(jacs),
+        "mean_jaccard": sum(jacs) / len(jacs) if jacs else None,
+        "micro_precision": prec,
+        "micro_recall": rec,
+        "micro_f1": f1,
+    }
+
+
+def imslp_period_scores(
+    by_composer: dict[str, dict[str, Any]], imslp_dom: dict[str, set[str]]
+) -> dict[str, Any]:
+    """primary_period vs the dominant IMSLP period (IMSLP = reference for accuracy)."""
+    period_pairs: list[tuple[str, str]] = []
+    correct = 0
+    compared = 0
+    ties = 0
+    for cid, row in by_composer.items():
+        dom = imslp_dom.get(cid) or set()
+        # Only compare when IMSLP has a mappable dominant period and model did not abstain period
+        pred = str(row.get("primary_period", ""))
+        if not dom or pred == "unknown":
+            continue
+        compared += 1
+        if len(dom) > 1:
+            ties += 1
+        if pred in dom:
+            correct += 1
+        # κ uses a single reference label: singleton only
+        if len(dom) == 1:
+            period_pairs.append((pred, next(iter(dom))))
+
+    # Confusion: predicted period × IMSLP dominant (singletons only)
+    confusion: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
+    labels_axis = list(ERA_SLUGS) + ["jazz", "traditional_folk", "non_western_classical", "unknown"]
+    for pred, ref in period_pairs:
+        confusion[pred][ref] += 1
+    return {
+        "reference": "dominant mapped IMSLP work imslp_style (ties → set; accuracy = membership)",
+        "n": compared,
+        "n_ties": ties,
+        "accuracy": correct / compared if compared else None,
+        "cohens_kappa_singletons": cohens_kappa(period_pairs),
+        "kappa_n": len(period_pairs),
+        "confusion": {p: dict(confusion[p]) for p in confusion},
+        "confusion_axis_note": labels_axis,
+    }
+
+
+def build_report(
+    ledger: list[dict[str, Any]],
+    composers: pd.DataFrame,
+    works: pd.DataFrame,
+) -> dict[str, Any]:
+    by_cid, imslp_dom = composer_refs(composers, works)
+
+    groups = group_ledger(ledger)
 
     per_mc: list[dict[str, Any]] = []
     for (model, condition), by_composer in sorted(groups.items()):
         n = len(by_composer)
         abstain_n = sum(1 for r in by_composer.values() if is_abstain(r))
-        # Wikidata agreement (Wikidata = reference)
-        jacs: list[float] = []
-        pred_sets: list[set[str]] = []
-        ref_sets: list[set[str]] = []
-        for cid, row in by_composer.items():
-            if cid not in by_cid.index:
-                continue
-            ref = wikidata_styles(by_cid.loc[cid])
-            if not ref:
-                continue
-            pred = set(row.get("styles") or [])
-            jacs.append(jaccard(pred, ref))
-            pred_sets.append(pred)
-            ref_sets.append(ref)
-        prec, rec, f1 = micro_pr(pred_sets, ref_sets) if pred_sets else (None, None, None)
-
-        # IMSLP primary_period agreement (IMSLP dominant = reference for accuracy)
-        period_pairs: list[tuple[str, str]] = []
-        correct = 0
-        compared = 0
-        ties = 0
-        for cid, row in by_composer.items():
-            dom = imslp_dom.get(cid) or set()
-            # Only compare when IMSLP has a mappable dominant period and model did not abstain period
-            pred = str(row.get("primary_period", ""))
-            if not dom or pred == "unknown":
-                continue
-            compared += 1
-            if len(dom) > 1:
-                ties += 1
-            if pred in dom:
-                correct += 1
-            # κ uses a single reference label: singleton only
-            if len(dom) == 1:
-                period_pairs.append((pred, next(iter(dom))))
-
-        acc = correct / compared if compared else None
-        kappa = cohens_kappa(period_pairs)
-
-        # Confusion: predicted period × IMSLP dominant (singletons only)
-        confusion: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
-        labels_axis = list(ERA_SLUGS) + ["jazz", "traditional_folk", "non_western_classical", "unknown"]
-        for pred, ref in period_pairs:
-            confusion[pred][ref] += 1
-
+        styles = {cid: set(row.get("styles") or []) for cid, row in by_composer.items()}
         per_mc.append(
             {
                 "model": model,
@@ -281,22 +324,9 @@ def build_report(
                 "abstain_rate": abstain_n / n if n else None,
                 "wikidata": {
                     "reference": "wikidata style_tags (style_tags_src=wikidata)",
-                    "n": len(jacs),
-                    "mean_jaccard": sum(jacs) / len(jacs) if jacs else None,
-                    "micro_precision": prec,
-                    "micro_recall": rec,
-                    "micro_f1": f1,
+                    **wikidata_scores(styles, by_cid),
                 },
-                "imslp_primary_period": {
-                    "reference": "dominant mapped IMSLP work imslp_style (ties → set; accuracy = membership)",
-                    "n": compared,
-                    "n_ties": ties,
-                    "accuracy": acc,
-                    "cohens_kappa_singletons": kappa,
-                    "kappa_n": len(period_pairs),
-                    "confusion": {p: dict(confusion[p]) for p in confusion},
-                    "confusion_axis_note": labels_axis,
-                },
+                "imslp_primary_period": imslp_period_scores(by_composer, imslp_dom),
             }
         )
 
@@ -348,16 +378,119 @@ def build_report(
                 )
 
     return {
-        "disclaimer": (
-            "No source is ground truth. Wikidata and IMSLP are independent references "
-            "for measuring agreement/disagreement with LLM labels; disagreement is the finding."
-        ),
+        "disclaimer": DISCLAIMER,
         "ledger_rows": len(ledger),
         "per_model_condition": per_mc,
         "inter_model": inter_model,
         "closed_vs_grounded": closed_vs_grounded,
         "imslp_period_map": dict(IMSLP_PERIOD_TO_SLUG),
     }
+
+
+def vote(rows: list[dict[str, Any]], k: int) -> set[str]:
+    """Style tags that at least k of the given labels carry."""
+    counts = Counter(s for row in rows for s in set(row.get("styles") or []))
+    return {s for s, c in counts.items() if c >= k}
+
+
+def build_three_way(
+    ledger: list[dict[str, Any]],
+    composers: pd.DataFrame,
+    works: pd.DataFrame,
+    labellers: tuple[str, ...] = THREE_WAY_LABELLERS,
+    conditions: tuple[str, ...] = THREE_WAY_CONDITIONS,
+) -> dict[str, Any]:
+    """The labellers on equal terms: only composers whose input hash all of them share.
+
+    Aggregates only; never per-composer labels (some composers are blind gold-set items).
+    """
+    by_cid, imslp_dom = composer_refs(composers, works)
+    groups = group_ledger(ledger)
+    out: list[dict[str, Any]] = []
+    for condition in conditions:
+        label_sets = [groups.get((lab, condition), {}) for lab in labellers]
+        seen = set().union(*label_sets)
+        shared = sorted(
+            cid
+            for cid in set.intersection(*(set(s) for s in label_sets))
+            if len({s[cid].get("input_hash") for s in label_sets}) == 1
+        )
+        rows = {lab: {cid: s[cid] for cid in shared} for lab, s in zip(labellers, label_sets)}
+
+        per_labeller: list[dict[str, Any]] = []
+        for lab in labellers:
+            abstain_n = sum(1 for r in rows[lab].values() if is_abstain(r))
+            period = imslp_period_scores(rows[lab], imslp_dom)
+            per_labeller.append(
+                {
+                    "model": lab,
+                    "abstain_n": abstain_n,
+                    "abstain_rate": abstain_n / len(shared) if shared else None,
+                    "wikidata": wikidata_scores(
+                        {cid: set(r.get("styles") or []) for cid, r in rows[lab].items()}, by_cid
+                    ),
+                    "imslp_primary_period": {
+                        k: v for k, v in period.items() if k not in {"confusion", "confusion_axis_note"}
+                    },
+                }
+            )
+
+        pairs = [
+            {"model_a": a, "model_b": b, **pair_agreement(rows[a], rows[b], shared)}
+            for i, a in enumerate(labellers)
+            for b in labellers[i + 1 :]
+        ]
+
+        # An abstain is a missing value, as in gold_set.py: a composer counts once two models answered.
+        period_units = [
+            [str(rows[lab][cid].get("primary_period", "")) for lab in labellers
+             if rows[lab][cid].get("primary_period") != "unknown"]
+            for cid in shared
+        ]
+        style_units = [
+            [frozenset(rows[lab][cid]["styles"]) for lab in labellers if rows[lab][cid].get("styles")]
+            for cid in shared
+        ]
+
+        rules = [((a, b), 2) for i, a in enumerate(labellers) for b in labellers[i + 1 :]]
+        rules += [(labellers, 2), (labellers, len(labellers))]
+        votes: list[dict[str, Any]] = []
+        for members, k in rules:
+            tags = {cid: vote([rows[m][cid] for m in members], k) for cid in shared}
+            covered = sum(1 for t in tags.values() if t)
+            votes.append(
+                {
+                    "rule": f"{k} of {len(members)}",
+                    "members": list(members),
+                    "viewer_policy": condition.startswith("grounded@")
+                    and k == len(members)
+                    and set(members) == set(VIEWER_CONSENSUS),
+                    "covered_n": covered,
+                    "coverage": covered / len(shared) if shared else None,
+                    "wikidata": wikidata_scores(tags, by_cid),
+                }
+            )
+
+        out.append(
+            {
+                "condition": condition,
+                "n_labelled_by_any": len(seen),
+                "n_shared": len(shared),
+                "n_left_out": len(seen) - len(shared),
+                "per_labeller": per_labeller,
+                "pairs": pairs,
+                "alpha_primary_period": {
+                    "units": sum(1 for u in period_units if len(u) >= 2),
+                    "alpha": krippendorff_alpha(period_units),
+                },
+                "alpha_styles": {
+                    "units": sum(1 for u in style_units if len(u) >= 2),
+                    "alpha": krippendorff_alpha(style_units, masi_distance),
+                },
+                "votes": votes,
+            }
+        )
+    return {"disclaimer": DISCLAIMER, "labellers": list(labellers), "conditions": out}
 
 
 def fmt_pct(x: Optional[float]) -> str:
@@ -495,12 +628,111 @@ def render_markdown(report: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
+def render_three_way_markdown(report: dict[str, Any]) -> str:
+    conds = report["conditions"]
+    lines: list[str] = []
+    lines.append("# LLM labellers on equal terms")
+    lines.append("")
+    lines.append(report["disclaimer"])
+    lines.append("")
+    lines.append(
+        "Labellers: " + ", ".join(f"`{m}`" for m in report["labellers"]) + ". Only composers whose "
+        "input hash (prompt version + input record) all of them share are compared."
+    )
+    lines.append("")
+    lines.append("| condition | labelled by any | shared input | left out |")
+    lines.append("|---|---:|---:|---:|")
+    for c in conds:
+        lines.append(f"| {c['condition']} | {c['n_labelled_by_any']} | {c['n_shared']} | {c['n_left_out']} |")
+    lines.append("")
+    lines.append("## Each model")
+    lines.append("")
+    lines.append(
+        "Wikidata: micro precision/recall/F1 of style tags on composers with Wikidata styles "
+        "(Wikidata = reference). IMSLP: `primary_period` vs the dominant IMSLP period (accuracy on "
+        "composers where the model gave a period; κ on non-tied dominants). Not ground truth."
+    )
+    lines.append("")
+    lines.append(
+        "| condition | model | abstain | Wikidata n | P | R | F1 | IMSLP n | accuracy | κ |"
+    )
+    lines.append("|---|---|---:|---:|---:|---:|---:|---:|---:|---:|")
+    for c in conds:
+        for m in c["per_labeller"]:
+            wd, im = m["wikidata"], m["imslp_primary_period"]
+            lines.append(
+                f"| {c['condition']} | {m['model']} | {fmt_pct(m['abstain_rate'])} | {wd['n']} | "
+                f"{fmt_num(wd['micro_precision'])} | {fmt_num(wd['micro_recall'])} | "
+                f"{fmt_num(wd['micro_f1'])} | {im['n']} | {fmt_num(im['accuracy'])} | "
+                f"{fmt_num(im['cohens_kappa_singletons'])} |"
+            )
+    lines.append("")
+    lines.append("## Each pair")
+    lines.append("")
+    lines.append(
+        "Mean Jaccard on styles where at least one model gave styles; κ on `primary_period` where "
+        "both gave a period."
+    )
+    lines.append("")
+    lines.append("| condition | model A | model B | both abstain | Jaccard n | mean Jaccard | κ n | κ period |")
+    lines.append("|---|---|---|---:|---:|---:|---:|---:|")
+    for c in conds:
+        for p in c["pairs"]:
+            lines.append(
+                f"| {c['condition']} | {p['model_a']} | {p['model_b']} | {p['n_both_abstain_styles']} | "
+                f"{p['n_styles_labelled']} | {fmt_num(p['mean_jaccard_styles'])} | "
+                f"{p['n_period_known']} | {fmt_num(p['cohens_kappa_primary_period'])} |"
+            )
+    lines.append("")
+    lines.append("## All together")
+    lines.append("")
+    lines.append(
+        "Krippendorff's α (nominal for `primary_period`, MASI distance for style sets). An abstain is "
+        "a missing value; a composer counts once at least two models answered."
+    )
+    lines.append("")
+    lines.append("| condition | α period | units | α styles | units |")
+    lines.append("|---|---:|---:|---:|---:|")
+    for c in conds:
+        ap, ast_ = c["alpha_primary_period"], c["alpha_styles"]
+        lines.append(
+            f"| {c['condition']} | {fmt_num(ap['alpha'])} | {ap['units']} | "
+            f"{fmt_num(ast_['alpha'])} | {ast_['units']} |"
+        )
+    lines.append("")
+    lines.append("## Voting rules")
+    lines.append("")
+    lines.append(
+        "A tag is kept when at least k of the listed models gave it. Coverage: share of shared "
+        "composers left with at least one tag. Wikidata scores as above (an empty vote counts as "
+        "missing every reference tag). (viewer) marks the rule the viewer uses today."
+    )
+    lines.append("")
+    lines.append("| condition | rule | models | covered | coverage | P | R | F1 |")
+    lines.append("|---|---|---|---:|---:|---:|---:|---:|")
+    for c in conds:
+        for v in c["votes"]:
+            wd = v["wikidata"]
+            rule = v["rule"] + (" (viewer)" if v["viewer_policy"] else "")
+            lines.append(
+                f"| {c['condition']} | {rule} | {' + '.join(v['members'])} | {v['covered_n']} | "
+                f"{fmt_pct(v['coverage'])} | {fmt_num(wd['micro_precision'])} | "
+                f"{fmt_num(wd['micro_recall'])} | {fmt_num(wd['micro_f1'])} |"
+            )
+    lines.append("")
+    return "\n".join(lines)
+
+
 def run(args: argparse.Namespace) -> int:
     ledger = load_ledger(Path(args.ledger) if args.ledger else LEDGER_PATH)
     composers = pd.read_csv(dump_tsv_path("composers", args.dump), sep="\t", low_memory=False)
     works = pd.read_csv(dump_tsv_path("works", args.dump), sep="\t", low_memory=False)
-    report = build_report(ledger, composers, works)
-    md = render_markdown(report)
+    if args.three_way:
+        report = build_three_way(ledger, composers, works)
+        md = render_three_way_markdown(report)
+    else:
+        report = build_report(ledger, composers, works)
+        md = render_markdown(report)
     out = Path(args.out) if args.out else None
     if out:
         out.write_text(md, encoding="utf-8")
@@ -520,6 +752,11 @@ def main() -> None:
     p.add_argument("--ledger", default=None, help="Path to style_labels.jsonl")
     p.add_argument("--out", default=None, help="Write markdown report to this path")
     p.add_argument("--json", default=None, help="Also write JSON report to this path")
+    p.add_argument(
+        "--three-way",
+        action="store_true",
+        help="Only the full-pass labellers, on composers whose input all of them share",
+    )
     raise SystemExit(run(p.parse_args()))
 
 
