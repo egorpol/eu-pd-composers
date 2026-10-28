@@ -394,6 +394,57 @@ def test_codex_and_cursor_commands_use_scrubbed_env(monkeypatch, tmp_path):
     assert seen["input"] == "prompt2"
 
 
+def test_claude_command_is_isolated_and_reads_structured_output(monkeypatch):
+    seen = {}
+    labels = {"labels": [{"id": "Q1", "styles": [], "primary_period": "unknown", "confidence": "low"}]}
+
+    def fake_run(cmd, **kwargs):
+        seen["cmd"] = cmd
+        seen["env"] = kwargs.get("env")
+        seen["input"] = kwargs.get("input")
+        assert kwargs.get("cwd") and not any(Path(kwargs["cwd"]).iterdir())
+
+        class P:
+            returncode = 0
+            stdout = json.dumps(
+                {
+                    "is_error": False,
+                    "result": "prose, not the labels",
+                    "structured_output": labels,
+                    "usage": {"input_tokens": 2, "cache_creation_input_tokens": 3637, "output_tokens": 510},
+                }
+            )
+            stderr = ""
+
+        return P()
+
+    monkeypatch.setattr(lsp.subprocess, "run", fake_run)
+    monkeypatch.setenv("CLAUDECODE", "1")
+    monkeypatch.setenv("CLAUDE_CODE_SESSION_ID", "parent")
+    for k in ("ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN", "ANTHROPIC_BASE_URL", "ANTHROPIC_CUSTOM_HEADERS"):
+        monkeypatch.setenv(k, "x")
+    monkeypatch.setenv("CLAUDE_CONFIG_DIR", "/home/x/.claude")
+
+    raw, usage = lsp.run_claude(
+        "prompt", binary="claude", model="claude-haiku-5-5", effort="low", schema=lsp.SCHEMA_PATH
+    )
+    cmd = seen["cmd"]
+    assert cmd[:2] == ["claude", "-p"]
+    assert cmd[cmd.index("--tools") + 1] == ""
+    assert cmd[cmd.index("--setting-sources") + 1] == ""
+    assert cmd[cmd.index("--effort") + 1] == "low"
+    assert json.loads(cmd[cmd.index("--json-schema") + 1]) == json.loads(lsp.SCHEMA_PATH.read_text())
+    assert cmd[cmd.index("--system-prompt") + 1] == lsp.CLAUDE_SYSTEM_PROMPT
+    assert "--strict-mcp-config" in cmd and "--no-session-persistence" in cmd
+    assert "--bare" not in cmd
+    assert seen["input"] == "prompt"
+    assert "CLAUDECODE" not in seen["env"] and "CLAUDE_CODE_SESSION_ID" not in seen["env"]
+    assert not any(k.startswith("ANTHROPIC_") for k in seen["env"])
+    assert seen["env"]["CLAUDE_CONFIG_DIR"] == "/home/x/.claude"
+    assert json.loads(raw) == labels
+    assert usage == {"input_tokens": 2, "output_tokens": 510, "cache_write_tokens": 3637}
+
+
 def test_parse_cli_usage():
     assert lsp.parse_codex_usage("codex\n{}\ntokens used\n4,798\n") == {"total_tokens": 4798}
     assert lsp.parse_codex_usage("no usage here") == {}

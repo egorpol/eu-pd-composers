@@ -22,9 +22,9 @@ committed ledger into the dump's four `llm_style_*` columns.
 |---|---|
 | `composer_id` | Wikidata Q-id (dump key) |
 | `condition` | `closed` (model knowledge only) or `grounded` (Wikipedia lead supplied) |
-| `backend` | `codex` or `cursor` |
+| `backend` | `codex`, `cursor` or `claude` (Claude Code CLI, `claude -p`) |
 | `model` | Pinned model id passed to the CLI |
-| `effort` | Reasoning effort (codex); empty string when unused |
+| `effort` | Reasoning effort (codex, claude); empty string when unused |
 | `prompt_version` | Per condition (`PROMPT_VERSIONS`): `closed` = `style-v1`; `grounded` = `style-v2` (lead + own knowledge). `style-v1` grounded rows are the strict lead-only variant, kept as a finding |
 | `input_hash` | sha256 of canonical JSON `{"prompt_version","record"}` for the input sent to the model |
 | `styles` | 0–3 vocabulary slugs, most characteristic first |
@@ -44,7 +44,8 @@ ground truth; disagreement is the finding.
 The pipeline uses only `condition=grounded`, `prompt_version=style-v2` and these
 exact `(backend, model, effort)` labellers: `(codex, gpt-6.1-sol, low)` and
 `(cursor, grok-4.7-low, "")`. Closed-book, earlier prompts and sensitivity runs
-remain research records. Policy constants live in `scripts/apply_llm_styles.py`.
+remain research records, and so does the third labeller `(claude, claude-haiku-5-5, low)`
+(run on r020, 2026-10-28). Policy constants live in `scripts/apply_llm_styles.py`.
 
 The latest `created_at` per composer/labeller wins (later line for ties), even
 when `input_hash` differs. Consensus is the styles shared by both, in Codex
