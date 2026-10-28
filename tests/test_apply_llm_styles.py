@@ -12,7 +12,7 @@ import common
 
 
 def label(cid="Q1", labeller=0, tags=None, period="modern", **changes):
-    backend, model, effort, _ = styles.POLICY_LABELLERS[labeller]
+    backend, model, effort, *_ = styles.POLICY_LABELLERS[labeller]
     row = {"composer_id": cid, "backend": backend, "model": model, "effort": effort,
            "condition": styles.POLICY_CONDITION, "prompt_version": styles.POLICY_PROMPT_VERSION,
            "styles": tags if tags is not None else ["modern"], "primary_period": period,
@@ -44,6 +44,7 @@ def test_consensus_order_period_votes_and_column_order(tmp_path):
     assert out.llm_style_votes.tolist() == [
         "gpt-6.1-sol@low=neoclassicism|impressionism|modern;grok-4.7-low=impressionism|neoclassicism",
     ]
+    assert out.llm_period_votes.tolist() == ["gpt-6.1-sol@low=modern;grok-4.7-low=modern"]
     assert out.llm_style_src.tolist() == [styles.POLICY_ID]
     assert counts["consensus_nonempty"] == counts["period_nonempty"] == 1
     assert list(out.columns) == [*source.columns[:3], *styles.LLM_STYLE_COLUMNS, *source.columns[3:]]
@@ -65,12 +66,35 @@ def test_abstain_missing_disagreement_and_unknown_period(tmp_path):
     assert indexed.loc["abstain", "llm_style_src"] == styles.POLICY_ID
     assert indexed.loc["missing", "llm_style_votes"] == "gpt-6.1-sol@low=modern"
     assert indexed.loc["cursor_only", "llm_style_votes"] == "grok-4.7-low="
-    assert indexed.loc["neither", list(styles.LLM_STYLE_COLUMNS)].tolist() == [""] * 4
+    assert indexed.loc["neither", list(styles.LLM_STYLE_COLUMNS)].tolist() == [""] * 5
+    assert indexed.loc["unknown", "llm_period_votes"] == "gpt-6.1-sol@low=unknown;grok-4.7-low=unknown"
     assert indexed.loc[["missing", "cursor_only"], "llm_style_src"].tolist() == ["", ""]
     assert indexed.loc["disagree", "llm_style_period"] == ""
     assert indexed.loc["unknown", "llm_style_period"] == ""
     assert counts == {"consensus_nonempty": 1, "both_labelled_no_consensus": 2, "missing_labellers": 3,
-                      "period_nonempty": 1, "both_labelled": 3, "legacy_retired": 0}
+                      "period_nonempty": 1, "both_labelled": 3, "legacy_retired": 0,
+                      "labelled_sol": 4, "labelled_grok": 4, "labelled_haiku": 0}
+
+
+def test_third_labeller_is_recorded_but_not_in_consensus(tmp_path):
+    rows = [label("pair", tags=["impressionism"]), label("pair", 1, ["impressionism"]),
+            label("pair", 2, ["neoclassicism"], "early_20th_century"),
+            label("haiku_only", 2, [], "unknown")]
+    out, counts = styles.apply_llm_styles(composers("pair", "haiku_only"),
+                                          styles.load_ledger(ledger(tmp_path, rows)))
+    indexed = out.set_index("composer_id")
+    assert indexed.loc["pair", "llm_style_tags"] == "impressionism"
+    assert indexed.loc["pair", "llm_style_period"] == "modern"
+    assert indexed.loc["pair", "llm_style_votes"] == (
+        "gpt-6.1-sol@low=impressionism;grok-4.7-low=impressionism;claude-haiku-5-5@low=neoclassicism")
+    assert indexed.loc["pair", "llm_period_votes"] == (
+        "gpt-6.1-sol@low=modern;grok-4.7-low=modern;claude-haiku-5-5@low=early_20th_century")
+    assert indexed.loc["haiku_only", ["llm_style_tags", "llm_style_votes", "llm_period_votes", "llm_style_src"]
+                       ].tolist() == ["", "claude-haiku-5-5@low=", "claude-haiku-5-5@low=unknown", ""]
+    assert (counts["labelled_haiku"], counts["both_labelled"], counts["missing_labellers"]) == (2, 1, 1)
+    meta = styles.policy_metadata()
+    assert [m["slug"] for m in meta["labellers"]] == ["sol", "grok", "haiku"]
+    assert meta["consensus"] == ["gpt-6.1-sol@low", "grok-4.7-low"]
 
 
 def test_latest_timestamp_then_line_wins_across_input_hashes(tmp_path):

@@ -2,7 +2,8 @@
 """LLM style-labelling pass with an append-only decision ledger.
 
 Labels every selected composer with styles from the controlled vocabulary under
-one of two input conditions (closed | grounded) via Codex or cursor-agent.
+one of two input conditions (closed | grounded) via Codex, cursor-agent or the
+Claude Code CLI.
 Never sends Wikidata style tags, IMSLP periods, occupations, or other existing
 labels to the model — independence matters for agreement research.
 
@@ -58,6 +59,8 @@ LEDGER_DIR = DATA_DIR / "llm_ledger"
 LABELS_PATH = LEDGER_DIR / "style_labels.jsonl"
 RUNS_PATH = LEDGER_DIR / "runs.jsonl"
 CONFIDENCE_ALLOWED = frozenset({"low", "medium", "high"})
+# Replaces Claude Code's coding-agent system prompt; the task itself is the user prompt.
+CLAUDE_SYSTEM_PROMPT = "You are a labelling function. Reply with the JSON object only."
 
 # Fields that must never appear in the model prompt (independence).
 FORBIDDEN_PROMPT_FIELDS = frozenset(
@@ -111,6 +114,15 @@ def scrub_child_env(base: Optional[dict[str, str]] = None) -> dict[str, str]:
     path = env.get("PATH", "")
     cleaned = [p for p in path.split(":") if p and not p.startswith("/tmp/.mount_")]
     env["PATH"] = ":".join(cleaned)
+    return env
+
+
+def claude_child_env() -> dict[str, str]:
+    """Child env for `claude -p`: no parent-session vars, no API auth or gateway (subscription login only)."""
+    env = scrub_child_env()
+    for k in list(env):
+        if k == "CLAUDECODE" or k.startswith("ANTHROPIC_") or (k.startswith("CLAUDE_") and k != "CLAUDE_CONFIG_DIR"):
+            env.pop(k)
     return env
 
 
@@ -288,6 +300,18 @@ def parse_cursor_usage(stdout: str) -> dict[str, int]:
     return {dst: int(usage[src]) for src, dst in keys.items() if isinstance(usage.get(src), int)}
 
 
+def parse_claude_usage(payload: dict[str, Any]) -> dict[str, int]:
+    """Token counts from `claude -p --output-format json` (`usage` object)."""
+    usage = payload.get("usage") or {}
+    keys = {
+        "input_tokens": "input_tokens",
+        "output_tokens": "output_tokens",
+        "cache_read_input_tokens": "cache_read_tokens",
+        "cache_creation_input_tokens": "cache_write_tokens",
+    }
+    return {dst: int(usage[src]) for src, dst in keys.items() if isinstance(usage.get(src), int)}
+
+
 def extract_cursor_text(payload: Any) -> str:
     """Pull the final assistant text out of cursor-agent --output-format json."""
     if isinstance(payload, str):
@@ -386,6 +410,18 @@ def find_codex(explicit: str | None) -> str:
     if which:
         return which
     raise FileNotFoundError("codex binary not found; pass --codex or set CODEX_BIN")
+
+
+def find_claude(explicit: str | None) -> str:
+    if explicit:
+        return explicit
+    env = os.environ.get("CLAUDE_BIN")
+    if env:
+        return env
+    which = shutil.which("claude")
+    if which:
+        return which
+    raise FileNotFoundError("claude binary not found; pass --claude or set CLAUDE_BIN")
 
 
 def find_cursor_agent(explicit: str | None) -> str:
@@ -511,6 +547,56 @@ def run_cursor(
     return extract_cursor_text(out), parse_cursor_usage(out)
 
 
+def run_claude(
+    prompt: str,
+    *,
+    binary: str,
+    model: str,
+    effort: str,
+    schema: Path,
+) -> tuple[str, dict[str, Any]]:
+    cmd = [
+        binary,
+        "-p",
+        "--model",
+        model,
+        "--output-format",
+        "json",
+        "--json-schema",
+        schema.read_text(encoding="utf-8"),
+        "--system-prompt",
+        CLAUDE_SYSTEM_PROMPT,
+        # No tools, settings files (hooks), MCP servers or saved session. Not --bare: it skips the subscription login.
+        "--tools",
+        "",
+        "--setting-sources",
+        "",
+        "--strict-mcp-config",
+        "--no-session-persistence",
+    ]
+    if effort:
+        cmd += ["--effort", effort]
+    with tempfile.TemporaryDirectory(prefix="llm_style_cwd_") as cwd:
+        proc = subprocess.run(
+            cmd,
+            input=prompt,
+            capture_output=True,
+            text=True,
+            env=claude_child_env(),
+            cwd=cwd,
+        )
+    if proc.returncode != 0:
+        raise RuntimeError(
+            f"claude failed rc={proc.returncode}: {(proc.stderr or proc.stdout or '')[-800:]}"
+        )
+    payload = json.loads(proc.stdout or "{}")
+    if payload.get("is_error"):
+        raise RuntimeError(f"claude error: {str(payload.get('result'))[-800:]}")
+    structured = payload.get("structured_output")
+    raw = json.dumps(structured) if isinstance(structured, dict) else str(payload.get("result") or "")
+    return raw, parse_claude_usage(payload)
+
+
 def call_backend(
     prompt: str,
     *,
@@ -525,6 +611,10 @@ def call_backend(
         )
     elif backend == "cursor":
         raw, usage = run_cursor(prompt, binary=binary, model=model)
+    elif backend == "claude":
+        raw, usage = run_claude(
+            prompt, binary=binary, model=model, effort=effort, schema=SCHEMA_PATH
+        )
     else:
         raise ValueError(f"Unknown backend: {backend}")
     return extract_json_object(raw), usage
@@ -696,11 +786,12 @@ def run(args: argparse.Namespace) -> int:
         return 0
 
     run_id = args.run_id or utc_now().replace(":", "").replace("-", "") + "_" + uuid.uuid4().hex[:8]
-    binary = (
-        find_codex(args.codex)
-        if args.backend == "codex"
-        else find_cursor_agent(args.cursor_agent)
-    )
+    if args.backend == "codex":
+        binary = find_codex(args.codex)
+    elif args.backend == "claude":
+        binary = find_claude(args.claude)
+    else:
+        binary = find_cursor_agent(args.cursor_agent)
     version = cli_version_string(args.backend, binary)
     started = utc_now()
     labelled = 0
@@ -809,9 +900,9 @@ def main() -> None:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--dump", required=True)
     p.add_argument("--condition", required=True, choices=["closed", "grounded"])
-    p.add_argument("--backend", required=True, choices=["codex", "cursor"])
+    p.add_argument("--backend", required=True, choices=["codex", "cursor", "claude"])
     p.add_argument("--model", required=True)
-    p.add_argument("--effort", default=None, help="Reasoning effort (required for codex)")
+    p.add_argument("--effort", default=None, help="Reasoning effort (required for codex; optional for claude)")
     p.add_argument("--ids", help="File with one composer_id per line")
     p.add_argument("--limit", type=int, default=None)
     p.add_argument("--batch-size", type=int, default=40)
@@ -819,6 +910,7 @@ def main() -> None:
     p.add_argument("--dry-run", action="store_true")
     p.add_argument("--codex", default=None, help="Path to codex binary")
     p.add_argument("--cursor-agent", default=None, help="Path to cursor-agent binary")
+    p.add_argument("--claude", default=None, help="Path to claude binary")
     raise SystemExit(run(p.parse_args()))
 
 

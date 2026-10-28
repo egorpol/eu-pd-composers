@@ -1,13 +1,13 @@
 {
-  "dump_id": "r020",
-  "tool_version": "3.6.0",
+  "dump_id": "r021",
+  "tool_version": "3.7.0",
   "schema_version": 3,
-  "created_at_utc": "2026-10-11T00:32:07.040319+00:00",
-  "derived_from_dump_id": "r019",
-  "enrichment": "pipeline_derive",
+  "created_at_utc": "2026-10-28T13:56:30.060971+00:00",
+  "derived_from_dump_id": "r020",
+  "enrichment": "apply_llm_styles",
   "output_files": {
-    "composers": "composers_r020.tsv",
-    "works": "works_r020.tsv"
+    "composers": "composers_r021.tsv",
+    "works": "works_r021.tsv"
   },
   "row_counts": {
     "composers": 3369,
@@ -1042,6 +1042,7 @@
     "llm_style_tags",
     "llm_style_period",
     "llm_style_votes",
+    "llm_period_votes",
     "llm_style_src",
     "notable_works",
     "notable_works_qids",
@@ -1321,26 +1322,43 @@
           "model": "gpt-6.1-sol",
           "effort": "low",
           "key": "gpt-6.1-sol@low",
-          "name": "GPT-6.1 Sol"
+          "name": "GPT-6.1 Sol",
+          "slug": "sol"
         },
         {
           "backend": "cursor",
           "model": "grok-4.7-low",
           "effort": "",
           "key": "grok-4.7-low",
-          "name": "Grok 4.7"
+          "name": "Grok 4.7",
+          "slug": "grok"
+        },
+        {
+          "backend": "claude",
+          "model": "claude-haiku-5-5",
+          "effort": "low",
+          "key": "claude-haiku-5-5@low",
+          "name": "Claude Haiku 5.5",
+          "slug": "haiku"
         }
+      ],
+      "consensus": [
+        "gpt-6.1-sol@low",
+        "grok-4.7-low"
       ]
     },
     "ledger_path": "data/llm_ledger/style_labels.jsonl",
-    "ledger_sha256": "f912321077d71697768a10aeb1ef97193070d7e68d1d2f11574cbcb237c6c4ab",
+    "ledger_sha256": "fb983290152fadb9d0e695b2356c742f040d1979033a75491cc0215f7ecb6a0d",
     "counts": {
       "consensus_nonempty": 2842,
       "both_labelled_no_consensus": 517,
       "missing_labellers": 10,
       "period_nonempty": 2748,
       "both_labelled": 3359,
-      "legacy_retired": 0
+      "legacy_retired": 0,
+      "labelled_sol": 3359,
+      "labelled_grok": 3359,
+      "labelled_haiku": 3359
     }
   },
   "pd_reference_year": 2026,

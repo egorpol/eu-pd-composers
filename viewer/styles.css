@@ -367,6 +367,14 @@ body {
   border: 0;
 }
 
+.style-src .llm-rule {
+  margin-top: 0.3rem;
+}
+
+.facet-hint a {
+  color: var(--accent);
+}
+
 .controls-row {
   display: flex;
   flex-wrap: wrap;
@@ -619,6 +627,30 @@ tbody tr.empty td {
   margin: 0 0 0.75rem;
   font-size: 0.85rem;
   color: var(--ink-soft);
+}
+
+.detail-llm {
+  margin: 0 0 0.75rem;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}
+
+.detail-llm p {
+  margin: 0 0 0.2rem;
+}
+
+.detail-llm ul {
+  margin: 0;
+  padding-left: 1.1rem;
+}
+
+.llm-model {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.llm-model::after {
+  content: ":";
 }
 
 .detail-links a {

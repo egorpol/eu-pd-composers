@@ -10,6 +10,14 @@ Dump snapshots: revision `dump_id` (`rNNN`) — see [VERSIONING.md](VERSIONING.m
 
 ### Added
 - Zenodo DOI [10.5281/zenodo.23730119](https://doi.org/10.5281/zenodo.23730119) (all versions; v3.7.0 is [10.5281/zenodo.23730120](https://doi.org/10.5281/zenodo.23730120)) in `CITATION.cff` and README
+- Third LLM style labeller: `scripts/llm_style_pass.py --backend claude` runs Claude Haiku 5.5 (`claude-haiku-5-5`, effort `low`) through the Claude Code CLI with no tools, settings files or MCP servers, in an empty working directory. The ledger gains 6,728 rows on r020 (3,369 closed, 3,359 grounded; 0 failures). Its grounded labels reach the dump as votes in r021 (below); the consensus stays GPT-6.1 Sol + Grok 4.7. Grounded micro-F1 against Wikidata style tags, on the 153 composers that have them: 0.58 (GPT-6.1 Sol 0.57, Grok 4.7 0.60)
+- `scripts/style_agreement.py --three-way`: the three full-pass labellers on equal terms, only on composers whose input hash all three share (r020: 3,365 closed, 3,356 grounded). It reports each model against Wikidata and IMSLP, each pair, Krippendorff's α over all three, and voting rules (2 of 2, 2 of 3, 3 of 3). Grounded, a 2-of-3 vote leaves 93.1% of composers with tags against 84.6% for the viewer's Sol + Grok consensus, at the same micro-F1 against Wikidata (0.624 and 0.627). Krippendorff's α now sums over distinct values, so thousands of composers take seconds
+- Viewer **LLM tags** menu in the Style filter: the default Sol + Grok consensus, at least 2 of 3 models, all 3, any model, or one model alone, each with its composer count (URL `llm=`). The composer panel lists every model's own tags and period. `export_viewer_json.py` adds `lpv` (period votes) and the policy's model slugs and consensus pair
+- [`docs/LLM_STYLES.md`](docs/LLM_STYLES.md): plain-language comparison of the three models and of each viewer rule (coverage, precision / recall / F1 against Wikidata, periods against IMSLP, agreement between models, limits)
+- `style_agreement.py --three-way` also reports the 1-of-3 rule (any model): grounded, it tags 99.1% of shared composers at micro-F1 0.53
+
+### Changed
+- Dump **r021** = r020 + an offline `apply_llm_styles.py` replay: the policy records all three grounded labellers. `llm_style_votes` gains Claude Haiku 5.5's tags and the new composer column `llm_period_votes` holds each model's period (3,359 composers); `llm_style_tags`, `llm_style_period` and `llm_style_src` are unchanged (2,842 with consensus tags, 2,748 with an agreed period); works unchanged. Meta counts add `labelled_sol`, `labelled_grok`, `labelled_haiku`
 
 ## [3.7.0] - 2026-10-28
 

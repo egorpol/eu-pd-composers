@@ -1,9 +1,9 @@
 {
-  "dump_id": "r020",
-  "dump_label": "dump r020 \u00b7 built 2026-10-11",
-  "created_at_utc": "2026-10-11T00:32:07.040319+00:00",
+  "dump_id": "r021",
+  "dump_label": "dump r021 \u00b7 built 2026-10-28",
+  "created_at_utc": "2026-10-28T13:56:30.060971+00:00",
   "schema_version": 3,
-  "generated_at_utc": "2026-10-28T00:34:13.137967+00:00",
+  "generated_at_utc": "2026-10-28T13:56:46.310716+00:00",
   "counts": {
     "composers": 3369,
     "works": 29033,
@@ -198,15 +198,29 @@
         "model": "gpt-6.1-sol",
         "effort": "low",
         "key": "gpt-6.1-sol@low",
-        "name": "GPT-6.1 Sol"
+        "name": "GPT-6.1 Sol",
+        "slug": "sol"
       },
       {
         "backend": "cursor",
         "model": "grok-4.7-low",
         "effort": "",
         "key": "grok-4.7-low",
-        "name": "Grok 4.7"
+        "name": "Grok 4.7",
+        "slug": "grok"
+      },
+      {
+        "backend": "claude",
+        "model": "claude-haiku-5-5",
+        "effort": "low",
+        "key": "claude-haiku-5-5@low",
+        "name": "Claude Haiku 5.5",
+        "slug": "haiku"
       }
+    ],
+    "consensus": [
+      "gpt-6.1-sol@low",
+      "grok-4.7-low"
     ]
   },
   "disclaimer": "EU public-domain status here is an estimate from the composer's death year only: 70 years after death, counted from 1 January of the following year. It ignores lyricists and librettists, editions, arrangements, posthumous publication rights and national exceptions, such as Spain's longer term for authors who died before 7 December 1987. Not legal advice: check the work itself before you copy, perform or publish it. Composers with no death date on record are marked \u201cdeath unknown\u201d. Linked IMSLP entries are work pages, not a checked list of score files. Force and style tags are research aids and often wrong (incomplete IMSLP or Wikidata data, rules of thumb, or language-model guesses); verify before relying on them.",

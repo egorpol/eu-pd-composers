@@ -6,7 +6,7 @@ Composer-first UI over the versioned dump. No backend.
 
 ```bash
 # Refresh JSON from a dump
-python scripts/export_viewer_json.py --dump r020
+python scripts/export_viewer_json.py --dump r021
 
 # Serve (module scripts need HTTP)
 python -m http.server 8080 --directory viewer
@@ -40,21 +40,28 @@ single option matches across sources. Options are ordered era-first; each option
 shows a live composer count for the selected sources. **Style source** (Wikidata ·
 IMSLP works · LLM, all on by default) chooses which sources count toward matching
 and those counts. A composer matches when any selected style is present under
-any selected source; individual model votes do not count as consensus.
+any selected source.
 
-The optional composer fields `ls` (consensus list), `lp` (agreed period) and `lv`
-(votes in manifest labeller order) are omitted when absent. In `lv`, `[]` means
-abstention and `null` means a missing row. Policy, labeller identities and display
-names live once in `manifest.llm_style_policy`; `style_tags_coverage.llm` counts
-composers with non-empty consensus. Coverage `tagged` is the union of composers
+**LLM tags** chooses which model answers count as the LLM source: the dump's
+consensus (`ls`, GPT-6.1 Sol and Grok 4.7 agree; the default), at least 2 of 3,
+all 3, any model, or one model alone. Each option shows how many composers it
+tags; the URL keeps a non-default choice as `llm=2of3|all|any|sol|grok|haiku`.
+Rules other than the default are computed from the votes in the browser.
+[docs/LLM_STYLES.md](../docs/LLM_STYLES.md) compares the models and the rules.
+
+The optional composer fields `ls` (consensus list), `lp` (agreed period), `lv`
+(style votes in manifest labeller order) and `lpv` (period votes, same order) are
+omitted when absent. In `lv`, `[]` means abstention and `null` means a missing row;
+in `lpv`, `""` means `unknown`. Policy, labeller identities, slugs and display
+names live once in `manifest.llm_style_policy` (`consensus` lists the two labellers
+behind `ls`); `style_tags_coverage.llm` counts composers with non-empty consensus. Coverage `tagged` is the union of composers
 with Wikidata tags or LLM consensus.
 
 Per-work IMSLP periods remain visible as chips. The compact detail style line shows
-`Style — Wikidata: … · IMSLP works: … · LLM: Impressionism (GPT-6.1 Sol:
-Impressionism, Neoclassicism · Grok 4.7: Impressionism); period: Early 20th century`.
-Both rows with no shared styles show `LLM: no consensus` and the votes (`—` for
-abstention); one missing row shows `incomplete labelling`. Never-labelled composers
-omit the LLM part.
+`Style — Wikidata: … · IMSLP works: …`. Below it, an LLM block shows the tags the
+chosen rule keeps (`none` when it keeps none) and one line per model with its own
+tags and period (`no style tags` for abstention, `not labelled` for a missing row).
+Never-labelled composers omit the block.
 
 Each work row shows IMSLP's own rights evidence as badges (tooltips give IMSLP's
 meaning; none is a legal determination). Copyright warnings: not PD in EU / US,

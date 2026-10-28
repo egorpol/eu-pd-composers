@@ -329,17 +329,20 @@ def test_imslp_style_alias_merge_and_style_tags_coverage(patched_paths):
     assert c_rows[1]["styles"] == [] and c_rows[1]["style_src"] == ""
     assert c_rows[1]["ls"] == ["minimalism", "Romantic"]
     assert c_rows[1]["lp"] == "Romantic"
-    assert c_rows[1]["lv"] == [["minimalism", "Romantic"], ["Romantic", "minimalism"]]
-    assert all(field not in c_rows[2] for field in ("ls", "lp", "lv"))
+    assert c_rows[1]["lv"] == [["minimalism", "Romantic"], ["Romantic", "minimalism"], None]
+    assert all(field not in c_rows[2] for field in ("ls", "lp", "lv", "lpv"))
     assert manifest["llm_style_policy"]["condition"] == "grounded"
-    assert [m["name"] for m in manifest["llm_style_policy"]["labellers"]] == ["GPT-6.1 Sol", "Grok 4.7"]
+    assert [m["name"] for m in manifest["llm_style_policy"]["labellers"]] == ["GPT-6.1 Sol", "Grok 4.7", "Claude Haiku 5.5"]
 
 
 def test_votes_keep_abstention_missing_models_and_consensus_coverage(patched_paths):
     data, out = patched_paths
     composers = pd.DataFrame([
         _base_composer(composer_id="Q1", llm_style_tags="impressionism", llm_style_period="",
-                       llm_style_votes="gpt-6.1-sol@low=impressionism;grok-4.7-low=impressionism"),
+                       llm_style_votes="gpt-6.1-sol@low=impressionism;grok-4.7-low=impressionism;"
+                                       "claude-haiku-5-5@low=",
+                       llm_period_votes="gpt-6.1-sol@low=romantic;grok-4.7-low=unknown;"
+                                        "claude-haiku-5-5@low=early_20th_century"),
         _base_composer(composer_id="Q2", style_tags="", style_tags_src="", llm_style_tags="",
                        llm_style_votes="gpt-6.1-sol@low=romantic;grok-4.7-low="),
         _base_composer(composer_id="Q3", style_tags="", style_tags_src="", llm_style_tags="",
@@ -348,8 +351,11 @@ def test_votes_keep_abstention_missing_models_and_consensus_coverage(patched_pat
     _write_dump(data, "r902", composers, pd.DataFrame([_base_work()]))
     exporter.export("r902", out)
     rows = json.loads((out / "composers.json").read_text())
-    assert rows[1]["lv"] == [["Romantic"], []]
-    assert rows[2]["lv"] == [None, []]
+    assert rows[0]["lv"] == [["impressionism"], ["impressionism"], []]
+    assert rows[0]["lpv"] == ["Romantic", "", "Early 20th century"]
+    assert rows[1]["lv"] == [["Romantic"], [], None]
+    assert rows[2]["lv"] == [None, [], None]
+    assert "lpv" not in rows[1]
     assert "ls" not in rows[1] and "lp" not in rows[0]
     manifest = json.loads((out / "manifest.json").read_text())
     assert manifest["style_tags_coverage"] == {"tagged": 1, "total": 3, "wikidata": 1, "llm": 1}

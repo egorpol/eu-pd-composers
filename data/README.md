@@ -8,11 +8,15 @@ Pipeline diagram: [`docs/PIPELINE.md`](../docs/PIPELINE.md).
 
 | File | Rows | dump_id |
 |---|---|---|
-| `composers_r020.tsv` | 3369 | `r020` |
-| `works_r020.tsv` | 29033 | `r020` |
-| `dump_meta_r020.json` | — | companion meta |
+| `composers_r021.tsv` | 3369 | `r021` |
+| `works_r021.tsv` | 29033 | `r021` |
+| `dump_meta_r021.json` | — | companion meta |
 
-Only the **latest** revision is kept in `data/` in git. Older `rNNN` / calendar dumps are recoverable from **git history** (not from gitignored `data/cache/`). The viewer is exported from `r020` (`scripts/export_viewer_json.py --dump r020`).
+Only the **latest** revision is kept in `data/` in git. Older `rNNN` / calendar dumps are recoverable from **git history** (not from gitignored `data/cache/`). The viewer is exported from `r021` (`scripts/export_viewer_json.py --dump r021`).
+
+### What changed since r020
+
+- **r021 — all three LLM style labellers in the data.** r020 plus an offline replay of the committed style ledger (`scripts/apply_llm_styles.py`). `llm_style_votes` gains Claude Haiku 5.5's tags, and the new column `llm_period_votes` holds each model's period. `llm_style_tags`, `llm_style_period` and `llm_style_src` are unchanged (still GPT-6.1 Sol + Grok 4.7); works are unchanged. See [Composer styles](#composer-styles) and [docs/LLM_STYLES.md](../docs/LLM_STYLES.md).
 
 ### What changed since r019
 
@@ -114,17 +118,19 @@ Hand-reviewed fixes live in [`overrides/composers.tsv`](overrides/composers.tsv)
 `scripts/apply_llm_styles.py`. Legacy `llm*` styles are cleared, and carry-forward
 no longer restores them. The committed [style ledger](llm_ledger/README.md) is
 replayed after overrides and identity/work evidence stages, without calling models.
-Schema version stays 3; these four columns are inserted after `style_tags_src`:
+Schema version stays 3; these five columns are inserted after `style_tags_src` (`llm_period_votes` since r021):
 
 | Column | Values |
 |---|---|
-| `llm_style_tags` | Slugs shared by both policy labellers, in Codex order, pipe-joined; empty for disagreement, abstention or missing labels |
+| `llm_style_tags` | Slugs shared by both consensus labellers (GPT-6.1 Sol and Grok 4.7), in Sol's order, pipe-joined; empty for disagreement, abstention or missing labels |
 | `llm_style_period` | Agreed `primary_period` slug; empty for disagreement, `unknown` or missing labels |
-| `llm_style_votes` | Each present labeller's ordered styles: `gpt-6.1-sol@low=impressionism\|neoclassicism;grok-4.7-low=impressionism`; abstention is `model=`, missing labellers are omitted |
-| `llm_style_src` | `llm_consensus_grounded_v2` when both rows exist, even with no consensus; otherwise empty |
+| `llm_style_votes` | Each present labeller's ordered styles, Sol, Grok, Haiku: `gpt-6.1-sol@low=impressionism\|neoclassicism;grok-4.7-low=impressionism;claude-haiku-5-5@low=`; abstention is `model=`, missing labellers are omitted |
+| `llm_period_votes` | Each present labeller's `primary_period` in the same order: `gpt-6.1-sol@low=modern;grok-4.7-low=modern;claude-haiku-5-5@low=unknown` |
+| `llm_style_src` | `llm_consensus_grounded_v2` when both consensus rows exist, even with no consensus; otherwise empty |
 
-The policy selects only `grounded` / `style-v2`, Codex `gpt-6.1-sol` at `low`
-and Cursor `grok-4.7-low` at empty effort. For each composer/labeller the latest
+The policy selects only `grounded` / `style-v2` from three labellers: Codex `gpt-6.1-sol`
+at `low`, Cursor `grok-4.7-low` at empty effort and Claude `claude-haiku-5-5` at `low`.
+The first two make the consensus; all three are recorded in the vote columns. For each composer/labeller the latest
 `created_at` wins, with later ledger lines breaking ties across input hashes.
 The output meta's `llm_styles` records the policy, ledger SHA-256 and coverage counts.
 Dump cells retain ledger slugs; viewer export maps period slugs to IMSLP facet names.
@@ -200,11 +206,11 @@ The whole chain is one command ([`docs/PIPELINE.md`](../docs/PIPELINE.md), [`doc
 
 ```bash
 pip install -r requirements.txt
-python scripts/pipeline.py refresh --base r020                  # crawl + all stages → next revision
-python scripts/pipeline.py derive --from-dump r020 --to r021    # offline stages only
+python scripts/pipeline.py refresh --base r021                  # crawl + all stages → next revision
+python scripts/pipeline.py derive --from-dump r021 --to r022    # offline stages only
 
-python scripts/export_viewer_json.py --dump r020
-python scripts/check_release.py --dump r020 --viewer-data viewer/data
+python scripts/export_viewer_json.py --dump r021
+python scripts/check_release.py --dump r021 --viewer-data viewer/data
 ```
 
 The stages it runs, in order, each as `--from-dump rX --to rY`: `remap_force.py` → `carry_forward.py --base rPREV` → `remap_composers.py` → `apply_overrides.py` → `remap_imslp_matches.py` (after `refetch_composer_pages.py --dump rX`, network, ~1 min) → `remap_work_evidence.py` (after `refetch_work_files.py --dump rX` on refresh, network, ~10 min) → `apply_llm_styles.py` (replays the committed ledger; never calls a model).

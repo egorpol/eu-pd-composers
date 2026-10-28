@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import pandas as pd
+import pytest
 
 import style_agreement as sa
 
@@ -174,3 +175,63 @@ def test_build_report_splits_codex_efforts():
     ledger = [{**base, "effort": "low"}, {**base, "effort": "medium"}]
     report = sa.build_report(ledger, composers, works)
     assert {r["model"] for r in report["per_model_condition"]} == {"gpt-x@low", "gpt-x@medium"}
+
+
+def test_krippendorff_alpha_matches_pairwise_definition():
+    a, b, ab, c = frozenset("a"), frozenset("b"), frozenset("ab"), frozenset("c")
+    units = [[ab, a], [a, a, c], [b], [c, ab, b]]
+    values = [v for u in units if len(u) >= 2 for v in u]
+    n = len(values)
+    d = sa.masi_distance
+    observed = sum(
+        sum(d(x, y) for i, x in enumerate(u) for j, y in enumerate(u) if i != j) / (len(u) - 1)
+        for u in units
+        if len(u) >= 2
+    ) / n
+    expected = sum(d(x, y) for i, x in enumerate(values) for j, y in enumerate(values) if i != j) / (n * (n - 1))
+    assert sa.krippendorff_alpha(units, d) == pytest.approx(1 - observed / expected)
+
+
+def test_build_three_way_shared_inputs_and_votes():
+    composers = pd.DataFrame(
+        [
+            {"composer_id": "Q1", "style_tags": "serialism", "style_tags_src": "wikidata"},
+            {"composer_id": "Q2", "style_tags": "", "style_tags_src": ""},
+            {"composer_id": "Q3", "style_tags": "", "style_tags_src": ""},
+        ]
+    )
+    works = pd.DataFrame(columns=["composer_id", "imslp_style"])
+    haiku, sol, grok = ("claude-haiku-5-5", "low"), ("gpt-6.1-sol", "low"), ("grok-4.7-low", "")
+
+    def row(cid, labeller, styles, record="r020"):
+        return {"composer_id": cid, "condition": "grounded", "prompt_version": "style-v2",
+                "model": labeller[0], "effort": labeller[1], "input_hash": f"{cid}-{record}",
+                "styles": styles, "primary_period": "modern" if styles else "unknown", "confidence": "high"}
+
+    ledger = [
+        row("Q1", haiku, ["serialism"]), row("Q1", sol, ["serialism", "avant_garde"]),
+        row("Q1", grok, ["avant_garde"]),
+        row("Q2", haiku, []), row("Q2", sol, ["romantic"]), row("Q2", grok, ["romantic"]),
+        # Grok saw an older input for Q3, so Q3 is left out.
+        row("Q3", haiku, ["baroque"]), row("Q3", sol, ["baroque"]), row("Q3", grok, ["baroque"], "r014"),
+    ]
+    report = sa.build_three_way(ledger, composers, works, conditions=("grounded@style-v2",))
+    (c,) = report["conditions"]
+    assert (c["n_labelled_by_any"], c["n_shared"], c["n_left_out"]) == (3, 2, 1)
+    assert c["per_labeller"][0]["abstain_n"] == 1  # Haiku on Q2
+    assert c["per_labeller"][0]["wikidata"]["micro_f1"] == 1.0  # Q1: {serialism} vs {serialism}
+
+    votes = {(v["rule"], tuple(v["members"])): v for v in c["votes"]}
+    viewer = votes[("2 of 2", sa.VIEWER_CONSENSUS)]
+    assert viewer["viewer_policy"] and viewer["covered_n"] == 2  # Q1 avant_garde, Q2 romantic
+    assert not votes[("2 of 2", ("claude-haiku-5-5@low", "gpt-6.1-sol@low"))]["viewer_policy"]
+    two_of_three = votes[("2 of 3", sa.THREE_WAY_LABELLERS)]
+    assert two_of_three["covered_n"] == 2
+    # Q1 vote {serialism, avant_garde} vs Wikidata {serialism}
+    assert (two_of_three["wikidata"]["micro_precision"], two_of_three["wikidata"]["micro_recall"]) == (0.5, 1.0)
+    assert votes[("3 of 3", sa.THREE_WAY_LABELLERS)]["covered_n"] == 0
+    assert votes[("1 of 3", sa.THREE_WAY_LABELLERS)]["covered_n"] == 2
+
+    # Q1 has three answers, Q2 two (Haiku abstained).
+    assert c["alpha_styles"]["units"] == 2 and c["alpha_primary_period"]["units"] == 2
+    assert "(viewer default)" in sa.render_three_way_markdown(report)

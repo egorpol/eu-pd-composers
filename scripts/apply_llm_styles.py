@@ -21,11 +21,14 @@ POLICY_ID = "llm_consensus_grounded_v2"
 POLICY_CONDITION = "grounded"
 POLICY_PROMPT_VERSION = "style-v2"
 # Order defines consensus ordering, vote serialisation and viewer model order.
+# Every labeller's vote is recorded; only the first CONSENSUS_SIZE make llm_style_tags / llm_style_period.
 POLICY_LABELLERS = (
-    ("codex", "gpt-6.1-sol", "low", "GPT-6.1 Sol"),
-    ("cursor", "grok-4.7-low", "", "Grok 4.7"),
+    ("codex", "gpt-6.1-sol", "low", "GPT-6.1 Sol", "sol"),
+    ("cursor", "grok-4.7-low", "", "Grok 4.7", "grok"),
+    ("claude", "claude-haiku-5-5", "low", "Claude Haiku 5.5", "haiku"),
 )
-LLM_STYLE_COLUMNS = ("llm_style_tags", "llm_style_period", "llm_style_votes", "llm_style_src")
+CONSENSUS_SIZE = 2
+LLM_STYLE_COLUMNS = ("llm_style_tags", "llm_style_period", "llm_style_votes", "llm_period_votes", "llm_style_src")
 
 
 def default_ledger_path() -> Path:
@@ -49,9 +52,10 @@ def policy_metadata() -> dict[str, Any]:
         "id": POLICY_ID, "condition": POLICY_CONDITION, "prompt_version": POLICY_PROMPT_VERSION,
         "labellers": [
             {"backend": backend, "model": model, "effort": effort,
-             "key": vote_key(model, effort), "name": name}
-            for backend, model, effort, name in POLICY_LABELLERS
+             "key": vote_key(model, effort), "name": name, "slug": slug}
+            for backend, model, effort, name, slug in POLICY_LABELLERS
         ],
+        "consensus": [vote_key(model, effort) for _, model, effort, *_ in POLICY_LABELLERS[:CONSENSUS_SIZE]],
     }
 
 
@@ -93,16 +97,21 @@ def apply_llm_styles(
     out = out.reindex(columns=columns[:position] + list(LLM_STYLE_COLUMNS) + columns[position:])
     out[list(LLM_STYLE_COLUMNS)] = ""
     counts = {"consensus_nonempty": 0, "both_labelled_no_consensus": 0, "missing_labellers": 0,
-              "period_nonempty": 0, "both_labelled": 0, "legacy_retired": int(legacy.sum())}
+              "period_nonempty": 0, "both_labelled": 0, "legacy_retired": int(legacy.sum()),
+              **{f"labelled_{slug}": 0 for *_, slug in POLICY_LABELLERS}}
     for idx, composer in out.iterrows():
         rows = [ledger.get((composer["composer_id"], *labeller[:3])) for labeller in POLICY_LABELLERS]
-        votes = [f"{vote_key(model, effort)}={'|'.join(row['styles'])}"
-                 for (_, model, effort, _), row in zip(POLICY_LABELLERS, rows) if row is not None]
-        out.at[idx, "llm_style_votes"] = ";".join(votes)
-        if any(row is None for row in rows):
+        present = [(vote_key(model, effort), slug, row)
+                   for (_, model, effort, _, slug), row in zip(POLICY_LABELLERS, rows) if row is not None]
+        out.at[idx, "llm_style_votes"] = ";".join(f"{key}={'|'.join(row['styles'])}" for key, _, row in present)
+        out.at[idx, "llm_period_votes"] = ";".join(f"{key}={row['primary_period']}" for key, _, row in present)
+        for _, slug, _ in present:
+            counts[f"labelled_{slug}"] += 1
+        # "both" and "missing" refer to the consensus pair; the other votes are recorded only.
+        if any(row is None for row in rows[:CONSENSUS_SIZE]):
             counts["missing_labellers"] += 1
             continue
-        first, second = rows
+        first, second = rows[:CONSENSUS_SIZE]
         consensus = [s for s in first["styles"] if s in second["styles"]]
         period = first["primary_period"]
         if period != second["primary_period"] or period == "unknown":

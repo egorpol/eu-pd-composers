@@ -22,9 +22,9 @@ committed ledger into the dump's four `llm_style_*` columns.
 |---|---|
 | `composer_id` | Wikidata Q-id (dump key) |
 | `condition` | `closed` (model knowledge only) or `grounded` (Wikipedia lead supplied) |
-| `backend` | `codex` or `cursor` |
+| `backend` | `codex`, `cursor` or `claude` (Claude Code CLI, `claude -p`) |
 | `model` | Pinned model id passed to the CLI |
-| `effort` | Reasoning effort (codex); empty string when unused |
+| `effort` | Reasoning effort (codex, claude); empty string when unused |
 | `prompt_version` | Per condition (`PROMPT_VERSIONS`): `closed` = `style-v1`; `grounded` = `style-v2` (lead + own knowledge). `style-v1` grounded rows are the strict lead-only variant, kept as a finding |
 | `input_hash` | sha256 of canonical JSON `{"prompt_version","record"}` for the input sent to the model |
 | `styles` | 0–3 vocabulary slugs, most characteristic first |
@@ -42,15 +42,19 @@ ground truth; disagreement is the finding.
 ## Dump replay policy
 
 The pipeline uses only `condition=grounded`, `prompt_version=style-v2` and these
-exact `(backend, model, effort)` labellers: `(codex, gpt-6.1-sol, low)` and
-`(cursor, grok-4.7-low, "")`. Closed-book, earlier prompts and sensitivity runs
-remain research records. Policy constants live in `scripts/apply_llm_styles.py`.
+exact `(backend, model, effort)` labellers: `(codex, gpt-6.1-sol, low)`,
+`(cursor, grok-4.7-low, "")` and `(claude, claude-haiku-5-5, low)` (run on r020,
+2026-10-28; in the dump since r021). The first two make the consensus; all three
+are recorded in `llm_style_votes` and `llm_period_votes`. Closed-book, earlier
+prompts and sensitivity runs remain research records. Policy constants live in
+`scripts/apply_llm_styles.py`; [docs/LLM_STYLES.md](../../docs/LLM_STYLES.md)
+compares the three labellers.
 
 The latest `created_at` per composer/labeller wins (later line for ties), even
-when `input_hash` differs. Consensus is the styles shared by both, in Codex
+when `input_hash` differs. Consensus is the styles shared by the first two, in Codex
 order; the primary period is kept only when both agree and it is not `unknown`.
 Votes retain disagreement and empty-list abstention. `llm_style_src` is set
-when both labellers have a row, distinguishing no consensus from missing labels.
+when both consensus labellers have a row, distinguishing no consensus from missing labels.
 Meta records the policy, ledger SHA-256 and counts. Legacy unledgered LLM styles
 are retired from `style_tags`; the ledger is the only LLM composer-style source.
 
@@ -70,5 +74,5 @@ Changing the input record (e.g. a refreshed Wikipedia lead) changes
 - `scripts/fetch_wikipedia_leads.py` — cache Wikipedia leads (`wikipedia_lead`)
 - `scripts/llm_style_pass.py` — labelling runner (ledger writer)
 - `scripts/apply_llm_styles.py` — offline grounded-consensus replay into dumps
-- `scripts/style_agreement.py` — markdown/JSON agreement report
+- `scripts/style_agreement.py` — markdown/JSON agreement report; `--three-way` compares the full-pass labellers on composers whose input hash all of them share
 - `scripts/pilot_sample.py` — stratified pilot id list

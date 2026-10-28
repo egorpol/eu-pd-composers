@@ -105,6 +105,8 @@ const STYLE_SRC_LABELS = {
 };
 const DEFAULT_STYLE_SRC = ["wikidata", "imslp", "llm"];
 const STYLE_SRC_VALUES = new Set(STYLE_SRC_ORDER);
+// The dump's own llm_style_tags (the policy's consensus pair); other rules are computed from the votes.
+const DEFAULT_LLM_RULE = "consensus";
 
 // Empty selection on a facet means "no filter" on that axis.
 const FACETS = [
@@ -137,6 +139,7 @@ const DEFAULTS = {
   cit: [],
   style: [],
   styleSrc: [...DEFAULT_STYLE_SRC],
+  llmRule: DEFAULT_LLM_RULE,
   pd: ["now"],
   open: [],
   labelSrc: "all",
@@ -156,6 +159,9 @@ const state = {
   worksByComposer: {},
   styleVocab: [],
   styleSrcCoverage: { wikidata: 0, imslp: 0, llm: 0 },
+  llmRule: DEFAULT_LLM_RULE,
+  llmRules: [],
+  llmRuleCounts: {},
   selectedId: null,
   detailForce: "",
   currentYear: new Date().getFullYear(),
@@ -184,6 +190,7 @@ function bindElements() {
     resetDefaults: document.getElementById("resetDefaults"),
     euAsOf: document.getElementById("euAsOf"),
     styleSrc: document.getElementById("styleSrc"),
+    llmRule: document.getElementById("llmRule"),
     viewsHeader: document.getElementById("viewsHeader"),
     pd: document.getElementById("pd"),
     open: document.getElementById("open"),
@@ -253,18 +260,77 @@ export function buildStyleVocab(values) {
   return [...ordered, ...extras];
 }
 
+function labellerSlug(labeller, i) {
+  return labeller.slug || `m${i + 1}`;
+}
+
+function labellerShort(labeller) {
+  return labeller.slug ? labeller.slug[0].toUpperCase() + labeller.slug.slice(1) : labeller.name;
+}
+
+/**
+ * LLM tag rules on offer, default first: a short menu label and a full title.
+ * Older manifests list two labellers and no slugs.
+ * @param {{ labellers?: Array<{ key: string, name: string, slug?: string }>, consensus?: string[] }} policy
+ */
+export function llmRules(policy) {
+  const labellers = policy?.labellers || [];
+  const n = labellers.length;
+  const pairKeys = policy?.consensus || labellers.slice(0, 2).map((l) => l.key);
+  const pair = labellers.filter((l) => pairKeys.includes(l.key));
+  const rules = [{
+    value: DEFAULT_LLM_RULE,
+    label: `${pair.map(labellerShort).join(" + ")} agree`,
+    title: `${pair.map((l) => l.name).join(" and ")} agree`,
+  }];
+  if (n > 2) {
+    const k = Math.floor(n / 2) + 1;
+    rules.push({ value: `${k}of${n}`, label: `${k} of ${n} agree`, title: `At least ${k} of ${n} models agree` });
+    rules.push({ value: "all", label: `All ${n} agree`, title: `All ${n} models agree` });
+  }
+  rules.push({ value: "any", label: "Any model", title: "Any model" });
+  labellers.forEach((l, i) => rules.push({ value: labellerSlug(l, i), label: `${labellerShort(l)} only`, title: `${l.name} only` }));
+  return rules;
+}
+
+/**
+ * A composer's LLM style tags under one rule, in labeller order.
+ * @param {{ ls?: string[], lv?: Array<string[]|null> }} composer
+ * @param {string} rule
+ * @param {{ labellers?: Array<{ slug?: string }> }} policy
+ */
+export function llmTags(composer, rule, policy) {
+  if (!rule || rule === DEFAULT_LLM_RULE) return Array.isArray(composer.ls) ? composer.ls.slice() : [];
+  const labellers = policy?.labellers || [];
+  const votes = composer.lv || [];
+  const single = labellers.findIndex((l, i) => labellerSlug(l, i) === rule);
+  if (single >= 0) return Array.isArray(votes[single]) ? votes[single].slice() : [];
+  const given = votes.filter(Array.isArray);
+  let need;
+  if (rule === "any") need = 1;
+  else if (rule === "all") need = labellers.length;
+  else {
+    const m = /^(\d+)of\d+$/.exec(rule);
+    if (!m) return [];
+    need = Number(m[1]);
+  }
+  const counts = new Map();
+  for (const tags of given) for (const t of new Set(tags)) counts.set(t, (counts.get(t) || 0) + 1);
+  return [...counts].filter(([, k]) => k >= need).map(([t]) => t);
+}
+
 /**
  * Per-composer styles keyed by source.
- * Wikidata uses styles/style_src, LLM uses ls; IMSLP is the union of work.st.
- * @param {{ styles?: string[], style_src?: string, ls?: string[] }} composer
+ * Wikidata uses styles/style_src, LLM uses ls (or the votes under another rule); IMSLP is the union of work.st.
+ * @param {{ styles?: string[], style_src?: string, ls?: string[], lv?: Array<string[]|null> }} composer
  * @param {Array<{ st?: string[] }>|undefined} works
  */
-export function composerStylesBySource(composer, works) {
+export function composerStylesBySource(composer, works, rule = DEFAULT_LLM_RULE, policy = undefined) {
   const by = { wikidata: [], llm: [], imslp: [] };
   const tags = Array.isArray(composer.styles) ? composer.styles : [];
   const src = composer.style_src || "";
   if (tags.length && src === "wikidata") by.wikidata = tags.slice();
-  if (Array.isArray(composer.ls)) by.llm = composer.ls.slice();
+  by.llm = llmTags(composer, rule, policy);
   const imslp = new Set();
   for (const w of works || []) {
     for (const s of w.st || []) if (s) imslp.add(s);
@@ -348,6 +414,7 @@ export function encodeUrlState(params) {
   const allSrc =
     srcs.length === DEFAULT_STYLE_SRC.length && DEFAULT_STYLE_SRC.every((s) => srcs.includes(s));
   if (srcs.length && !allSrc) setList("styleSrc", srcs);
+  if (params.llmRule && params.llmRule !== DEFAULT_LLM_RULE) sp.set("llm", params.llmRule);
   setList("pd", params.pd);
   setList("open", params.open);
   if (params.labelSrc && params.labelSrc !== "all") sp.set("src", params.labelSrc);
@@ -396,6 +463,11 @@ export function decodeUrlState(search, allowed) {
     out.styleSrc = ["imslp"];
   } else {
     out.styleSrc = [...DEFAULT_STYLE_SRC];
+  }
+  out.llmRule = DEFAULT_LLM_RULE;
+  if (sp.has("llm")) {
+    const rule = sp.get("llm");
+    if (!allowed.llmRules || allowed.llmRules.has(rule)) out.llmRule = rule;
   }
 
   // Accept current pd buckets plus legacy within5; map eu=… separately.
@@ -497,6 +569,32 @@ function fillStyleFacet(selected) {
     })
     .join("");
   updateFacetButton(FACETS.find((f) => f.key === "style"));
+}
+
+function fillLlmRule(selected) {
+  el.llmRule.innerHTML = state.llmRules
+    .map((r) => {
+      const n = (state.llmRuleCounts[r.value] || 0).toLocaleString();
+      const title = r.value === DEFAULT_LLM_RULE ? `${r.title} (default)` : r.title;
+      return `<option value="${escapeHtml(r.value)}" title="${escapeHtml(title)}"${r.value === selected ? " selected" : ""}>${escapeHtml(r.label)} · ${n}</option>`;
+    })
+    .join("");
+}
+
+/** Recompute every composer's LLM tags and the LLM coverage under one rule (data only). */
+function setLlmRule(rule) {
+  const policy = state.manifest?.llm_style_policy;
+  state.llmRule = rule;
+  for (const c of state.composers) c._stylesBySrc.llm = llmTags(c, rule, policy);
+  state.styleSrcCoverage = computeStyleSrcCoverage(state.composers);
+}
+
+function applyLlmRule(rule) {
+  setLlmRule(rule);
+  if (el.llmRule.value !== rule) el.llmRule.value = rule;
+  const label = el.styleSrc.querySelector('input[value="llm"] + span');
+  if (label) label.textContent = `${STYLE_SRC_LABELS.llm} ${state.styleSrcCoverage.llm.toLocaleString()}`;
+  fillStyleFacet(selectedValues(el.style));
 }
 
 function fillStyleSrc(selected) {
@@ -635,6 +733,7 @@ function readUiState() {
     cit: sel.cit,
     style: sel.style,
     styleSrc: selectedValues(el.styleSrc),
+    llmRule: el.llmRule ? el.llmRule.value : DEFAULT_LLM_RULE,
     pd: selectedValues(el.pd),
     open: selectedValues(el.open),
     labelSrc: el.labelSrc.value,
@@ -658,6 +757,7 @@ function countActiveFilters(ui) {
     ui.styleSrc.length === DEFAULT_STYLE_SRC.length &&
     DEFAULT_STYLE_SRC.every((s) => ui.styleSrc.includes(s));
   if (ui.styleSrc.length && !allSrc) n += 1;
+  if (ui.llmRule && ui.llmRule !== DEFAULT_LLM_RULE) n += 1;
   if (ui.labelSrc && ui.labelSrc !== "all") n += 1;
   if (ui.hasWorks) n += 1;
   return n;
@@ -869,32 +969,44 @@ function periodChipsHtml(w) {
     .join("");
 }
 
-export function styleDetailLine(c, policy = state.manifest?.llm_style_policy) {
+/** Wikidata and IMSLP styles; LLM tags have their own block (llmDetailHtml). */
+export function styleDetailLine(c) {
   const by = c._stylesBySrc || composerStylesBySource(c, []);
   const parts = [];
   for (const src of STYLE_SRC_ORDER) {
     const vals = by[src] || [];
-    if (src === "llm") {
-      const labellers = policy?.labellers || [];
-      const votes = c.lv || [];
-      if (!votes.some(Array.isArray)) continue;
-      const models = labellers.flatMap((labeller, i) => {
-        if (!Array.isArray(votes[i])) return [];
-        const labels = votes[i].map(humanizeStyleTag).join(", ") || "—";
-        return [`${labeller.name}: ${labels}`];
-      });
-      const complete = labellers.length && labellers.every((_, i) => Array.isArray(votes[i]));
-      const consensus = vals.map(humanizeStyleTag).join(", ") || (complete ? "no consensus" : "incomplete labelling");
-      const period = c.lp ? `; period: ${humanizeStyleTag(c.lp)}` : "";
-      parts.push(`LLM: ${consensus}${models.length ? ` (${models.join(" · ")})` : ""}${period}`);
-      continue;
-    }
-    if (!vals.length) continue;
+    if (src === "llm" || !vals.length) continue;
     const labels = vals.map(humanizeStyleTag).join(", ");
     parts.push(`${STYLE_SRC_LABELS[src]}: ${labels}`);
   }
   if (!parts.length) return "";
   return `Style — ${parts.join(" · ")}`;
+}
+
+/**
+ * Each model's style tags and period, plus the tags the chosen rule keeps.
+ * @param {{ ls?: string[], lp?: string, lv?: Array<string[]|null>, lpv?: Array<string|null> }} c
+ */
+export function llmDetailHtml(c, rule = state.llmRule, policy = state.manifest?.llm_style_policy) {
+  const votes = c.lv || [];
+  if (!votes.some(Array.isArray)) return "";
+  const labellers = policy?.labellers || [];
+  const periods = c.lpv || [];
+  const ruleDef = llmRules(policy).find((r) => r.value === rule) || llmRules(policy)[0];
+  const kept = llmTags(c, ruleDef.value, policy).map(humanizeStyleTag).join(", ") || "none";
+  const agreed = ruleDef.value === DEFAULT_LLM_RULE && c.lp ? ` · period: ${humanizeStyleTag(c.lp)}` : "";
+  const models = labellers.map((l, i) => {
+    let text = "not labelled";
+    if (Array.isArray(votes[i])) {
+      text = votes[i].map(humanizeStyleTag).join(", ") || "no style tags";
+      if (periods[i] != null) text += ` · period: ${periods[i] ? humanizeStyleTag(periods[i]) : "unknown"}`;
+    }
+    return `<li><span class="llm-model">${escapeHtml(l.name)}</span> ${escapeHtml(text)}</li>`;
+  });
+  return `<div class="detail-llm">
+      <p>LLM style tags (${escapeHtml(ruleDef.title)}): <strong>${escapeHtml(kept)}</strong>${escapeHtml(agreed)}</p>
+      <ul>${models.join("")}</ul>
+    </div>`;
 }
 
 function selectComposer(id) {
@@ -1006,6 +1118,7 @@ function renderDetail() {
     <h2>${escapeHtml(c.name)}</h2>
     <p class="years">${years ? escapeHtml(years) + " · " : ""}<span class="badge ${escapeHtml(bucket)}">${escapeHtml(liveEuLabel(c.eu_year, state.currentYear))}</span>${euBit}</p>
     ${metaLine}
+    ${llmDetailHtml(c)}
     <div class="detail-links">${links.join("") || "<span>No external links</span>"}</div>
     ${worksBlock}`;
   el.detail.scrollTop = 0;
@@ -1052,6 +1165,7 @@ function bindEvents() {
 
   const onFilterChange = (e) => {
     if (e.target === el.q) return;
+    if (e.target === el.llmRule) applyLlmRule(el.llmRule.value);
     if (e.target.name === "styleSrc") {
       const checked = selectedValues(el.style);
       fillStyleFacet(checked);
@@ -1095,6 +1209,7 @@ function bindEvents() {
     setPdFacet([]);
     setOpenFacet([]);
     setStyleSrc([...DEFAULT_STYLE_SRC]);
+    applyLlmRule(DEFAULT_LLM_RULE);
     fillStyleFacet([]);
     el.q.value = "";
     el.hasWorks.checked = false;
@@ -1113,6 +1228,7 @@ function bindEvents() {
     setPdFacet(DEFAULTS.pd);
     setOpenFacet(DEFAULTS.open || []);
     setStyleSrc([...DEFAULT_STYLE_SRC]);
+    applyLlmRule(DEFAULT_LLM_RULE);
     fillStyleFacet([]);
     el.q.value = "";
     el.hasWorks.checked = true;
@@ -1172,6 +1288,8 @@ async function load() {
     fetchJson(files.works_by_composer || "works_by_composer.json"),
   ]);
   state.manifest = manifest;
+  const policy = manifest.llm_style_policy;
+  state.llmRules = llmRules(policy);
   const allStyleValues = new Set();
   composers.forEach((c) => {
     c._hay = [c.name, c.sort, ...(c.aliases || [])].join(" ").toLowerCase();
@@ -1184,7 +1302,12 @@ async function load() {
     for (const src of STYLE_SRC_ORDER) {
       for (const v of c._stylesBySrc[src]) allStyleValues.add(v);
     }
+    // Any rule can surface any model's tag.
+    for (const tags of c.lv || []) for (const v of tags || []) allStyleValues.add(v);
   });
+  for (const r of state.llmRules) {
+    state.llmRuleCounts[r.value] = composers.filter((c) => llmTags(c, r.value, policy).length).length;
+  }
   state.composers = composers;
   state.worksByComposer = worksByComposer;
   state.styleVocab = buildStyleVocab(allStyleValues);
@@ -1202,11 +1325,14 @@ async function load() {
     cit: new Set(facets.citizenship_iso || []),
     style: new Set(state.styleVocab),
     ids: new Set(composers.map((c) => c.id)),
+    llmRules: new Set(state.llmRules.map((r) => r.value)),
   };
 
   const fromUrl = decodeUrlState(location.search, allowed);
   const init = fromUrl.useDefaults ? { ...DEFAULTS, styleSrc: [...DEFAULT_STYLE_SRC] } : fromUrl;
 
+  setLlmRule(init.llmRule || DEFAULT_LLM_RULE);
+  fillLlmRule(state.llmRule);
   fillStyleSrc(init.styleSrc || [...DEFAULT_STYLE_SRC]);
 
   for (const f of FACETS) {
