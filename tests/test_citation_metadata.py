@@ -122,6 +122,10 @@ def test_citation_and_zenodo_agree():
         assert forbidden not in zenodo
 
     assert cff["type"] == "dataset"
+    # concept DOI (all versions), minted by Zenodo after the first release
+    assert re.fullmatch(r"10\.5281/zenodo\.\d+", cff["doi"])
+    assert cff["identifiers"][0]["value"] == cff["doi"]
+    assert f"https://doi.org/{cff['doi']}" in README_PATH.read_text(encoding="utf-8")
     release = _readme_release()
     assert cff["version"] == release
     assert _changelog_newest() == release

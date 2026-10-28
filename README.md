@@ -4,7 +4,7 @@
 
 A versioned dataset and a static browser for finding 20th-century classical composers whose music is likely public domain in the EU (life + 70 years), with links to their works on IMSLP.
 
-**Live viewer:** [egorpol.github.io/eu-pd-composers](https://egorpol.github.io/eu-pd-composers/) · **Release:** v3.7.0 · **Dump:** r020 (schema 3) · [Changelog](CHANGELOG.md) · [Versioning](VERSIONING.md)
+**Live viewer:** [egorpol.github.io/eu-pd-composers](https://egorpol.github.io/eu-pd-composers/) · **Release:** v3.7.0 · **DOI:** [10.5281/zenodo.23730119](https://doi.org/10.5281/zenodo.23730119) · **Dump:** r020 (schema 3) · [Changelog](CHANGELOG.md) · [Versioning](VERSIONING.md)
 
 > **Not legal advice.** "Public domain" here is a heuristic based on the composer's death year only. It ignores lyricists and librettists, editions, arrangements, posthumous publication rights and national exceptions (such as Spain's longer term; see the [caveats](data/README.md#caveats-read-these)). Check the work itself before you copy, perform or publish it.
 
@@ -40,7 +40,7 @@ composers = pd.read_csv("data/composers_r020.tsv", sep="\t", dtype=str, keep_def
 works = pd.read_csv("data/works_r020.tsv", sep="\t", dtype=str, keep_default_na=False)
 ```
 
-Cite the revision id (`r020`) and the release tag. Column reference and caveats: [`data/README.md`](data/README.md).
+Cite the DOI [10.5281/zenodo.23730119](https://doi.org/10.5281/zenodo.23730119) (all versions; Zenodo also gives each release its own DOI), the revision id (`r020`) and the release tag. Column reference and caveats: [`data/README.md`](data/README.md).
 
 **Maintain the dataset.** These are the jobs a maintainer runs (details in [`docs/PIPELINE.md`](docs/PIPELINE.md) and [`docs/AUTOMATION.md`](docs/AUTOMATION.md)):
 
