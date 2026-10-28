@@ -8,6 +8,9 @@ Dump snapshots: revision `dump_id` (`rNNN`) — see [VERSIONING.md](VERSIONING.m
 
 ## [Unreleased]
 
+### Added
+- Zenodo DOI [10.5281/zenodo.23730119](https://doi.org/10.5281/zenodo.23730119) (all versions; v3.7.0 is [10.5281/zenodo.23730120](https://doi.org/10.5281/zenodo.23730120)) in `CITATION.cff` and README
+
 ## [3.7.0] - 2026-10-28
 
 Open-licence and citation release. Schema stays **3** (five added works/composer columns for the open-licence axis). Shipped dump: **r020**.

@@ -14,9 +14,17 @@ authors:
     affiliation: "University of Music FRANZ LISZT Weimar"
 version: 3.7.0
 date-released: 2026-10-28
+doi: 10.5281/zenodo.23730119
 license: CC-BY-SA-4.0
 repository-code: "https://github.com/egorpol/eu-pd-composers"
 url: "https://egorpol.github.io/eu-pd-composers/"
+identifiers:
+  - type: doi
+    value: 10.5281/zenodo.23730119
+    description: "Concept DOI: all versions, resolves to the latest"
+  - type: doi
+    value: 10.5281/zenodo.23730120
+    description: "Version DOI of v3.7.0"
 keywords:
   - public domain
   - classical music
