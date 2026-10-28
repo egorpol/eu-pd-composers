@@ -139,12 +139,20 @@
                 <p class="facet-hint" id="styleHint" hidden>
                   Styles come from three sources that often disagree: Wikidata
                   (tagged composers only), IMSLP (period of the composer's works), LLM.
-                  Choose sources to compare them.
+                  Choose sources to compare them. Three language models (GPT-6.1 Sol,
+                  Grok 4.7, Claude Haiku 5.5) each read the composer's Wikipedia
+                  introduction; "LLM tags" picks whose tags count (default: tags both
+                  GPT-6.1 Sol and Grok 4.7 gave).
+                  <a href="https://github.com/egorpol/eu-pd-composers/blob/main/docs/LLM_STYLES.md" target="_blank" rel="noopener">How the three models compare</a>
                 </p>
                 <div class="facet-options" id="style"></div>
                 <div class="style-src" role="group" aria-label="Style source">
                   <span class="style-src-heading">Style source</span>
                   <div class="style-src-options" id="styleSrc"></div>
+                  <label class="field llm-rule">
+                    <span>LLM tags</span>
+                    <select id="llmRule"></select>
+                  </label>
                 </div>
               </fieldset>
             </div>

@@ -453,7 +453,7 @@ def build_three_way(
         ]
 
         rules = [((a, b), 2) for i, a in enumerate(labellers) for b in labellers[i + 1 :]]
-        rules += [(labellers, 2), (labellers, len(labellers))]
+        rules += [(labellers, 1), (labellers, 2), (labellers, len(labellers))]
         votes: list[dict[str, Any]] = []
         for members, k in rules:
             tags = {cid: vote([rows[m][cid] for m in members], k) for cid in shared}
@@ -705,7 +705,8 @@ def render_three_way_markdown(report: dict[str, Any]) -> str:
     lines.append(
         "A tag is kept when at least k of the listed models gave it. Coverage: share of shared "
         "composers left with at least one tag. Wikidata scores as above (an empty vote counts as "
-        "missing every reference tag). (viewer) marks the rule the viewer uses today."
+        "missing every reference tag). (viewer default) marks the viewer's default rule; the viewer "
+        "also offers 1, 2 and 3 of 3 and each model alone."
     )
     lines.append("")
     lines.append("| condition | rule | models | covered | coverage | P | R | F1 |")
@@ -713,7 +714,7 @@ def render_three_way_markdown(report: dict[str, Any]) -> str:
     for c in conds:
         for v in c["votes"]:
             wd = v["wikidata"]
-            rule = v["rule"] + (" (viewer)" if v["viewer_policy"] else "")
+            rule = v["rule"] + (" (viewer default)" if v["viewer_policy"] else "")
             lines.append(
                 f"| {c['condition']} | {rule} | {' + '.join(v['members'])} | {v['covered_n']} | "
                 f"{fmt_pct(v['coverage'])} | {fmt_num(wd['micro_precision'])} | "

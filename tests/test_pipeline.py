@@ -44,7 +44,7 @@ def repository(tmp_path, monkeypatch):
         "composer_id": "wiki:One", "backend": backend, "model": model, "effort": effort,
         "condition": "grounded", "prompt_version": "style-v2", "styles": ["modern"],
         "primary_period": "modern", "created_at": "2026-10-10T00:00:00Z",
-    }) + "\n" for backend, model, effort, _ in apply_llm_styles.POLICY_LABELLERS))
+    }) + "\n" for backend, model, effort, *_ in apply_llm_styles.POLICY_LABELLERS))
     c = pd.DataFrame([{col: "" for col in build_dump.COMPOSER_COLUMNS}])
     c.loc[0, ["composer_id", "name_display", "name_sort", "scope_class", "scope_class_src", "is_film_composer",
               "birth_year", "death_year", "eu_pd_year", "eu_pd_status", "years_until_eu_pd", "imslp_match_status",

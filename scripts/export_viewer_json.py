@@ -48,12 +48,25 @@ def _llm_facet_value(slug: str) -> str:
     return LLM_STYLE_TO_FACET.get(slug, slug)
 
 
-def _llm_votes(value, labellers: list[dict]) -> list[list[str] | None]:
+def _llm_vote_map(value) -> dict[str, str]:
     text = str(_clean(value) or "")
-    if not text:
+    return dict(part.split("=", 1) for part in text.split(";") if "=" in part)
+
+
+def _llm_votes(value, labellers: list[dict]) -> list[list[str] | None]:
+    votes = _llm_vote_map(value)
+    if not votes:
         return []
-    votes = dict(part.split("=", 1) for part in text.split(";") if "=" in part)
     return [[_llm_facet_value(s) for s in _pipe_list(votes[labeller["key"]])]
+            if labeller["key"] in votes else None for labeller in labellers]
+
+
+def _llm_period_votes(value, labellers: list[dict]) -> list[str | None]:
+    """Each labeller's period as a facet value: "" for `unknown`, None when the labeller has no row."""
+    votes = _llm_vote_map(value)
+    if not votes:
+        return []
+    return [("" if votes[labeller["key"]] == "unknown" else _llm_facet_value(votes[labeller["key"]]))
             if labeller["key"] in votes else None for labeller in labellers]
 
 
@@ -172,12 +185,15 @@ def export(dump_id: str, out_dir: Path) -> None:
         llm_styles = [_llm_facet_value(s) for s in _pipe_list(row.get("llm_style_tags"))]
         llm_period = _llm_facet_value(str(_clean(row.get("llm_style_period")) or ""))
         llm_votes = _llm_votes(row.get("llm_style_votes"), llm_policy["labellers"])
+        llm_period_votes = _llm_period_votes(row.get("llm_period_votes"), llm_policy["labellers"])
         if llm_styles:
             entry["ls"] = llm_styles
         if llm_period:
             entry["lp"] = llm_period
         if llm_votes:
             entry["lv"] = llm_votes
+        if llm_period_votes:
+            entry["lpv"] = llm_period_votes
         if has_open_composer:
             ocu = str(_clean(row.get("open_catalogue_url")))
             ocl = str(_clean(row.get("open_catalogue_licence")))

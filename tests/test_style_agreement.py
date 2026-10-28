@@ -230,7 +230,8 @@ def test_build_three_way_shared_inputs_and_votes():
     # Q1 vote {serialism, avant_garde} vs Wikidata {serialism}
     assert (two_of_three["wikidata"]["micro_precision"], two_of_three["wikidata"]["micro_recall"]) == (0.5, 1.0)
     assert votes[("3 of 3", sa.THREE_WAY_LABELLERS)]["covered_n"] == 0
+    assert votes[("1 of 3", sa.THREE_WAY_LABELLERS)]["covered_n"] == 2
 
     # Q1 has three answers, Q2 two (Haiku abstained).
     assert c["alpha_styles"]["units"] == 2 and c["alpha_primary_period"]["units"] == 2
-    assert "(viewer)" in sa.render_three_way_markdown(report)
+    assert "(viewer default)" in sa.render_three_way_markdown(report)

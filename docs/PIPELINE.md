@@ -138,7 +138,7 @@ Identity rule (`scripts/imslp_identity.py`): compare dump birth/death years with
 - `pipeline.py derive --from-dump rX --to rY`: the offline stages only (rules or overrides changed). By default it may add work-evidence, open-licence and composer `llm_style_*` columns; `--preserve-schema` fails on any column change. Every output stamps `dump_date` with its revision id when the column exists; `derive` on an already-derived dump reproduces its TSVs modulo `dump_date` when the local cache matches the one that built it: uncached pages and entities keep their prior cells, but a stale cache entry overwrites them.
 - `refresh` first runs `refetch_override_entities.py` (preflight: override re-key targets into the cache), then `build_dump.py`.
 - Stage order: `remap_force` → `carry_forward` (earlier LLM force / GenInfo decisions, joined on composer + IMSLP page id; never over a category-derived label) → `remap_composers` → `apply_overrides` → (`refetch_authorities`) `remap_authorities` → (`refetch_composer_pages`) `remap_imslp_matches` → (`refetch_work_files`) `remap_work_evidence` → (`refetch_work_wikitext`) `remap_open_licences` → `apply_llm_styles`. The `refetch_*` steps run on `refresh` only.
-- `apply_llm_styles` reads the committed ledger after composer re-keys, selects grounded `style-v2` rows from the two pinned labellers, writes consensus/votes/period/provenance, and retires legacy `llm*` composer tags. The meta records policy, ledger SHA-256 and counts. Carry-forward retains no LLM composer styles; replay is their only source. See [ledger policy](../data/llm_ledger/README.md).
+- `apply_llm_styles` reads the committed ledger after composer re-keys, selects grounded `style-v2` rows from the three pinned labellers, writes the two-model consensus, every model's style and period votes, provenance, and retires legacy `llm*` composer tags. The meta records policy, ledger SHA-256 and counts. Carry-forward retains no LLM composer styles; replay is their only source. See [ledger policy](../data/llm_ledger/README.md).
 - `diff_dumps.py rPREV rNEXT --out diff.md --summary-json summary.json` writes the review report (PD flips, identity changes, works added or removed, label transitions, schema changes).
 - `check_release.py --against rPREV` fails if composers change by more than 3%, works drop by more than 5%, a column disappears, or the share of works with `has_files` set falls by more than 5 points (a skipped file fetch). It also checks the `imslp_copyright_flags` and `has_files` vocabularies and warns on a new IMSLP file server.
 - `EU_PD_DATA_DIR` / `EU_PD_CACHE_DIR` move the data and cache dirs (staging uses them).
@@ -192,8 +192,8 @@ Caches: `data/cache/` (gitignored). Complete work categories under `imslp_page_c
 ## Filter viewer
 
 ```bash
-python scripts/export_viewer_json.py --dump r020
-python scripts/check_release.py --dump r020 --viewer-data viewer/data
+python scripts/export_viewer_json.py --dump r021
+python scripts/check_release.py --dump r021 --viewer-data viewer/data
 python -m http.server 8080 --directory viewer
 ```
 
