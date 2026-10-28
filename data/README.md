@@ -1,6 +1,6 @@
 # Data dumps
 
-Versioned snapshots. Treat TSV + `dump_meta_*.json` as the product; scripts under `scripts/` are how they were built.
+Versioned snapshots. Treat TSV + `dump_meta_*.json` as the product; scripts under `scripts/` are how they were built. Licence and sources: [`LICENSE.md`](LICENSE.md).
 
 Pipeline diagram: [`docs/PIPELINE.md`](../docs/PIPELINE.md).
 

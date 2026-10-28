@@ -8,9 +8,16 @@ Dump snapshots: revision `dump_id` (`rNNN`) — see [VERSIONING.md](VERSIONING.m
 
 ## [Unreleased]
 
+## [3.7.0] - 2026-10-28
+
+Open-licence and citation release. Schema stays **3** (five added works/composer columns for the open-licence axis). Shipped dump: **r020**.
+
 ### Added
 - Open-licence axis (dump r020): works columns `imslp_open_licences`, `imslp_open_scope`, `imslp_open_formats` from cached IMSLP score-block wikitext; composer columns `open_catalogue_url`, `open_catalogue_licence` from `data/overrides/open_catalogues.tsv` (`scripts/remap_open_licences.py`, stage after `remap_work_evidence`; `refetch_work_wikitext` on refresh). Scope `composition` only when Image Type is New Composition, the composer is not EU-`pd`, and Arranger is empty or `Composer` (otherwise `edition`). Viewer facet **Open licence**, work badges, and catalogue link when the columns are present
 - Release gate: unknown `qa_flags` tokens, or a cell out of canonical order, fail
+- Data licence CC BY-SA 4.0 with sources table in [`data/LICENSE.md`](data/LICENSE.md); code stays MIT
+- [`CITATION.cff`](CITATION.cff) and [`.zenodo.json`](.zenodo.json) for a Zenodo dataset record on GitHub release
+- Viewer footer link to the data licence
 
 ### Changed
 - Viewer disclaimer now lists what the estimate ignores, as the README does (lyricists and librettists, editions, arrangements, posthumous publication rights, national exceptions), and names Spain's longer term; `data/README.md` caveats explain it (80 years after death for authors who died before 7 December 1987, up to 190 composers marked public domain in r020; no Spanish dates computed).
@@ -28,7 +35,7 @@ Dump snapshots: revision `dump_id` (`rNNN`) — see [VERSIONING.md](VERSIONING.m
 - Enable the monthly refresh schedule once IMSLP has been notified (`refresh.yml`, commented out)
 - Lyricist-aware PD flags: librettist life dates (names are now in `imslp_librettists`)
 - LLM force decision ledger (today: force labels carry forward from the previous revision)
-- Dataset licence + `CITATION.cff`; gold-set error rates (the r018 sheets are being annotated)
+- Gold-set error rates (the r018 sheets are being annotated)
 - Death years where the Wikipedia list and a coarse Wikidata date disagree (Margherita Galeotti, Eugenia Calosso: articles say "after 1912" / "after 1914", GND gives Calosso †1962) stay at the interval's last year until a source settles them
 
 ## [3.6.0] - 2026-10-10
@@ -236,7 +243,8 @@ Published on GitHub as tag `v1.0`. Data files first appeared in-repo earlier (20
 - `composers.tsv` / `composers_imslp.tsv`
 - MIT license
 
-[Unreleased]: https://github.com/egorpol/eu-pd-composers/compare/v3.6.0...HEAD
+[Unreleased]: https://github.com/egorpol/eu-pd-composers/compare/v3.7.0...HEAD
+[3.7.0]: https://github.com/egorpol/eu-pd-composers/compare/v3.6.0...v3.7.0
 [3.6.0]: https://github.com/egorpol/eu-pd-composers/compare/v3.5.0...v3.6.0
 [3.0.0]: https://github.com/egorpol/eu-pd-composers/compare/v1.1...v3.0.0
 [1.1.0]: https://github.com/egorpol/eu-pd-composers/compare/v1.0...v1.1

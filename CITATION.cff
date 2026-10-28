@@ -1,0 +1,29 @@
+cff-version: 1.2.0
+message: "If you use this dataset, please cite it as below."
+type: dataset
+title: "eu-pd-composers: EU public-domain estimates for 20th-century classical composers and their works on IMSLP"
+abstract: >-
+  A versioned dataset of 3,369 twentieth-century classical composers and 29,033
+  IMSLP works, with an EU life-plus-70 public-domain estimate. Composer and work
+  metadata are drawn from Wikipedia, Wikidata and IMSLP. The estimate is a
+  heuristic, not legal advice.
+authors:
+  - family-names: Polyakov
+    given-names: Egor
+    orcid: "https://orcid.org/0000-0003-0913-0429"
+    affiliation: "University of Music FRANZ LISZT Weimar"
+version: 3.7.0
+date-released: 2026-10-28
+license: CC-BY-SA-4.0
+repository-code: "https://github.com/egorpol/eu-pd-composers"
+url: "https://egorpol.github.io/eu-pd-composers/"
+keywords:
+  - public domain
+  - classical music
+  - composers
+  - IMSLP
+  - Wikidata
+  - EU copyright
+  - sheet music
+  - dataset
+  - authority control

@@ -4,7 +4,7 @@
 
 A versioned dataset and a static browser for finding 20th-century classical composers whose music is likely public domain in the EU (life + 70 years), with links to their works on IMSLP.
 
-**Live viewer:** [egorpol.github.io/eu-pd-composers](https://egorpol.github.io/eu-pd-composers/) · **Release:** v3.6.0 · **Dump:** r020 (schema 3) · [Changelog](CHANGELOG.md) · [Versioning](VERSIONING.md)
+**Live viewer:** [egorpol.github.io/eu-pd-composers](https://egorpol.github.io/eu-pd-composers/) · **Release:** v3.7.0 · **Dump:** r020 (schema 3) · [Changelog](CHANGELOG.md) · [Versioning](VERSIONING.md)
 
 > **Not legal advice.** "Public domain" here is a heuristic based on the composer's death year only. It ignores lyricists and librettists, editions, arrangements, posthumous publication rights and national exceptions (such as Spain's longer term; see the [caveats](data/README.md#caveats-read-these)). Check the work itself before you copy, perform or publish it.
 
@@ -139,4 +139,4 @@ python -m pytest tests -q
 
 ## License
 
-Code: MIT (see `LICENSE`). Data drawn from Wikipedia, Wikidata and IMSLP remains under their respective terms.
+Code: MIT (see [`LICENSE`](LICENSE)). Data: [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) (see [`data/LICENSE.md`](data/LICENSE.md) for sources and terms). Cite with [`CITATION.cff`](CITATION.cff) or GitHub's "Cite this repository".
