@@ -297,12 +297,17 @@ def export(dump_id: str, out_dir: Path) -> None:
         "style_tags_coverage": style_tags_coverage,
         "llm_style_policy": llm_policy,
         "disclaimer": (
-            "EU public-domain status is a live death-year + 70 years heuristic "
-            "(counted from 1 January), not legal advice; composers without a death "
-            "date are shown as having no death date. Linked IMSLP entries are work "
-            "pages, not a verified score-file inventory. Force and style "
-            "tags are research aids and often wrong (incomplete IMSLP/Wikidata data, "
-            "heuristics, or LLM guesses)—verify before relying on them."
+            "EU public-domain status here is an estimate from the composer's death "
+            "year only: 70 years after death, counted from 1 January of the "
+            "following year. It ignores lyricists and librettists, editions, "
+            "arrangements, posthumous publication rights and national exceptions, "
+            "such as Spain's longer term for authors who died before 7 December "
+            "1987. Not legal advice: check the work itself before you copy, perform "
+            "or publish it. Composers with no death date on record are marked "
+            "“death unknown”. Linked IMSLP entries are work pages, not a checked "
+            "list of score files. Force and style tags are research aids and often "
+            "wrong (incomplete IMSLP or Wikidata data, rules of thumb, or "
+            "language-model guesses); verify before relying on them."
         ),
         "pageviews_window_label": _pageviews_window_label(
             [c["views_window"] for c in composer_rows]

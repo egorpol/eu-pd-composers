@@ -6,7 +6,7 @@ A versioned dataset and a static browser for finding 20th-century classical comp
 
 **Live viewer:** [egorpol.github.io/eu-pd-composers](https://egorpol.github.io/eu-pd-composers/) · **Release:** v3.6.0 · **Dump:** r020 (schema 3) · [Changelog](CHANGELOG.md) · [Versioning](VERSIONING.md)
 
-> **Not legal advice.** "Public domain" here is a heuristic based on the composer's death year only. It ignores lyricists and librettists, editions, arrangements, posthumous publication rights and national exceptions. Check the work itself before you copy, perform or publish it.
+> **Not legal advice.** "Public domain" here is a heuristic based on the composer's death year only. It ignores lyricists and librettists, editions, arrangements, posthumous publication rights and national exceptions (such as Spain's longer term; see the [caveats](data/README.md#caveats-read-these)). Check the work itself before you copy, perform or publish it.
 
 ## What is in the current dump (r020)
 
