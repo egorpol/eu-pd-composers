@@ -11,6 +11,7 @@
       --compare data/gold/r018                            # adds inter-annotator agreement
   python scripts/gold_set.py kit --dump r018_overlap      # second annotator's repo → build/annotator_kit/
   python scripts/gold_set.py kit --dump r020 --annotator S02 --packages 1,3   # a contributor's packages
+  python scripts/gold_set.py kit --dump r020 --annotator S09 --packages 1 --repo someone/eu-pd-gold-S09
   python scripts/gold_set.py score --dump r020 --pool     # every contributor's answers, one per item
 
 Offline. `sample` is deterministic for a dump and seed, and refuses to overwrite
@@ -460,6 +461,43 @@ GUIDE = DATA_DIR / "gold" / "annotator_guide.md"
 RULES_SPAN = ("## Composers\n", "## What the scores mean\n")
 # Budget per item in minutes, as the guide and the form state it.
 MINUTES = {"composers": 3, "composers_style": 8, "works": 1}
+# Hosted kit: owner/name (letters, digits, ".", "_", "-").
+REPO_NAME = re.compile(r"^[A-Za-z0-9._-]+/[A-Za-z0-9._-]+$")
+GUIDE_MARKERS = {"local", "link"}
+GUIDE_OPEN = re.compile(r"^<!--\s*([A-Za-z0-9_-]+)\s*-->$")
+GUIDE_CLOSE = re.compile(r"^<!--\s*/([A-Za-z0-9_-]+)\s*-->$")
+
+
+def select_guide_variant(text: str, variant: str) -> str:
+    """Keep the chosen variant's inner lines; drop the other; remove every marker line."""
+    if variant not in GUIDE_MARKERS:
+        raise ValueError(f"Unknown guide variant {variant!r}")
+    out: list[str] = []
+    active: str | None = None
+    for line in text.splitlines(keepends=True):
+        bare = line.strip("\n")
+        opened, closed = GUIDE_OPEN.fullmatch(bare), GUIDE_CLOSE.fullmatch(bare)
+        if opened:
+            name = opened.group(1)
+            if name not in GUIDE_MARKERS:
+                raise ValueError(f"Unknown guide marker {name!r}")
+            if active is not None:
+                raise ValueError(f"Nested guide marker {name!r} inside {active!r}")
+            active = name
+            continue
+        if closed:
+            name = closed.group(1)
+            if name not in GUIDE_MARKERS:
+                raise ValueError(f"Unknown guide marker {name!r}")
+            if active != name:
+                raise ValueError(f"Unbalanced guide marker: closing {name!r} while {active!r} is open")
+            active = None
+            continue
+        if active is None or active == variant:
+            out.append(line)
+    if active is not None:
+        raise ValueError(f"Unclosed guide marker {active!r}")
+    return "".join(out)
 
 
 def style_rules_table() -> str:
@@ -475,6 +513,12 @@ def style_rules_table() -> str:
 
 def run_kit(args: argparse.Namespace) -> Path:
     """A contributor's repo: guide, rules, local form and blank sheets (only their packages, if given)."""
+    repo = getattr(args, "repo", None)
+    if repo is not None:
+        if not args.annotator:
+            raise SystemExit("kit --repo requires --annotator (a contributor code such as S02)")
+        if not REPO_NAME.fullmatch(repo):
+            raise SystemExit(f"kit --repo must look like owner/name (letters, digits, ., _, -); got {repo!r}")
     read = dict(sep="\t", dtype=str, keep_default_na=False)
     directory = Path(args.gold_dir) if args.gold_dir else gold_dir(args.dump)
     default_out = REPO_ROOT / "build" / "annotator_kit" / args.dump
@@ -500,8 +544,10 @@ def run_kit(args: argparse.Namespace) -> Path:
     rules = readme[readme.index(RULES_SPAN[0]):readme.index(RULES_SPAN[1])]
     if style:
         rules = rules.rstrip() + "\n\n" + style_rules_table()
+    rules_text = "# Annotation rules\n\n" + rules.rstrip() + "\n"
     guide = GUIDE.read_text(encoding="utf-8")
     guide = guide[guide.index("# "):]
+    guide = select_guide_variant(guide, "link" if repo else "local")
     for key, value in (("__GOLD_DIR__", f"data/gold/{args.dump}"), ("__N_COMPOSERS__", len(sheets["composers"])),
                        ("__N_WORKS__", len(sheets["works"])), ("__HOURS__", f"{minutes / 60 + 0.25:.1f}")):
         guide = guide.replace(key, str(value))
@@ -510,10 +556,28 @@ def run_kit(args: argparse.Namespace) -> Path:
     for kind in SETS:
         sheets[kind].to_csv(target / f"{kind}_sheet.tsv", sep="\t", index=False)
     (out / "README.md").write_text(guide, encoding="utf-8")
-    (out / "RULES.md").write_text("# Annotation rules\n\n" + rules.rstrip() + "\n", encoding="utf-8")
-    page = render_form(form_data(directory, args.dump, keep), FORM_TEMPLATE.read_text(encoding="utf-8"))
-    (out / "gold_form.html").write_text(LOCAL_PAGE.format(page=page), encoding="utf-8")
-    print(f"annotator repo files → {out} ({len(sheets['composers'])} composers, {len(sheets['works'])} works)")
+    (out / "RULES.md").write_text(rules_text, encoding="utf-8")
+    data = form_data(directory, args.dump, keep)
+    if repo:
+        data["github"] = {"repo": repo, "branch": "main", "dir": f"data/gold/{args.dump}",
+                          "annotator": args.annotator, "guide": "guide.html", "rules": "RULES.html"}
+    page = render_form(data, FORM_TEMPLATE.read_text(encoding="utf-8"))
+    if repo:
+        site = out / "site"
+        site.mkdir(parents=True, exist_ok=True)
+        # A Pages site is public: robots noindex, and the page holds questions only. Pages turns RULES.md into
+        # RULES.html but skips README*.md (jekyll-optional-front-matter), so the guide goes in as guide.md.
+        site_page = LOCAL_PAGE.replace("</head>", '<meta name="robots" content="noindex">\n</head>')
+        (site / "index.html").write_text(site_page.format(page=page), encoding="utf-8")
+        (site / "guide.md").write_text(guide, encoding="utf-8")
+        (site / "RULES.md").write_text(rules_text, encoding="utf-8")
+        # A kit rebuilt with --repo in the same folder must not keep a local form whose answers never reach GitHub.
+        (out / "gold_form.html").unlink(missing_ok=True)
+        print(f"annotator repo files → {out} ({len(sheets['composers'])} composers, {len(sheets['works'])} works)")
+        print(f"Pages site → {site} (publish from a repository or branch that holds only these files)")
+    else:
+        (out / "gold_form.html").write_text(LOCAL_PAGE.format(page=page), encoding="utf-8")
+        print(f"annotator repo files → {out} ({len(sheets['composers'])} composers, {len(sheets['works'])} works)")
     return out
 
 
@@ -1119,6 +1183,7 @@ def main() -> None:
     kit.add_argument("--dump", required=True, help="Gold dir name, e.g. r020 or r018_overlap")
     kit.add_argument("--packages", help="Comma-separated package numbers (gold v2), e.g. 1,3. Default: all items")
     kit.add_argument("--annotator", help="Contributor code such as S02; names the output folder")
+    kit.add_argument("--repo", help="OWNER/NAME: also write site/ for GitHub Pages (requires --annotator)")
     kit.add_argument("--gold-dir", help="Default: data/gold/<dump>/")
     kit.add_argument("--out-dir", help="Default: build/annotator_kit/<dump>/[<annotator>/]")
     imp = commands.add_parser("import-form", help="Write answers saved by the form into the sheets")
