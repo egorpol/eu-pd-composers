@@ -426,6 +426,53 @@ body {
   cursor: pointer;
 }
 
+.pick {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin: 0 0 0.75rem;
+}
+
+.pick-btn {
+  font: 600 0.88rem var(--font-body);
+  color: var(--accent);
+  background: #fff;
+  border: 1px solid var(--accent);
+  padding: 0.4rem 0.75rem;
+  cursor: pointer;
+}
+
+.pick-btn:hover,
+.pick-btn:focus-visible {
+  background: var(--accent-soft);
+}
+
+.pick-fame {
+  display: inline-flex;
+  gap: 0.75rem;
+  font-size: 0.88rem;
+  color: var(--ink-soft);
+}
+
+.pick-fame label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  cursor: pointer;
+}
+
+.pick-msg {
+  font-size: 0.85rem;
+  color: var(--warn);
+}
+
+.pick-note {
+  margin: 0 0 0.4rem;
+  font-size: 0.78rem;
+  color: var(--accent);
+}
+
 .check {
   display: flex;
   align-items: center;
@@ -681,6 +728,12 @@ tbody tr.empty td {
   border-top: 1px solid var(--line);
   font-size: 0.88rem;
   line-height: 1.35;
+}
+
+.works-list li.picked {
+  background: var(--accent-soft);
+  box-shadow: inset 3px 0 0 var(--accent);
+  padding-left: 0.6rem;
 }
 
 .works-list a {
