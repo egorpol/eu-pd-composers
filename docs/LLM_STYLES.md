@@ -1,6 +1,6 @@
 # LLM style tags: how the three models compare
 
-Three language models (LLMs), GPT-6.1 Sol, Grok 4.7 and Claude Haiku 5.5 (Sol, Grok and Haiku below and in the viewer), suggest style tags (such as *Impressionism* or *Serialism*) and one period for each composer. Each model read the composer's name, life dates, citizenship and the opening paragraph of their English Wikipedia article, and could add what it already knew. This page explains how the models differ and what each choice in the viewer's **LLM tags** menu gives you.
+Three language models (LLMs) suggest style tags (such as *Impressionism* or *Serialism*) and one period for each composer: GPT-6.1 Sol, Grok 4.7 and Claude Haiku 5.5, called Sol, Grok and Haiku below and in the viewer. Each model read the composer's name, life dates, citizenship and, where there is one, the opening paragraph of their English Wikipedia article, and could add what it already knew. This page explains how the models differ and what each choice in the viewer's **LLM tags** menu gives you.
 
 Numbers are for data version **r021**. They describe agreement with other sources, not accuracy: none of these sources is known to be correct. A hand-checked sample (the gold set) will measure accuracy later.
 
@@ -26,7 +26,7 @@ In short:
 
 - **2 of 3 agree** tags about 280 more composers than the default, and agrees with Wikidata as well (0.62 against 0.63; a gap this small can easily be chance).
 - **All 3 agree** tags the fewest composers: more of its tags match Wikidata, but it finds fewer of Wikidata's.
-- **Any model** and the single models are for comparing the models: they tag almost everyone, but add more tags that Wikidata does not have.
+- **Any model** and the single models are for comparing the models: they tag more composers (88% to 99%), but add more tags that Wikidata does not have.
 
 The default stays "Sol + Grok agree" until the gold set shows whether a vote of three is better.
 
@@ -41,17 +41,17 @@ On style tags, the models differ mainly in how often and how freely they tag; no
 | Recall against Wikidata | 0.81 | 0.75 | 0.67 |
 | F1 against Wikidata | 0.57 | 0.60 | 0.58 |
 | Period matches IMSLP, exact (share, 1 = always) | 0.63 | 0.49 | 0.56 |
-| Period matches IMSLP, late romantic counted as romantic | about 0.80 | about 0.74 | about 0.77 |
-| Answers "late romantic" (among composers compared with IMSLP) | 24% | 38% | 33% |
+| Period matches IMSLP, late romantic counted as romantic | 0.81 | 0.75 | 0.78 |
+| Answers "late romantic" (among composers compared with IMSLP) | 25% | 38% | 33% |
 
 - **Sol** almost always tags, and tags generously: it finds the most Wikidata tags but also adds the most others.
 - **Haiku** is the most cautious: it gives no tag more often, and more of its tags match Wikidata.
-- **Grok** sits in between and has the highest F1. Only its lead over Sol (+0.04) is bigger than chance alone would explain, and only just.
-- **Periods:** compared with the main period of a composer's IMSLP works (about 1,000 composers), Sol matches most often, then Haiku, then Grok, and these gaps are too large to be chance. But IMSLP has no "late romantic" period, so that answer always counts as a miss here, and Grok gives it most often. Counting it as "romantic" narrows the gaps (Sol about 0.80, Haiku 0.77, Grok 0.74).
+- **Grok** sits in between and has the highest F1. Only its lead over Sol (0.602 against 0.565 before rounding) is bigger than chance alone would explain, and only just.
+- **Periods:** compared with the main period of a composer's IMSLP works (about 1,000 composers), Sol matches most often, then Haiku, then Grok, and these gaps are too large to be chance. But IMSLP has no "late romantic" period, so that answer always counts as a miss here, and Grok gives it most often. Counting it as "romantic" narrows the gaps (Sol 0.81, Haiku 0.78, Grok 0.75).
 
 Without the Wikipedia paragraph (from memory only), all three give no tag more often (Sol 12.9%, Grok 20.5%, Haiku 26.9%) and agree less with Wikidata (F1 Grok 0.55, Sol 0.52, Haiku 0.50).
 
-*For specialists:* "chance" here means a paired bootstrap over composers (2,000 resamples, 95% intervals). Grok minus Sol, F1: +0.04 (+0.005 to +0.07). 2 of 3 minus the default, F1: −0.003 (−0.02 to +0.02). Every period gap excludes zero, on the 1,006 composers where all three gave a period.
+*For specialists:* "chance" here means a paired bootstrap over composers (2,000 resamples, 95% intervals). Grok minus Sol, F1: +0.037 (+0.005 to +0.069). 2 of 3 minus the default, F1: −0.003 (−0.022 to +0.016). Every period gap excludes zero, on the 1,006 composers where all three gave a period.
 
 ## How much the models agree with each other
 
@@ -61,15 +61,15 @@ Without the Wikipedia paragraph (from memory only), all three give no tag more o
 | Haiku and Grok | 0.54 | 0.70 |
 | Haiku and Sol | 0.50 | 0.72 |
 
-For tags in common, 1 means the same tags and 0 means none shared. For the period, 1 means always the same and 0 means no better than chance. A combined score for all three, on the same 0-to-1 scale, is 0.74 for the period (fairly high) and 0.47 for style tags (low). Sol and Grok are closest; Haiku differs most. (Measures: Jaccard for tags in common, Cohen's κ for pairs, Krippendorff's α for all three.)
+For tags in common, 1 means the same tags and 0 means none shared. For the period, 1 means always the same and 0 means no better than chance. A combined score for all three, where 1 means always the same and 0 no better than chance, is 0.74 for the period (fairly high) and 0.47 for style tags (low). Sol and Grok are closest; Haiku differs most. (Measures: Jaccard for tags in common, Cohen's κ for pairs, Krippendorff's α for all three, with MASI distance for tags.)
 
 ## Limits
 
 - Wikidata has style tags for only 153 composers, so F1 differences of a few hundredths may be due to chance.
 - Wikidata and IMSLP are references, and neither is known to be correct. A model's tag can be correct where they say nothing or something else, and a match with them does not prove a tag correct.
-- The comparisons above use only composers whose input was identical for all three models: 3,356 with the Wikipedia paragraph and 3,365 without. The 4 and 5 left out are mostly composers whose data changed between the Sol and Grok run and the Haiku run. The viewer counts use every composer.
+- The comparisons above use only composers whose input was identical for all three models: 3,356 of 3,360 with the Wikipedia paragraph and 3,365 of 3,370 without. The 4 and 5 left out are composers whose data changed between the Sol and Grok run and the Haiku run (one of them is no longer in the data). The viewer counts use every composer.
 - Sol and Grok ran 18 days before Haiku, on the same input text.
-- Haiku's instructions had one extra line asking for the answer only. Grok's tool cannot force the answer format, but its logs show no tags lost this way.
+- Haiku's instructions had one extra line asking for the answer only. The Cursor CLI, which ran Grok, cannot force the answer format, but Grok's logs show no tags lost this way.
 
 ## How the tags were made
 
@@ -79,7 +79,7 @@ For tags in common, 1 means the same tags and 0 means none shared. For the perio
 | Grok 4.7 | Grok | `grok-4.7-low` | low (set by the id) | 2026-10-10 (100-composer pilot: 2026-10-09) | Cursor CLI |
 | Claude Haiku 5.5 | Haiku | `claude-haiku-5-5` | low | 2026-10-28 | Claude Code CLI |
 
-Low reasoning effort means quick answers with little step-by-step reasoning. All three got the same task and the same input. Each answer is 0 to 3 style tags from a fixed list (the viewer's Style list) plus one period, or "unknown". A model may give no tags at all.
+Low reasoning effort means quick answers with little step-by-step reasoning. All three got the same task and, apart from the few composers noted under Limits, the same input. Each answer is 0 to 3 style tags from a fixed list (the viewer's Style list) plus one period, or "unknown". A model may give no tags at all.
 
 Every answer is stored in [`data/llm_ledger/style_labels.jsonl`](../data/llm_ledger/style_labels.jsonl), together with the model, prompt version and a fingerprint of the input. The data pipeline never calls a model: it only replays this file.
 

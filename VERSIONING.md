@@ -28,6 +28,7 @@ Applies to code, schema contract, docs, and UI.
 | `v3.5.0` | 2026-10-10 | All-composer LLM style pass with committed ledger; grounded two-model consensus as `llm_style_*` columns and the viewer's LLM style source; `style_tags` Wikidata-only; dump r015 |
 | `v3.6.0` | 2026-10-10 | IMSLP rights evidence (`has_files`, file hosts, six rights tokens); GND / VIAF ids and the identity guard; `imslp_n_players`; LCMPT / LCGFT crosswalk; gold-set sampler, scorer and annotation form; dump r018 |
 | `v3.7.0` | 2026-10-28 | Open-licence axis; viewer disclaimer with Spain caveat; gold form via GitHub; data licence CC BY-SA 4.0, `CITATION.cff` and `.zenodo.json`; dump r020 |
+| `v3.8.0` | 2026-10-30 | Third LLM style labeller (Claude Haiku 5.5) and three-way comparison; viewer LLM tags menu (each model's tags and period, voting rules) and [`docs/LLM_STYLES.md`](docs/LLM_STYLES.md); Random composer / Random work; Zenodo DOI; dump r021 |
 
 Do **not** reset to `0.2` — that would go backwards from published `v1.1`.
 

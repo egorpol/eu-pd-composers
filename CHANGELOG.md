@@ -8,6 +8,8 @@ Dump snapshots: revision `dump_id` (`rNNN`) — see [VERSIONING.md](VERSIONING.m
 
 ## [Unreleased]
 
+## [3.8.0] - 2026-10-30
+
 ### Added
 - Zenodo DOI [10.5281/zenodo.23730119](https://doi.org/10.5281/zenodo.23730119) (all versions; v3.7.0 is [10.5281/zenodo.23730120](https://doi.org/10.5281/zenodo.23730120)) in `CITATION.cff` and README
 - Third LLM style labeller: `scripts/llm_style_pass.py --backend claude` runs Claude Haiku 5.5 (`claude-haiku-5-5`, effort `low`) through the Claude Code CLI with no tools, settings files or MCP servers, in an empty working directory. The ledger gains 6,728 rows on r020 (3,369 closed, 3,359 grounded; 0 failures). Its grounded labels reach the dump as votes in r021 (below); the consensus stays GPT-6.1 Sol + Grok 4.7. Grounded micro-F1 against Wikidata style tags, on the 153 composers that have them: 0.58 (GPT-6.1 Sol 0.57, Grok 4.7 0.60)
