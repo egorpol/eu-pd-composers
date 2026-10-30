@@ -40,7 +40,7 @@ composers = pd.read_csv("data/composers_r021.tsv", sep="\t", dtype=str, keep_def
 works = pd.read_csv("data/works_r021.tsv", sep="\t", dtype=str, keep_default_na=False)
 ```
 
-Cite the DOI [10.5281/zenodo.23730119](https://doi.org/10.5281/zenodo.23730119) (all versions; Zenodo also gives each release its own DOI), the revision id (`r021`) and the release tag. Column reference and caveats: [`data/README.md`](data/README.md).
+Cite the DOI [10.5281/zenodo.23730119](https://doi.org/10.5281/zenodo.23730119) (all versions; Zenodo also gives each release its own DOI: v3.8.0 is [10.5281/zenodo.23791548](https://doi.org/10.5281/zenodo.23791548)), the revision id (`r021`) and the release tag. Column reference and caveats: [`data/README.md`](data/README.md).
 
 **Maintain the dataset.** These are the jobs a maintainer runs (details in [`docs/PIPELINE.md`](docs/PIPELINE.md) and [`docs/AUTOMATION.md`](docs/AUTOMATION.md)):
 
