@@ -50,6 +50,16 @@
         />
       </label>
 
+      <div class="pick" role="group" aria-label="Random pick from what the filters match">
+        <button type="button" id="pickComposer" class="pick-btn" title="Open a random composer from those the filters match">🎲 Random composer</button>
+        <button type="button" id="pickWork" class="pick-btn" title="Open a random composer with matching works and highlight one of those works">🎲 Random work</button>
+        <span class="pick-fame" title="Lesser-known: only the less-viewed half of the matches (Wikipedia pageviews)">
+          <label><input type="radio" name="pickFame" value="any" checked /> Anyone</label>
+          <label><input type="radio" name="pickFame" value="lesser" /> Lesser-known</label>
+        </span>
+        <span class="pick-msg" id="pickMsg" role="status"></span>
+      </div>
+
       <details class="filters-panel" id="filtersPanel">
         <summary class="filters-summary">
           Filters · <span id="activeFilterCount">0</span> active

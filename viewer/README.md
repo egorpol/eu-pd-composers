@@ -79,6 +79,16 @@ no filter. These are uploader-/site-asserted licences, not a legal determination
 
 Filters, sort, and selected composer id are mirrored into the query string (`history.replaceState`) for shareable links (`style`, `styleSrc=wikidata,imslp,llm`, `open=music,edition`). Legacy URLs keep working: `eu=pd` → `pd=now`; `eu=not_pd` → `pd=next,soon,later`; `eu=unknown_death` → `pd=unknown`; `pd=within5` → `pd=next,soon`; `ist=X` / `imslpStyle=X` → `style=X` with `styleSrc=imslp`; bare `style=Y` still applies with all sources on.
 
+## Random pick
+
+Below the search box, **Random composer** opens a random composer from those the filters match, and **Random work**
+opens a random composer with ≥1 matching work and highlights one of those works (the work filters apply, so
+"Has works for: chamber" draws a chamber work). The draw is two-stage on purpose: every composer is equally likely,
+whatever their number of works. **Lesser-known** keeps only the less-viewed half of the matches by Wikipedia
+pageviews (missing pageviews count as 0); **Anyone** keeps all. Within a page visit a composer is not drawn twice
+until the pool is used up. The pick goes into the URL (`id`, plus `work` = the IMSLP page name), so a link reopens
+it with the work highlighted; selecting another composer by hand drops the pick.
+
 ## Layout breakpoints
 
 | Width | Behaviour |

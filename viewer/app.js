@@ -164,6 +164,9 @@ const state = {
   llmRuleCounts: {},
   selectedId: null,
   detailForce: "",
+  pickedWork: null,
+  pickNote: "",
+  pickSeen: new Set(),
   currentYear: new Date().getFullYear(),
   urlReady: false,
   filtersMq: null,
@@ -194,6 +197,10 @@ function bindElements() {
     viewsHeader: document.getElementById("viewsHeader"),
     pd: document.getElementById("pd"),
     open: document.getElementById("open"),
+    results: document.querySelector(".results"),
+    pickComposer: document.getElementById("pickComposer"),
+    pickWork: document.getElementById("pickWork"),
+    pickMsg: document.getElementById("pickMsg"),
   });
   for (const f of FACETS) el[f.key] = document.getElementById(f.key);
 }
@@ -398,6 +405,29 @@ export function workMatchesFilters(work, forceSet, srcMode) {
   return true;
 }
 
+/** A work's IMSLP page name, the `work=` URL value. */
+export function workKey(work) {
+  return work.u.split("/wiki/").pop();
+}
+
+/** Random-pick pool: "lesser" keeps the less-viewed half of the matches (no pageviews counts as 0). */
+export function pickPool(composers, fame) {
+  if (fame !== "lesser") return composers;
+  const byViews = [...composers].sort((a, b) => (a.views ?? 0) - (b.views ?? 0));
+  return byViews.slice(0, Math.ceil(byViews.length / 2));
+}
+
+/** One random item; with `seen` (ids), skips earlier picks until all were picked, then starts over. */
+export function pickRandom(items, seen = null, rand = Math.random) {
+  if (!items.length) return null;
+  let fresh = seen ? items.filter((x) => !seen.has(x.id)) : items;
+  if (!fresh.length) {
+    seen.clear();
+    fresh = items;
+  }
+  return fresh[Math.floor(rand() * fresh.length)];
+}
+
 export function encodeUrlState(params) {
   const sp = new URLSearchParams();
   // Marker so a shared URL with no filters means "cleared", not "use defaults".
@@ -422,6 +452,7 @@ export function encodeUrlState(params) {
   if (params.sortDir && params.sortDir !== "desc") sp.set("dir", params.sortDir);
   if (params.hasWorks === false) sp.set("hasWorks", "0");
   if (params.id) sp.set("id", params.id);
+  if (params.id && params.work) sp.set("work", params.work);
   return `?${sp.toString()}`;
 }
 
@@ -502,6 +533,7 @@ export function decodeUrlState(search, allowed) {
     const id = sp.get("id");
     if (id && (!allowed.ids || allowed.ids.has(id))) out.id = id;
   }
+  if (out.id && sp.get("work")) out.work = sp.get("work");
   return out;
 }
 
@@ -741,6 +773,7 @@ function readUiState() {
     sortDir: el.sortDir.value,
     hasWorks: el.hasWorks.checked,
     id: state.selectedId,
+    work: state.pickedWork,
   };
 }
 
@@ -844,6 +877,7 @@ function renderRows() {
   const srcMode = el.labelSrc.value;
   const workActive = workFilterActive(forceSet, srcMode);
   const rows = filteredComposers();
+  el.pickMsg.textContent = "";
   el.meta.textContent = `${rows.length.toLocaleString()} of ${state.composers.length.toLocaleString()} composers shown · ${state.manifest.dump_label || "dump " + state.manifest.dump_id}`;
   updateActiveFilterCount();
 
@@ -855,6 +889,7 @@ function renderRows() {
       el.announce.textContent = "";
       renderDetail();
     } else {
+      state.pickNote = ""; // its match count no longer holds
       syncDetailForceFromFacet();
       renderDetail();
     }
@@ -1009,7 +1044,33 @@ export function llmDetailHtml(c, rule = state.llmRule, policy = state.manifest?.
     </div>`;
 }
 
-function selectComposer(id) {
+/** Scroll `item` to the upper third of its own scrolling pane, leaving the page alone. */
+function scrollWithin(box, item) {
+  box.scrollTop += item.getBoundingClientRect().top - box.getBoundingClientRect().top - box.clientHeight / 3;
+}
+
+/** Open a random composer (kind "composer") or one of their works (kind "work") from what the filters match. */
+function randomPick(kind) {
+  const forceSet = new Set(selectedValues(el.force));
+  const srcMode = el.labelSrc.value;
+  let matches = filteredComposers();
+  if (kind === "work") matches = matches.filter((c) => matchingWorksFor(c, forceSet, srcMode).length);
+  const fame = document.querySelector('input[name="pickFame"]:checked')?.value || "any";
+  const pool = pickPool(matches, fame);
+  const c = pickRandom(pool, state.pickSeen);
+  if (!c) {
+    el.pickMsg.textContent = `No ${kind === "work" ? "works" : "composers"} match these filters.`;
+    return;
+  }
+  el.pickMsg.textContent = "";
+  state.pickSeen.add(c.id);
+  const work = kind === "work" ? workKey(pickRandom(matchingWorksFor(c, forceSet, srcMode))) : null;
+  const n = matches.length.toLocaleString();
+  const from = fame === "lesser" ? `the less-viewed half (${pool.length.toLocaleString()}) of ${n}` : n;
+  selectComposer(c.id, { work, note: `Random ${kind} · from ${from} matching composers` });
+}
+
+function selectComposer(id, pick = null) {
   const prev = el.rows.querySelector("tr.active");
   if (prev) {
     prev.classList.remove("active");
@@ -1022,21 +1083,31 @@ function selectComposer(id) {
   }
 
   state.selectedId = id;
+  state.pickedWork = pick?.work || null;
+  state.pickNote = pick?.note || "";
   const c = state.composers.find((x) => x.id === id);
   if (!c) return;
   const works = state.worksByComposer[c.id] || [];
   syncDetailForceFromFacet();
   renderDetail();
   pushUrlState();
-  el.announce.textContent = `${c.name}: ${works.length} IMSLP works`;
+  el.announce.textContent = `${pick?.note ? "Random pick: " : ""}${c.name}: ${works.length} IMSLP works`;
+  const picked = el.detail.querySelector(".works-list li.picked");
+  if (picked) scrollWithin(el.detail, picked);
+  if (pick && tr) scrollWithin(el.results, tr);
   if (window.matchMedia("(max-width: 900px)").matches) {
     el.detail.scrollIntoView({ behavior: "smooth", block: "start" });
+  } else if (pick?.note) {
+    // The buttons sit above the filters panel, so bring the result into view.
+    el.detail.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }
 }
 
 function renderDetail() {
   const c = state.composers.find((x) => x.id === state.selectedId);
   if (!c) {
+    state.pickedWork = null;
+    state.pickNote = "";
     el.detail.innerHTML = `<p class="detail-empty">Select a composer to see IMSLP works.</p>`;
     return;
   }
@@ -1049,6 +1120,8 @@ function renderDetail() {
   else if (facetForces.length) forceFilter = new Set(facetForces);
 
   const shown = works.filter((w) => workMatchesFilters(w, forceFilter, srcMode));
+  const picked = state.pickedWork ? shown.find((w) => workKey(w) === state.pickedWork) : null;
+  if (!picked) state.pickedWork = null;
   const forForceOptions = works.filter((w) => workMatchesFilters(w, new Set(), srcMode));
   const forces = [...new Set(forForceOptions.map((w) => w.f).filter(Boolean))].sort();
   const forceSelect =
@@ -1105,7 +1178,7 @@ function renderDetail() {
     <ul class="works-list">
       ${shown
         .map(
-          (w) => `<li>
+          (w) => `<li${w === picked ? ' class="picked"' : ""}>
             <a href="${escapeHtml(w.u)}" target="_blank" rel="noopener">${escapeHtml(w.t || "Work")}</a>
             <span class="src">${escapeHtml(w.f)}${w.s ? " · " + escapeHtml(w.s) : ""}</span>${periodChipsHtml(w)}${workEvidenceHtml(w)}
           </li>`
@@ -1115,6 +1188,7 @@ function renderDetail() {
   }
 
   el.detail.innerHTML = `
+    ${state.pickNote ? `<p class="pick-note">${escapeHtml(state.pickNote)}</p>` : ""}
     <h2>${escapeHtml(c.name)}</h2>
     <p class="years">${years ? escapeHtml(years) + " · " : ""}<span class="badge ${escapeHtml(bucket)}">${escapeHtml(liveEuLabel(c.eu_year, state.currentYear))}</span>${euBit}</p>
     ${metaLine}
@@ -1241,6 +1315,9 @@ function bindEvents() {
     renderRows();
   });
 
+  el.pickComposer.addEventListener("click", () => randomPick("composer"));
+  el.pickWork.addEventListener("click", () => randomPick("work"));
+
   el.rows.addEventListener("click", (e) => {
     const tr = e.target.closest("tr[data-id]");
     if (tr) selectComposer(tr.dataset.id);
@@ -1250,6 +1327,7 @@ function bindEvents() {
     if (e.target.id !== "detailForce") return;
     state.detailForce = e.target.value;
     renderDetail();
+    pushUrlState();
     document.getElementById("detailForce")?.focus();
   });
 }
@@ -1363,7 +1441,7 @@ async function load() {
   renderRows();
 
   if (init.id && allowed.ids.has(init.id)) {
-    selectComposer(init.id);
+    selectComposer(init.id, init.work ? { work: init.work } : null);
   }
 }
 
