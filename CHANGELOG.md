@@ -8,6 +8,9 @@ Dump snapshots: revision `dump_id` (`rNNN`) — see [VERSIONING.md](VERSIONING.m
 
 ## [Unreleased]
 
+### Added
+- v3.8.0 version DOI [10.5281/zenodo.23791548](https://doi.org/10.5281/zenodo.23791548) in `CITATION.cff` and README
+
 ## [3.8.0] - 2026-10-30
 
 ### Added
