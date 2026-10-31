@@ -635,7 +635,14 @@ function renderCard(tab, items, i) {
       card.append(q("Primary period", "primary_period",
         el("p", { class: "help", text: "The period where the bulk of the composer's output sits, judged by its musical language more than the calendar." }),
         seg("primary_period", [...S.data.eras.map(x => ({ v: x })), { v: "unknown", hint: "" }]),
-        el("div", { class: "row" }, ssrc.box)));
+        el("div", { class: "row" }, ssrc.box),
+        el("details", { class: "ref" }, el("summary", { text: "Sources for style" }),
+          el("ol", {},
+            el("li", { text: "Reference works: Grove / Oxford Music Online, MGG, Baker's, national music encyclopaedias, music information centres." }),
+            el("li", { text: "Scholarly writing, publishers' composer pages, signed programme or liner notes." }),
+            el("li", { text: "The composer's scores on IMSLP, to confirm a technique (a twelve-tone row, tape parts)." }),
+            el("li", { text: "Wikipedia, only when nothing above covers the composer. Say so in the source." })),
+          el("p", { class: "help", style: "margin-top:6px", text: "Grove and MGG need a library login; many national music encyclopaedias and music information centres are free online." }))));
     }
   } else {
     card.append(q("Instrumentation of the original version", "force_family",
