@@ -297,7 +297,6 @@ function warnings(kind, v, it) {
       if (v.styles && v.styles !== "unknown" && !(v.style_source || "").trim()) w.push("Name the source for the style: Grove, MGG, a publisher's page… with its URL.");
       if (v.styles === "unknown" && v.primary_period && v.primary_period !== "unknown") w.push("You can name the period, so add its period tag to the style instead of unknown.");
       if (/wikidata/i.test(v.style_source || "")) w.push("Wikidata's movement statements are what the style is checked against: use another source.");
-      if (/wikipedia/i.test(v.style_source || "")) w.push("Wikipedia is also what the AI labels read, so a style taken from it checks them least. Look for a reference work first (Sources for style, below); keep Wikipedia only if nothing else covers this composer.");
     }
   }
   return w;
