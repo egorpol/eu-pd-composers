@@ -75,12 +75,12 @@ Only the **latest** revision is kept in `data/` in git. Older `rNNN` / calendar 
 
 | Column | Coverage | Content |
 |---|---|---|
-| `imslp_style` | 99.7% | IMSLP period style, pipe list (`Romantic`, `Early 20th century`, `Modern`, …) |
-| `imslp_first_published` | 73.8% | earliest `Works first published in YYYY` |
-| `imslp_copyright_flags` | — | IMSLP's own flags, normalised: `nonpd_eu` (4,575 works), `nonpd_us`, `pd_eu_rost`, `pd_ca_rost`, `nonpd_ca_text`, `permission_granted` |
-| `imslp_librettists` | 27.2% | `Last, First` from `…/Librettist` categories |
+| `imslp_style` | 99.8% | IMSLP period style, pipe list (`Romantic`, `Early 20th century`, `Modern`, …) |
+| `imslp_first_published` | 73.9% | earliest `Works first published in YYYY` |
+| `imslp_copyright_flags` | — | IMSLP's own flags, normalised: `nonpd_eu` (4,592 works), `nonpd_us`, `pd_eu_rost`, `pd_ca_rost`, `nonpd_ca_text`, `permission_granted` |
+| `imslp_librettists` | 27.3% | `Last, First` from `…/Librettist` categories |
 
-  IMSLP flags 4,510 of 7,825 works by `not_pd` composers as not PD in the EU, but only 65 of 20,351 works by `pd` composers. Those 65 are mostly vocal or posthumously published works, the cases a composer-only heuristic cannot see. The flag is IMSLP's judgement, not legal advice either.
+  IMSLP flags 4,527 of 7,834 works by `not_pd` composers as not PD in the EU, but only 65 of 20,391 works by `pd` composers. Some of those 65 are vocal or posthumously published, cases a composer-only heuristic cannot see. The flag is IMSLP's judgement, not legal advice either.
 
 ### What changed since r010
 

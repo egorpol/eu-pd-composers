@@ -11,6 +11,9 @@ Dump snapshots: revision `dump_id` (`rNNN`) — see [VERSIONING.md](VERSIONING.m
 ### Added
 - v3.8.0 version DOI [10.5281/zenodo.23791548](https://doi.org/10.5281/zenodo.23791548) in `CITATION.cff` and README
 
+### Fixed
+- README and `data/README.md`: the 65 PD-now works IMSLP flags as not PD in the EU are no longer called mostly vocal or posthumous (22 to 26 of them are); `data/README.md` totals and IMSLP column figures updated to r021
+
 ## [3.8.0] - 2026-10-30
 
 ### Added

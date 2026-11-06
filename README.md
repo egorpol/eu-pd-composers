@@ -24,7 +24,7 @@ A versioned dataset and a static browser for finding 20th-century classical comp
 
 Every label carries its source (`*_src` columns, `qa_flags`, `imslp_match_evidence`, per-model LLM votes), and every revision is immutable with a `dump_meta_rNNN.json` that records how it was built. Only the latest revision lives in `data/`; older ones are in git history.
 
-A useful cross-check: IMSLP flags 4,527 of the 7,834 works by not-yet-PD composers as not PD in the EU, but only 65 of the 20,391 works by PD-now composers. Those 65 are mostly vocal works and posthumous publications, which a composer-only rule cannot see. IMSLP gives that EU warning only for composers who died 1956–1971 (PD in Canada); later works carry other rights categories (US-only PD, hosted by permission) or sit on IMSLP's US and life+50 servers.
+A useful cross-check: IMSLP flags 4,527 of the 7,834 works by not-yet-PD composers as not PD in the EU, but only 65 of the 20,391 works by PD-now composers. Some of those 65 are vocal or posthumously published, which a composer-only rule cannot see. IMSLP gives that EU warning only for composers who died 1956–1971 (PD in Canada); later works carry other rights categories (US-only PD, hosted by permission) or sit on IMSLP's US and life+50 servers.
 
 ## Use cases
 
